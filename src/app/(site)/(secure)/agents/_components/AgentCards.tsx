@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Icon } from "@iconify/react";
 
 export type AgentItem = {
   id: string;
@@ -13,64 +14,86 @@ export type AgentItem = {
   authorizationsCount: number;
 };
 
+const inputClass =
+  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
+
 export function AgentCardItem({ item }: { item: AgentItem }) {
   const statusClass =
     item.status === "active"
-      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
-      : "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300";
+      ? "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:text-emerald-300"
+      : "bg-amber-500/15 text-amber-800 ring-1 ring-amber-500/25 dark:bg-amber-500/20 dark:text-amber-200";
 
   return (
-    <div className="group rounded-xl bg-white dark:bg-darkmode">
-      <div className="flex items-start gap-4">
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-gray-200 dark:border-gray-700">
+    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.12),0_8px_16px_-8px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(8,43,28,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-[#082b1c]/8 to-transparent blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+      <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/5 blur-xl" />
+
+      <div className="relative flex items-start gap-4">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl shadow-md ring-2 ring-white dark:ring-gray-800">
           <Image
             src={item.photo || "/images/blog/blog_2.jpg"}
             alt={item.name}
             fill
-            className="object-cover"
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="truncate text-base font-semibold text-midnight_text dark:text-white">
+            <h3 className="truncate text-base font-bold tracking-tight text-midnight_text dark:text-white">
               {item.name}
             </h3>
-            <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${statusClass}`}>
+            <span
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusClass}`}
+            >
+              <Icon icon="solar:shield-check-bold" className="h-3.5 w-3.5" />
               {item.status}
             </span>
           </div>
-          <p className="truncate text-xs text-gray-500">{item.email}</p>
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:letter-bold-duotone" className="h-4 w-4 shrink-0 text-primary/70" />
+            {item.email}
+          </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-        <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800">
-          <p className="text-gray-500">Matricule</p>
+      <div className="relative mt-5 grid grid-cols-2 gap-2.5 text-xs">
+        <div className="rounded-xl bg-white/70 px-3 py-2.5 shadow-sm ring-1 ring-gray-100/80 backdrop-blur-sm transition-transform duration-200 hover:scale-[1.02] dark:bg-gray-800/50 dark:ring-gray-700/60">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:id-card-bold-duotone" className="h-3.5 w-3.5" />
+            Matricule
+          </p>
           <p className="mt-1 font-semibold text-midnight_text dark:text-white">{item.matricule}</p>
         </div>
-        <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800">
-          <p className="text-gray-500">Role</p>
+        <div className="rounded-xl bg-white/70 px-3 py-2.5 shadow-sm ring-1 ring-gray-100/80 backdrop-blur-sm transition-transform duration-200 hover:scale-[1.02] dark:bg-gray-800/50 dark:ring-gray-700/60">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:user-speak-bold-duotone" className="h-3.5 w-3.5" />
+            Rôle
+          </p>
           <p className="mt-1 font-semibold capitalize text-midnight_text dark:text-white">{item.role}</p>
         </div>
-        <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800">
-          <p className="text-gray-500">Diplome</p>
-          <p className="mt-1 font-semibold text-midnight_text dark:text-white">{item.diplome}</p>
-        </div>
-        <div className="rounded-md bg-gray-50 px-3 py-2 dark:bg-gray-800">
-          <p className="text-gray-500">Autorisations</p>
-          <p className="mt-1 font-semibold text-midnight_text dark:text-white">
-            {item.authorizationsCount}
+        <div className="rounded-xl bg-white/70 px-3 py-2.5 shadow-sm ring-1 ring-gray-100/80 backdrop-blur-sm transition-transform duration-200 hover:scale-[1.02] dark:bg-gray-800/50 dark:ring-gray-700/60">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:diploma-bold-duotone" className="h-3.5 w-3.5" />
+            Diplôme
           </p>
+          <p className="mt-1 line-clamp-1 font-semibold text-midnight_text dark:text-white">{item.diplome}</p>
+        </div>
+        <div className="rounded-xl bg-white/70 px-3 py-2.5 shadow-sm ring-1 ring-gray-100/80 backdrop-blur-sm transition-transform duration-200 hover:scale-[1.02] dark:bg-gray-800/50 dark:ring-gray-700/60">
+          <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:key-minimalistic-bold-duotone" className="h-3.5 w-3.5" />
+            Autorisations
+          </p>
+          <p className="mt-1 font-semibold text-midnight_text dark:text-white">{item.authorizationsCount}</p>
         </div>
       </div>
 
       <Link
         href={`/agents/${item.id}`}
-        className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary transition group-hover:text-warning"
+        className="group/btn mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#082b1c]/30"
       >
-        Voir details
-        <span aria-hidden>→</span>
+        Voir le détail
+        <Icon icon="solar:arrow-right-linear" className="h-4 w-4 transition-transform duration-300 group-hover/btn:translate-x-0.5" />
       </Link>
     </div>
   );
@@ -82,17 +105,52 @@ type AgentCardCreateProps = {
 
 export function AgentCardCreate({ defaultRole }: AgentCardCreateProps) {
   return (
-    <div className="grid gap-2 md:grid-cols-2">
-      <input name="name" placeholder="Nom agent" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input name="email" placeholder="Email agent" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input name="matricule" placeholder="Matricule" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input name="diplome" placeholder="Diplome" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <p className="rounded border border-gray-300 bg-gray-100 px-3 py-2 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-        Role selectionne: {defaultRole}
-      </p>
-      <button type="submit" className="rounded bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white md:col-span-2">
-        Creer agent
-      </button>
+    <div className="rounded-2xl bg-gradient-to-br from-gray-50/95 to-white p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)] ring-1 ring-gray-200/90 dark:from-gray-900 dark:to-gray-900 dark:ring-gray-700">
+      <div className="grid gap-3 rounded-xl bg-white/60 p-4 backdrop-blur-sm dark:bg-gray-900/40 md:grid-cols-2">
+        <div>
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:user-bold-duotone" className="h-4 w-4 text-primary" />
+            Nom
+          </label>
+          <input name="name" placeholder="Nom de l'agent" className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:letter-bold-duotone" className="h-4 w-4 text-primary" />
+            Email
+          </label>
+          <input name="email" type="email" placeholder="email@exemple.com" className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:id-card-bold-duotone" className="h-4 w-4 text-primary" />
+            Matricule
+          </label>
+          <input name="matricule" placeholder="Ex. AG-0001" className={inputClass} />
+        </div>
+        <div>
+          <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+            <Icon icon="solar:diploma-bold-duotone" className="h-4 w-4 text-primary" />
+            Diplôme
+          </label>
+          <input name="diplome" placeholder="Diplôme" className={inputClass} />
+        </div>
+        <div className="flex items-end md:col-span-2">
+          <div className="flex w-full items-center gap-2 rounded-xl border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+            <Icon icon="solar:tag-bold-duotone" className="h-5 w-5 text-primary" />
+            <span>
+              Rôle appliqué : <span className="font-semibold text-midnight_text dark:text-white">{defaultRole}</span>
+            </span>
+          </div>
+        </div>
+        <button
+          type="submit"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] py-3 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/20 transition duration-300 hover:scale-[1.01] hover:shadow-xl md:col-span-2"
+        >
+          <Icon icon="solar:add-circle-bold" className="h-5 w-5" />
+          Créer l&apos;agent
+        </button>
+      </div>
     </div>
   );
 }
@@ -100,11 +158,31 @@ export function AgentCardCreate({ defaultRole }: AgentCardCreateProps) {
 export function AgentCardDetail({ item }: { item: AgentItem }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      <input defaultValue={item.name} name="name" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input defaultValue={item.email} name="email" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input defaultValue={item.matricule} name="matricule" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input defaultValue={item.diplome} name="diplome" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input defaultValue={item.role} name="role" className="rounded border border-gray-300 px-3 py-2 text-sm" />
+      <input
+        defaultValue={item.name}
+        name="name"
+        className={inputClass}
+      />
+      <input
+        defaultValue={item.email}
+        name="email"
+        className={inputClass}
+      />
+      <input
+        defaultValue={item.matricule}
+        name="matricule"
+        className={inputClass}
+      />
+      <input
+        defaultValue={item.diplome}
+        name="diplome"
+        className={inputClass}
+      />
+      <input
+        defaultValue={item.role}
+        name="role"
+        className={inputClass + " md:col-span-2"}
+      />
     </div>
   );
 }

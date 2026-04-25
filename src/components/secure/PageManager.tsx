@@ -24,6 +24,8 @@ type PageManagerProps<T extends { id: string }> = {
   searchPlaceholder?: string;
   searchText?: string;
   onSearchChange?: (value: string) => void;
+  /** When true, list items are not wrapped in a bordered box (for cards that provide their own chrome). */
+  bareListItems?: boolean;
 };
 
 function PageHeader({ title, description }: { title: string; description: string }) {
@@ -83,6 +85,7 @@ export default function PageManager<T extends { id: string }>({
   searchPlaceholder = "Rechercher...",
   searchText,
   onSearchChange,
+  bareListItems = false,
 }: PageManagerProps<T>) {
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
@@ -224,10 +227,16 @@ export default function PageManager<T extends { id: string }>({
             return (
               <article
                 key={item.id}
-                className={`w-full rounded-2xl border p-4 transition ${
-                  isSelected
-                    ? "border-[#082b1c] bg-[#082b1c]/5 dark:border-[#5ec998]"
-                    : "border-gray-200 dark:border-gray-700"
+                className={`w-full transition ${
+                  bareListItems
+                    ? isSelected
+                      ? "ring-2 ring-[#082b1c] ring-offset-2 ring-offset-white dark:ring-offset-gray-900"
+                      : ""
+                    : `rounded-2xl border p-4 ${
+                        isSelected
+                          ? "border-[#082b1c] bg-[#082b1c]/5 dark:border-[#5ec998]"
+                          : "border-gray-200 dark:border-gray-700"
+                      }`
                 }`}
               >
                 <button
@@ -241,7 +250,9 @@ export default function PageManager<T extends { id: string }>({
                   <button
                     type="button"
                     onClick={() => onDelete(item.id)}
-                    className="mt-3 rounded-md bg-rose-50 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300"
+                    className={`rounded-md bg-rose-50 px-3 py-1 text-xs font-medium text-rose-600 hover:bg-rose-100 dark:bg-rose-900/30 dark:text-rose-300 ${
+                      bareListItems ? "mt-2" : "mt-3"
+                    }`}
                   >
                     Supprimer
                   </button>

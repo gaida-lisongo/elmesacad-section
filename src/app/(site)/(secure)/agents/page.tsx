@@ -49,6 +49,7 @@ export default function AgentsPage() {
     <PageManager
       title="Gestion des agents"
       description="Creation, lecture et suppression des agents par role"
+      bareListItems
       items={items}
       tabs={roleTabs}
       activeTab={activeTab}
