@@ -22,6 +22,7 @@ export interface User {
 // Interface Fille : Student
 export interface Student extends User {
     _id: Types.ObjectId;
+    cycle: string;
     transactions: {
         ressourceId: string;
         amount: number;
@@ -30,10 +31,11 @@ export interface Student extends User {
         categorie: string;
     }[];
     deposits: {
-        orderNumber: string;
+        orderNumber?: string;
         amount: number;
         currency: 'USD' | 'CDF';
         phoneNumber: string;
+        status: 'pending' | 'paid' | 'failed';
     }[];
 }
 
@@ -78,11 +80,13 @@ const userFields = {
 
 const studentSchema = new Schema<Student>({
     ...userFields,
+    cycle: { type: String, required: true },
     deposits: [{
-        orderNumber: { type: String, required: true },
+        orderNumber: { type: String },
         amount: { type: Number, required: true },
         currency: { type: String, required: true, enum: ['USD', 'CDF'] },
         phoneNumber: { type: String, required: true },
+        status: { type: String, required: true, enum: ['pending', 'paid', 'failed'] },
     }],
     transactions: [{
         ressourceId: { type: String, required: true },

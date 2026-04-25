@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageManager from "@/components/secure/PageManager";
 import {
   StudentCardCreate,
@@ -8,57 +8,81 @@ import {
   StudentItem,
 } from "@/app/(site)/(secure)/etudiants/_components/StudentCards";
 
-const mockStudents: StudentItem[] = [
-  { id: "s1", name: "Grace Ilunga", matricule: "ET-001", email: "grace@inbtp.cd", diplome: "Licence", status: "active" },
-  { id: "s2", name: "Merveille Mbuyi", matricule: "ET-002", email: "merveille@inbtp.cd", diplome: "Master", status: "active" },
-  { id: "s3", name: "Joel Kanku", matricule: "ET-003", email: "joel@inbtp.cd", diplome: "Graduat", status: "inactive" },
+const cycleTabs = [
+  { label: "Tous", value: "all" },
+  { label: "Science de Base", value: "Science de Base" },
+  { label: "Licence", value: "Licence" },
+  { label: "Master", value: "Master" },
+  { label: "Doctorat", value: "Doctorat" },
 ];
 
+const defaultCycleForCreate = "Licence";
+
+type StudentsApiResponse = {
+  data: StudentItem[];
+};
+
 export default function EtudiantsPage() {
-  const [items, setItems] = useState<StudentItem[]>(mockStudents);
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchText, setSearchText] = useState("");
+  const [items, setItems] = useState<StudentItem[]>([]);
+
+  const fetchStudents = useCallback(async () => {
+    const params = new URLSearchParams({
+      offset: "0",
+      limit: "50",
+      search: searchText,
+    });
+
+    if (activeTab !== "all") {
+      params.set("cycle", activeTab);
+    }
+
+    const response = await fetch(`/api/student?${params.toString()}`);
+    const payload = (await response.json()) as StudentsApiResponse;
+    setItems(payload.data ?? []);
+  }, [activeTab, searchText]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, [fetchStudents]);
+
+  const currentCycle = useMemo(
+    () => (activeTab === "all" ? defaultCycleForCreate : activeTab),
+    [activeTab]
+  );
 
   return (
     <PageManager
-      title="Gestion des etudiants"
-      description="Creation, lecture et suppression des etudiants"
+      title="Gestion des étudiants"
+      description="Création, consultation et suivi des étudiants par cycle"
+      bareListItems
       items={items}
-      tabs={[
-        { label: "Tous", value: "all" },
-        { label: "Actifs", value: "active" },
-        { label: "Inactifs", value: "inactive" },
-      ]}
-      activeTab="all"
+      tabs={cycleTabs}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      searchText={searchText}
+      onSearchChange={setSearchText}
+      searchPlaceholder="Rechercher par nom, email ou matricule"
       bulkCsvHeaders={["name", "email", "matricule", "diplome"]}
       CardItem={StudentCardItem}
-      CardCreate={StudentCardCreate}
+      CardCreate={() => <StudentCardCreate defaultCycle={currentCycle} />}
       onCreate={async (formData) => {
         const payload = {
           name: String(formData.get("name") ?? ""),
           email: String(formData.get("email") ?? ""),
           matricule: String(formData.get("matricule") ?? ""),
           diplome: String(formData.get("diplome") ?? ""),
+          cycle: currentCycle,
         };
 
-        const response = await fetch("/api/student", {
+        await fetch("/api/student", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
 
-        const created = await response.json();
-        if (created?.data?._id) {
-          setItems((prev) => [
-            {
-              id: String(created.data._id),
-              name: created.data.name,
-              email: created.data.email,
-              matricule: created.data.matricule,
-              diplome: created.data.diplome,
-              status: created.data.status,
-            },
-            ...prev,
-          ]);
-        }
+        await fetchStudents();
       }}
       onBulkCreate={async (rawText, onProgress) => {
         const lines = rawText
@@ -66,7 +90,6 @@ export default function EtudiantsPage() {
           .map((line) => line.trim())
           .filter(Boolean);
 
-        const createdItems: StudentItem[] = [];
         const total = lines.length || 1;
         let done = 0;
         for (const line of lines) {
@@ -77,29 +100,26 @@ export default function EtudiantsPage() {
             continue;
           }
 
-          const response = await fetch("/api/student", {
+          await fetch("/api/student", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, matricule, diplome }),
+            body: JSON.stringify({
+              name,
+              email,
+              matricule,
+              diplome,
+              cycle: currentCycle,
+            }),
           });
-          const created = await response.json();
-          if (created?.data?._id) {
-            createdItems.push({
-              id: String(created.data._id),
-              name: created.data.name,
-              email: created.data.email,
-              matricule: created.data.matricule,
-              diplome: created.data.diplome,
-              status: created.data.status,
-            });
-          }
           done += 1;
           onProgress?.(Math.round((done / total) * 100));
         }
 
-        if (createdItems.length > 0) {
-          setItems((prev) => [...createdItems, ...prev]);
-        }
+        await fetchStudents();
+      }}
+      onDelete={async (id) => {
+        await fetch(`/api/student/${id}`, { method: "DELETE" });
+        await fetchStudents();
       }}
     />
   );

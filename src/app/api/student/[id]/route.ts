@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import userManager from "@/lib/services/UserManager";
 import { connectDB } from "@/lib/services/connectedDB";
+import { STUDENT_CYCLES } from "@/lib/constants/studentCycles";
 
 type RouteContext = {
     params: Promise<{ id: string }>;
@@ -29,9 +30,21 @@ export async function PUT(request: Request, context: RouteContext) {
     try {
         await connectDB();
         const { id } = await context.params;
-        const payload = await request.json();
+        const payload = (await request.json()) as Record<string, unknown>;
+        if (
+            payload.cycle != null &&
+            !STUDENT_CYCLES.includes(payload.cycle as (typeof STUDENT_CYCLES)[number])
+        ) {
+            return NextResponse.json(
+                { message: "Invalid cycle" },
+                { status: 400 }
+            );
+        }
 
-        const student = await userManager.updateStudent(id, payload);
+        const student = await userManager.updateStudent(
+            id,
+            payload as Parameters<typeof userManager.updateStudent>[1]
+        );
         if (!student) {
             return NextResponse.json({ message: "Student not found" }, { status: 404 });
         }

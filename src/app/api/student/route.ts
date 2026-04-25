@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import userManager from "@/lib/services/UserManager";
+import { STUDENT_CYCLES } from "@/lib/constants/studentCycles";
 import { connectDB } from "@/lib/services/connectedDB";
 import { authManager } from "@/lib/services/AuthManager";
 
@@ -20,6 +21,8 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
+        const cycle = searchParams.get("cycle") ?? undefined;
+        const search = searchParams.get("search") ?? "";
         const offset = Number(searchParams.get("offset") ?? "0");
         const limit = Number(searchParams.get("limit") ?? "50");
         const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
@@ -34,13 +37,22 @@ export async function GET(request: Request) {
             return NextResponse.json({ data: student }, { status: 200 });
         }
 
-        const students = await userManager.getStudentsPaginated(safeOffset, safeLimit);
+        const students = await userManager.getStudentsList({
+            cycle: cycle && cycle !== "all" ? cycle : undefined,
+            search,
+            offset: safeOffset,
+            limit: safeLimit,
+        });
         return NextResponse.json(
             {
                 data: students,
                 pagination: {
                     offset: safeOffset,
                     limit: safeLimit,
+                },
+                filters: {
+                    cycle: cycle ?? "all",
+                    search,
                 },
             },
             { status: 200 }
@@ -57,8 +69,16 @@ export async function POST(request: Request) {
     try {
         await connectDB();
         const body = await request.json();
+        const cycle = body.cycle as string | undefined;
+        if (!cycle || !STUDENT_CYCLES.includes(cycle as (typeof STUDENT_CYCLES)[number])) {
+            return NextResponse.json(
+                { message: "Invalid or missing cycle. Use one of: " + STUDENT_CYCLES.join(", ") },
+                { status: 400 }
+            );
+        }
         const payload = {
             ...body,
+            cycle,
             status: "inactive",
             sexe: body.sexe ?? "M",
             dateDeNaissance: body.dateDeNaissance ?? new Date("2000-01-01"),
@@ -66,7 +86,7 @@ export async function POST(request: Request) {
             lieuDeNaissance: body.lieuDeNaissance ?? "A definir",
             adresse: body.adresse ?? "A definir",
             telephone: body.telephone ?? "000000000",
-            photo: body.photo ?? "/images/user.jpg",
+            photo: body.photo ?? "/images/blog/blog_2.jpg",
             ville: body.ville ?? "A definir",
             deposits: body.deposits ?? [],
             transactions: body.transactions ?? [],
