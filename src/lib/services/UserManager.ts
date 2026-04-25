@@ -18,9 +18,9 @@ type AgentUpdateInput = Partial<AgentCreateInput>;
 
 type AuthorizationCreateInput = Omit<Authorization, "_id" | "createdAt" | "updatedAt">;
 type AuthorizationUpdateInput = Partial<AuthorizationCreateInput>;
-type UserType = "Agent" | "Student";
-type AgentWithAuthorizations = Agent & { authorizations: Authorization[] };
-type UserByEmailResult = Student | AgentWithAuthorizations;
+export type UserType = "Agent" | "Student";
+export type AgentWithAuthorizations = Agent & { authorizations: Authorization[] };
+export type UserByEmailResult = Student | AgentWithAuthorizations;
 
 /**
  * Service singleton for CRUD operations on students, agents and authorizations.
