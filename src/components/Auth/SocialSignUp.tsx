@@ -1,13 +1,15 @@
 import React from "react";
-import { signIn } from "next-auth/react";
 
 
 const SocialSignUp = () => {
+    const handleSocialSignUp = () => {
+        console.log("Social sign-up desactive: workflow OTP actif");
+    };
     return (
         <>
             <div className="flex gap-4">
                 <button
-                    onClick={() => signIn("google")}
+                    onClick={handleSocialSignUp}
                     className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-solid hover:bg-stroke border-stroke p-3.5 text-dark duration-200 ease-in  dark:border-dark_border dark:text-white dark:hover:bg-primary/10 hover:bg-primary/10"
                 >
                     Sign Up
@@ -50,7 +52,7 @@ const SocialSignUp = () => {
                 </button>
 
                 <button
-                    onClick={() => signIn("github")}
+                    onClick={handleSocialSignUp}
                     className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-solid hover:bg-stroke border-stroke p-3.5 text-dark duration-200 ease-in  dark:border-dark_border dark:text-white dark:hover:bg-primary/10 hover:bg-primary/10"
                 >
                     Sign Up

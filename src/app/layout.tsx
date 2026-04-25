@@ -6,7 +6,6 @@ import { ThemeProvider } from "next-themes";
 import ScrollToTop from '@/components/ScrollToTop';
 import Aoscompo from "@/utils/aos";
 import { DonationProvider } from "./context/donationContext";
-import SessionProviderComp from "@/components/nextauth/SessionProvider";
 import { AuthDialogProvider } from "./context/AuthDialogContext";
 import UserFloatingMenu, { AdminMenuItem } from "@/components/UserFloatingMenu";
 const montserrat = Montserrat({ subsets: ["latin"] });
@@ -47,10 +46,8 @@ const adminMenu: AdminMenuItem[] = [
 
 export default function RootLayout({
   children,
-  session,
 }: Readonly<{
   children: React.ReactNode;
-  session:any
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -58,7 +55,6 @@ export default function RootLayout({
       <NextTopLoader color="#FF4D7E" />
       <DonationProvider>
         <AuthDialogProvider>
-      <SessionProviderComp session={session}>
         <ThemeProvider
           attribute="class"
           enableSystem={true}
@@ -82,7 +78,6 @@ export default function RootLayout({
 
           </div>
         </ThemeProvider>
-        </SessionProviderComp>
         </AuthDialogProvider>
         </DonationProvider>
       </body>

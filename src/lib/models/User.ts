@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, model, Types } from "mongoose";
+import mongoose, { Schema, Types } from "mongoose";
 
 // Interface Mère
 export interface User {
@@ -117,6 +117,14 @@ const authorizationSchema = new Schema<Authorization>({
 }, { timestamps: true });
 
 
-export const StudentModel = model<Student>("Student", studentSchema);
-export const AgentModel = model<Agent>("Agent", agentSchema);
-export const AuthorizationModel = model<Authorization>("Authorization", authorizationSchema);
+export const StudentModel =
+    (mongoose.models.Student as mongoose.Model<Student>) ||
+    mongoose.model<Student>("Student", studentSchema);
+
+export const AgentModel =
+    (mongoose.models.Agent as mongoose.Model<Agent>) ||
+    mongoose.model<Agent>("Agent", agentSchema);
+
+export const AuthorizationModel =
+    (mongoose.models.Authorization as mongoose.Model<Authorization>) ||
+    mongoose.model<Authorization>("Authorization", authorizationSchema);

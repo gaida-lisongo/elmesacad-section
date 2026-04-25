@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import userManager from "@/lib/services/UserManager";
 import { connectDB } from "@/lib/services/connectedDB";
 import { authManager } from "@/lib/services/AuthManager";
+import type { Agent } from "@/lib/models/User";
 
 type AgentAuthBody =
     | {
@@ -20,6 +21,12 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
+        const role = searchParams.get("role") as Agent["role"] | null;
+        const search = searchParams.get("search") ?? "";
+        const offset = Number(searchParams.get("offset") ?? "0");
+        const limit = Number(searchParams.get("limit") ?? "50");
+        const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+        const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 50) : 50;
 
         if (email) {
             const agent = await userManager.getUserByEmail("Agent", email);
@@ -30,8 +37,27 @@ export async function GET(request: Request) {
             return NextResponse.json({ data: agent }, { status: 200 });
         }
 
-        const agents = await userManager.getAllAgents();
-        return NextResponse.json({ data: agents }, { status: 200 });
+        const agents = await userManager.getAgentsPaginated({
+            role: role ?? undefined,
+            search,
+            offset: safeOffset,
+            limit: safeLimit,
+        });
+
+        return NextResponse.json(
+            {
+                data: agents,
+                pagination: {
+                    offset: safeOffset,
+                    limit: safeLimit,
+                },
+                filters: {
+                    role: role ?? "all",
+                    search,
+                },
+            },
+            { status: 200 }
+        );
     } catch (error) {
         return NextResponse.json(
             { message: "Failed to fetch agents", error: (error as Error).message },
@@ -43,7 +69,20 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await connectDB();
-        const payload = await request.json();
+        const body = await request.json();
+        const payload = {
+            ...body,
+            status: "inactive",
+            sexe: body.sexe ?? "M",
+            dateDeNaissance: body.dateDeNaissance ?? new Date("2000-01-01"),
+            nationalite: body.nationalite ?? "A definir",
+            lieuDeNaissance: body.lieuDeNaissance ?? "A definir",
+            adresse: body.adresse ?? "A definir",
+            telephone: body.telephone ?? "000000000",
+            photo: body.photo ?? "/images/user.jpg",
+            ville: body.ville ?? "A definir",
+            withdrawals: body.withdrawals ?? [],
+        };
 
         const agent = await userManager.createAgent(payload);
         return NextResponse.json({ data: agent }, { status: 201 });

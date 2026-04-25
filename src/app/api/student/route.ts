@@ -20,6 +20,10 @@ export async function GET(request: Request) {
 
         const { searchParams } = new URL(request.url);
         const email = searchParams.get("email");
+        const offset = Number(searchParams.get("offset") ?? "0");
+        const limit = Number(searchParams.get("limit") ?? "50");
+        const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
+        const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 50) : 50;
 
         if (email) {
             const student = await userManager.getUserByEmail("Student", email);
@@ -30,8 +34,17 @@ export async function GET(request: Request) {
             return NextResponse.json({ data: student }, { status: 200 });
         }
 
-        const students = await userManager.getAllStudents();
-        return NextResponse.json({ data: students }, { status: 200 });
+        const students = await userManager.getStudentsPaginated(safeOffset, safeLimit);
+        return NextResponse.json(
+            {
+                data: students,
+                pagination: {
+                    offset: safeOffset,
+                    limit: safeLimit,
+                },
+            },
+            { status: 200 }
+        );
     } catch (error) {
         return NextResponse.json(
             { message: "Failed to fetch students", error: (error as Error).message },
@@ -43,7 +56,21 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         await connectDB();
-        const payload = await request.json();
+        const body = await request.json();
+        const payload = {
+            ...body,
+            status: "inactive",
+            sexe: body.sexe ?? "M",
+            dateDeNaissance: body.dateDeNaissance ?? new Date("2000-01-01"),
+            nationalite: body.nationalite ?? "A definir",
+            lieuDeNaissance: body.lieuDeNaissance ?? "A definir",
+            adresse: body.adresse ?? "A definir",
+            telephone: body.telephone ?? "000000000",
+            photo: body.photo ?? "/images/user.jpg",
+            ville: body.ville ?? "A definir",
+            deposits: body.deposits ?? [],
+            transactions: body.transactions ?? [],
+        };
 
         const student = await userManager.createStudent(payload);
         return NextResponse.json({ data: student }, { status: 201 });

@@ -1,19 +1,14 @@
 import React from "react";
-import { signIn } from "next-auth/react";
-
 
 const SocialSignIn = () => {
-  const handleGoogleSignIn = async () => {
-    await signIn("google");
-  };
-  const handleGithubSignIn = async () => {
-    await signIn("github");
+  const handleSocialSignIn = () => {
+    console.log("Social sign-in desactive: workflow OTP actif");
   };
   return (
     <>
       <div className="flex gap-4">
         <button
-          onClick={handleGoogleSignIn}
+          onClick={handleSocialSignIn}
           className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-solid hover:bg-stroke border-stroke p-3.5 text-dark duration-200 ease-in dark:border-dark_border dark:text-white dark:hover:bg-primary/10 hover:bg-primary/10!"
         >
           Sign In
@@ -56,7 +51,7 @@ const SocialSignIn = () => {
         </button>
 
         <button
-          onClick={handleGithubSignIn}
+          onClick={handleSocialSignIn}
           className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-solid hover:bg-stroke border-stroke p-3.5 text-dark duration-200 ease-in dark:border-dark_border dark:text-white dark:hover:bg-primary/10 hover:bg-primary/10"
         >
           Sign In
