@@ -31,6 +31,8 @@ export interface Student extends User {
         categorie: string;
     }[];
     deposits: {
+        /** Synchronisé avec la collection `recharges` (même id) */
+        rechargeId?: string;
         orderNumber?: string;
         amount: number;
         currency: 'USD' | 'CDF';
@@ -82,6 +84,7 @@ const studentSchema = new Schema<Student>({
     ...userFields,
     cycle: { type: String, required: true },
     deposits: [{
+        rechargeId: { type: String },
         orderNumber: { type: String },
         amount: { type: Number, required: true },
         currency: { type: String, required: true, enum: ['USD', 'CDF'] },

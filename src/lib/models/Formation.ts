@@ -1,6 +1,8 @@
 /**
  * Types de référence (structure pédagogique) — modèles Mongoose dans des fichiers dédiés.
  */
+export type { AnneeDoc } from "./Annee";
+export { AnneeModel } from "./Annee";
 export type { MatiereDoc } from "./Matiere";
 export { MatiereModel } from "./Matiere";
 export type { UniteEnseignementDoc } from "./UniteEnseignement";

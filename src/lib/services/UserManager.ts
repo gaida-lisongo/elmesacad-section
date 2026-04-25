@@ -58,6 +58,21 @@ export type RechargeListItem = {
     createdAt: string;
 };
 
+/** Liste admin : recharges jointes à l’étudiant */
+export type AdminRechargeListItem = {
+    id: string;
+    studentId: string;
+    studentName: string;
+    studentEmail: string;
+    studentMatricule: string;
+    orderNumber?: string;
+    amount: number;
+    currency: "USD" | "CDF";
+    phoneNumber: string;
+    status: "pending" | "paid" | "failed";
+    createdAt: string;
+};
+
 export { STUDENT_CYCLES } from "../constants/studentCycles";
 
 /**
@@ -122,14 +137,19 @@ class UserManager {
     public async getStudentsList(filters: {
         cycle?: string;
         search?: string;
+        status?: "active" | "inactive";
         offset?: number;
         limit?: number;
     }): Promise<StudentListItem[]> {
-        const { cycle, search, offset = 0, limit = 50 } = filters;
+        const { cycle, search, status, offset = 0, limit = 50 } = filters;
         const match: Record<string, unknown> = {};
 
         if (cycle && STUDENT_CYCLES.includes(cycle as (typeof STUDENT_CYCLES)[number])) {
             match.cycle = cycle;
+        }
+
+        if (status === "active" || status === "inactive") {
+            match.status = status;
         }
 
         if (search && search.trim().length > 0) {
@@ -184,6 +204,30 @@ class UserManager {
         return data as StudentListItem[];
     }
 
+    public async countStudents(filters: {
+        cycle?: string;
+        search?: string;
+        status?: "active" | "inactive";
+    }): Promise<number> {
+        const { cycle, search, status } = filters;
+        const match: Record<string, unknown> = {};
+        if (cycle && STUDENT_CYCLES.includes(cycle as (typeof STUDENT_CYCLES)[number])) {
+            match.cycle = cycle;
+        }
+        if (status === "active" || status === "inactive") {
+            match.status = status;
+        }
+        if (search && search.trim().length > 0) {
+            const value = search.trim();
+            match.$or = [
+                { name: { $regex: value, $options: "i" } },
+                { email: { $regex: value, $options: "i" } },
+                { matricule: { $regex: value, $options: "i" } },
+            ];
+        }
+        return StudentModel.countDocuments(match);
+    }
+
     public async updateStudent(id: Id, payload: StudentUpdateInput): Promise<Student | null> {
         return StudentModel.findByIdAndUpdate(id, payload, { new: true, runValidators: true });
     }
@@ -202,13 +246,26 @@ class UserManager {
         if (!student) {
             return null;
         }
-        return RechargeModel.create({
+        const r = await RechargeModel.create({
             studentId: student._id,
             amount: deposit.amount,
             currency: deposit.currency,
             phoneNumber: deposit.phoneNumber,
             status: "pending",
         });
+        const rid = String(r._id);
+        await StudentModel.findByIdAndUpdate(student._id, {
+            $push: {
+                deposits: {
+                    rechargeId: rid,
+                    amount: r.amount,
+                    currency: r.currency,
+                    phoneNumber: r.phoneNumber,
+                    status: r.status,
+                },
+            },
+        });
+        return r;
     }
 
     public async ensureMigratedRechargesForStudent(studentId: Id): Promise<void> {
@@ -221,7 +278,7 @@ class UserManager {
         if (!s?.deposits?.length) {
             return;
         }
-        await RechargeModel.insertMany(
+        const created = await RechargeModel.insertMany(
             s.deposits.map((d) => ({
                 studentId: sid,
                 amount: d.amount,
@@ -229,8 +286,19 @@ class UserManager {
                 phoneNumber: d.phoneNumber,
                 orderNumber: d.orderNumber,
                 status: (d.status as "pending" | "paid" | "failed") ?? "pending",
-            }))
+            })),
+            { ordered: true }
         );
+        if (created.length) {
+            await StudentModel.bulkWrite(
+                created.map((doc, i) => ({
+                    updateOne: {
+                        filter: { _id: sid },
+                        update: { $set: { [`deposits.${i}.rechargeId`]: String(doc._id) } },
+                    },
+                }))
+            );
+        }
     }
 
     public async getRechargesPaginated(params: {
@@ -301,22 +369,154 @@ class UserManager {
     }
 
     public async setRechargeOrderNumber(rechargeId: Id, orderNumber: string): Promise<RechargeDoc | null> {
-        return RechargeModel.findByIdAndUpdate(
+        const doc = await RechargeModel.findByIdAndUpdate(
             rechargeId,
             { $set: { orderNumber } },
             { new: true, runValidators: true }
         );
+        if (doc) {
+            await this.syncStudentDepositFromRecharge(doc.studentId, doc._id, { orderNumber });
+        }
+        return doc;
     }
 
     public async setRechargeStatus(
         rechargeId: Id,
         status: "pending" | "paid" | "failed"
     ): Promise<RechargeDoc | null> {
-        return RechargeModel.findByIdAndUpdate(
+        const doc = await RechargeModel.findByIdAndUpdate(
             rechargeId,
             { $set: { status } },
             { new: true, runValidators: true }
         );
+        if (doc) {
+            await this.syncStudentDepositFromRecharge(doc.studentId, doc._id, { status: doc.status });
+        }
+        return doc;
+    }
+
+    /** Aligne l’entrée `deposits[]` de l’étudiant sur la recharge (si `rechargeId` est présent). */
+    private async syncStudentDepositFromRecharge(
+        studentId: Id,
+        rechargeId: Id,
+        patch: { orderNumber?: string; status?: "pending" | "paid" | "failed" }
+    ): Promise<void> {
+        const rrid = String(rechargeId);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const $set: Record<string, any> = {};
+        if (patch.orderNumber !== undefined) {
+            $set["deposits.$[d].orderNumber"] = patch.orderNumber;
+        }
+        if (patch.status !== undefined) {
+            $set["deposits.$[d].status"] = patch.status;
+        }
+        if (Object.keys($set).length === 0) {
+            return;
+        }
+        await StudentModel.updateOne(
+            { _id: new Types.ObjectId(String(studentId)) },
+            { $set },
+            { arrayFilters: [{ "d.rechargeId": rrid }] }
+        );
+    }
+
+    public async getRechargeById(rechargeId: Id): Promise<RechargeDoc | null> {
+        return RechargeModel.findById(rechargeId);
+    }
+
+    /**
+     * Toutes les recharges (admin), avec filtre et recherche sur étudiant / commande.
+     */
+    public async getAllRechargesPaginated(filters: {
+        offset?: number;
+        limit?: number;
+        status?: "all" | "pending" | "paid" | "failed";
+        search?: string;
+    }): Promise<{ items: AdminRechargeListItem[]; total: number }> {
+        const offset = Math.max(0, filters.offset ?? 0);
+        const limit = Math.min(200, Math.max(1, filters.limit ?? 20));
+        const search = (filters.search ?? "").trim();
+        const statusF = filters.status;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pipeline: any[] = [];
+        if (statusF && statusF !== "all") {
+            pipeline.push({ $match: { status: statusF } });
+        }
+        pipeline.push(
+            {
+                $lookup: {
+                    from: "students",
+                    let: { sid: "$studentId" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$sid"] } } },
+                        { $project: { name: 1, email: 1, matricule: 1 } },
+                    ],
+                    as: "student",
+                },
+            },
+            { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } }
+        );
+        if (search) {
+            const esc = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const rx = { $regex: esc, $options: "i" };
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const or: any[] = [
+                { orderNumber: rx },
+                { phoneNumber: rx },
+                { "student.name": rx },
+                { "student.email": rx },
+                { "student.matricule": rx },
+            ];
+            const num = Number.parseFloat(search.replace(/,/g, "."));
+            if (Number.isFinite(num)) {
+                or.push({ amount: num });
+            }
+            pipeline.push({ $match: { $or: or } });
+        }
+
+        const [countRow] = await RechargeModel.aggregate([...pipeline, { $count: "c" }]);
+        const total = countRow && typeof countRow.c === "number" ? countRow.c : 0;
+
+        const rows = await RechargeModel.aggregate([
+            ...pipeline,
+            { $sort: { createdAt: -1 } },
+            { $skip: offset },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: 1,
+                    studentId: 1,
+                    orderNumber: 1,
+                    amount: 1,
+                    currency: 1,
+                    phoneNumber: 1,
+                    status: 1,
+                    createdAt: 1,
+                    studentName: "$student.name",
+                    studentEmail: "$student.email",
+                    studentMatricule: "$student.matricule",
+                },
+            },
+        ]);
+
+        const items: AdminRechargeListItem[] = rows.map((d: Record<string, unknown>) => ({
+            id: String(d._id),
+            studentId: String(d.studentId),
+            studentName: d.studentName != null ? String(d.studentName) : "—",
+            studentEmail: d.studentEmail != null ? String(d.studentEmail) : "—",
+            studentMatricule: d.studentMatricule != null ? String(d.studentMatricule) : "—",
+            orderNumber: d.orderNumber != null ? String(d.orderNumber) : undefined,
+            amount: d.amount as number,
+            currency: d.currency as "USD" | "CDF",
+            phoneNumber: String(d.phoneNumber),
+            status: d.status as "pending" | "paid" | "failed",
+            createdAt: d.createdAt
+                ? new Date(d.createdAt as string | Date).toISOString()
+                : new Date(0).toISOString(),
+        }));
+
+        return { items, total };
     }
 
     // Agents CRUD
@@ -335,14 +535,19 @@ class UserManager {
     public async getAgentsPaginated(filters: {
         role?: AgentRole;
         search?: string;
+        status?: "active" | "inactive";
         offset?: number;
         limit?: number;
     }): Promise<AgentListItem[]> {
-        const { role, search, offset = 0, limit = 50 } = filters;
+        const { role, search, status, offset = 0, limit = 50 } = filters;
         const match: Record<string, unknown> = {};
 
         if (role) {
             match.role = role;
+        }
+
+        if (status === "active" || status === "inactive") {
+            match.status = status;
         }
 
         if (search && search.trim().length > 0) {
@@ -384,6 +589,30 @@ class UserManager {
         ]);
 
         return data as AgentListItem[];
+    }
+
+    public async countAgents(filters: {
+        role?: AgentRole;
+        search?: string;
+        status?: "active" | "inactive";
+    }): Promise<number> {
+        const { role, search, status } = filters;
+        const match: Record<string, unknown> = {};
+        if (role) {
+            match.role = role;
+        }
+        if (status === "active" || status === "inactive") {
+            match.status = status;
+        }
+        if (search && search.trim().length > 0) {
+            const value = search.trim();
+            match.$or = [
+                { name: { $regex: value, $options: "i" } },
+                { email: { $regex: value, $options: "i" } },
+                { matricule: { $regex: value, $options: "i" } },
+            ];
+        }
+        return AgentModel.countDocuments(match);
     }
 
     public async updateAgent(id: Id, payload: AgentUpdateInput): Promise<Agent | null> {

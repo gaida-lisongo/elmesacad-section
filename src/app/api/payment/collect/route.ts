@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     if (typeof reference !== "string" || !reference.trim()) {
       return NextResponse.json(
-        { success: false, error: "reference requise (ex. matricule/email#D0)" },
+        { success: false, error: "reference requise (id unique de la recharge, 24 car. hex)" },
         { status: 400 }
       );
     }

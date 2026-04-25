@@ -1,27 +1,52 @@
-import PageDashboard from "@/components/secure/PageDashboard";
+import { getSessionPayload } from "@/lib/auth/sessionServer";
+import type { DashboardRole } from "@/lib/dashboard/types";
+import { loadAdminDashboardData } from "@/lib/services/dashboardAdminData";
+import { loadPlaceholderDashboardData } from "@/lib/services/placeholderDashboardData";
+import DashboardView from "./DashboardView";
 
-export default function DashboardPage() {
+function mapSessionToDashboardRole(
+  s: Awaited<ReturnType<typeof getSessionPayload>>
+): DashboardRole {
+  if (!s) return "organisateur";
+  if (s.type === "Student") return "student";
+  const r = s.role;
+  if (r === "admin" || r === "titulaire" || r === "organisateur" || r === "gestionnaire") {
+    return r;
+  }
+  return "organisateur";
+}
+
+function roleInfoMessage(role: DashboardRole): string | undefined {
+  if (role === "admin") return undefined;
+  if (role === "student") {
+    return "Espace étudiant : les indicateurs détaillés arriveront ici prochainement.";
+  }
+  if (role === "titulaire") {
+    return "Espace titulaire : le tableau de bord métier sera complété ultérieurement.";
+  }
+  return "Les statistiques avancées pour votre rôle seront affichées ici bientôt.";
+}
+
+export default async function DashboardPage() {
+  const session = await getSessionPayload();
+  const role = mapSessionToDashboardRole(session);
+  const isAdmin = role === "admin";
+  const data = isAdmin
+    ? await loadAdminDashboardData()
+    : loadPlaceholderDashboardData();
+  const userName = session?.name || session?.email;
+
   return (
-    <PageDashboard
-      title="Dashboard metier"
-      metrics={[
-        { label: "Agents actifs", value: 48, trend: "+8% cette semaine" },
-        { label: "Etudiants actifs", value: 1240, trend: "+2.3% ce mois" },
-        { label: "Sections operationnelles", value: 12, trend: "Stable" },
-      ]}
-      chartTitle="Statistiques globales"
-      chartPlaceholder="Chart de performance (a brancher avec tes donnees)"
-      whiteList={[
-        { label: "Tickets prioritaires", value: "21" },
-        { label: "OTP valides", value: "39" },
-        { label: "Agents online", value: "7" },
-      ]}
-      tableHeaders={["Nom", "Type", "Etat", "Maj"]}
-      tableRows={[
-        { id: "r1", columns: ["Jean Mukendi", "Agent", "Actif", "09:15"] },
-        { id: "r2", columns: ["Grace Ilunga", "Etudiant", "Actif", "08:03"] },
-        { id: "r3", columns: ["Section Finances", "Section", "OK", "07:42"] },
-      ]}
+    <DashboardView
+      title="Tableau de bord"
+      role={role}
+      userName={userName}
+      infoMessage={roleInfoMessage(role)}
+      chartYear={data.chartYear}
+      metrics={data.metrics}
+      whiteList={data.whiteList}
+      chartData={data.chartData}
+      tableData={data.tableData}
     />
   );
 }

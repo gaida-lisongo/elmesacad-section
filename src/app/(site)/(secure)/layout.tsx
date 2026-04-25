@@ -11,10 +11,6 @@ export default function SecureLayout({ children }: { children: React.ReactNode }
           {children}
         </section>
       </main>
-
-      <div className="mt-16 lg:mt-20">
-        <Volunteer />
-      </div>
     </>
   );
 }
