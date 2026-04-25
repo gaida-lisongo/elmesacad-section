@@ -28,3 +28,9 @@ export async function getSessionPayload(): Promise<SessionPayload | null> {
 export function canEditSensitiveFields(payload: SessionPayload): boolean {
   return payload.type === "Agent" && payload.role === "admin";
 }
+
+export function isAgentSession(
+  p: SessionPayload | null
+): p is SessionPayload & { type: "Agent" } {
+  return p != null && p.type === "Agent";
+}

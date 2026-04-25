@@ -1,64 +1,139 @@
-'use client';
+"use client";
 
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageManager from "@/components/secure/PageManager";
+import {
+  SectionCardCreate,
+  SectionCardItem,
+  type SectionListItem,
+} from "@/app/(site)/(secure)/sections/_components/SectionCards";
+import {
+  DEFAULT_SECTION_CYCLE_FOR_CREATE,
+  SECTION_CYCLE_TABS,
+} from "@/lib/constants/sectionCycles";
 
-type SectionItem = {
-  id: string;
-  name: string;
-  responsable: string;
+type ListResponse = {
+  data: Record<string, unknown>[];
 };
 
-const mockSections: SectionItem[] = [
-  { id: "sec1", name: "Scolarite", responsable: "Mme Kanku" },
-  { id: "sec2", name: "Finances", responsable: "M. Lukusa" },
-  { id: "sec3", name: "Ressources", responsable: "Mme Mumpeta" },
-];
-
-function SectionCardItem({ item }: { item: SectionItem }) {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-midnight_text dark:text-white">{item.name}</h3>
-      <p className="text-xs text-gray-500">Responsable: {item.responsable}</p>
-      <a href={`/sections/${item.id}`} className="mt-2 inline-block text-xs font-semibold text-[#082b1c]">
-        Voir details
-      </a>
-    </div>
-  );
-}
-
-function SectionCardCreate() {
-  return (
-    <div className="grid gap-2 md:grid-cols-2">
-      <input name="name" placeholder="Nom section" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <input name="responsable" placeholder="Responsable" className="rounded border border-gray-300 px-3 py-2 text-sm" />
-      <button type="submit" className="rounded bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white md:col-span-2">
-        Creer section
-      </button>
-    </div>
-  );
+function toListItem(r: Record<string, unknown>): SectionListItem {
+  const desc = r.description;
+  const description: { title: string; contenu: string }[] = [];
+  if (Array.isArray(desc)) {
+    for (const block of desc) {
+      if (!block || typeof block !== "object") continue;
+      const b = block as { title?: unknown; contenu?: unknown };
+      const title = String(b.title ?? "").trim();
+      const contenu = String(b.contenu ?? "").trim();
+      if (!title && !contenu) continue;
+      description.push({ title: title || "Sans titre", contenu });
+    }
+  }
+  return {
+    id: String(r._id ?? ""),
+    slug: String(r.slug ?? ""),
+    designation: String(r.designation ?? ""),
+    cycle: String(r.cycle ?? ""),
+    email: r.email != null ? String(r.email) : undefined,
+    logo: String(r.logo ?? ""),
+    description,
+  };
 }
 
 export default function SectionsPage() {
+  const [activeTab, setActiveTab] = useState("all");
+  const [searchText, setSearchText] = useState("");
+  const [items, setItems] = useState<SectionListItem[]>([]);
+
+  const currentCycle = useMemo(
+    () => (activeTab === "all" ? DEFAULT_SECTION_CYCLE_FOR_CREATE : activeTab),
+    [activeTab]
+  );
+
+  const fetchSections = useCallback(async () => {
+    const params = new URLSearchParams({ offset: "0", limit: "100", search: searchText });
+    if (activeTab !== "all") {
+      params.set("cycle", activeTab);
+    }
+    const response = await fetch(`/api/sections?${params.toString()}`);
+    const payload = (await response.json()) as ListResponse;
+    setItems((payload.data ?? []).map((x) => toListItem(x)));
+  }, [activeTab, searchText]);
+
+  useEffect(() => {
+    fetchSections();
+  }, [fetchSections]);
+
   return (
     <PageManager
       title="Gestion des sections"
-      description="Creation, lecture et suppression des sections"
-      items={mockSections}
-      tabs={[
-        { label: "Toutes", value: "all" },
-        { label: "Operationnelles", value: "active" },
-      ]}
-      activeTab="all"
-      bulkCsvHeaders={["name", "responsable"]}
+      description="Création, consultation et suivi des sections pédagogiques"
+      bareListItems
+      items={items}
+      tabs={SECTION_CYCLE_TABS}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      searchText={searchText}
+      onSearchChange={setSearchText}
+      searchPlaceholder="Rechercher par désignation ou e-mail"
       CardItem={SectionCardItem}
-      CardCreate={SectionCardCreate}
-      onBulkCreate={async (rawText, onProgress) => {
-        const lines = rawText
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean);
-        onProgress?.(100);
-        console.log("Bulk create sections", lines);
+      CardCreate={() => <SectionCardCreate defaultCycle={currentCycle} />}
+      onCreate={async (formData) => {
+        const chef = String(formData.get("chefSection") ?? "").trim();
+        const ens = String(formData.get("chargeEnseignement") ?? "").trim();
+        const rech = String(formData.get("chargeRecherche") ?? "").trim();
+        const bureau: Record<string, string> = {};
+        if (chef) bureau.chefSection = chef;
+        if (ens) bureau.chargeEnseignement = ens;
+        if (rech) bureau.chargeRecherche = rech;
+
+        let description: { title: string; contenu: string }[] | undefined;
+        const descJson = String(formData.get("descriptionJson") ?? "[]");
+        try {
+          const raw = JSON.parse(descJson) as unknown;
+          if (Array.isArray(raw)) {
+            const blocks = raw
+              .map((x) => {
+                if (!x || typeof x !== "object") return null;
+                const o = x as { title?: unknown; contenu?: unknown };
+                const title = String(o.title ?? "").trim();
+                const contenu = String(o.contenu ?? "").trim();
+                if (!title && !contenu) return null;
+                return { title: title || "Sans titre", contenu };
+              })
+              .filter((b): b is { title: string; contenu: string } => b != null);
+            if (blocks.length) description = blocks;
+          }
+        } catch {
+          /* ignore */
+        }
+
+        const payload = {
+          designation: String(formData.get("designation") ?? "").trim(),
+          email: String(formData.get("email") ?? "").trim() || undefined,
+          website: String(formData.get("website") ?? "").trim() || undefined,
+          telephone: String(formData.get("telephone") ?? "").trim() || undefined,
+          description,
+          cycle: currentCycle,
+          logo: String(formData.get("logo") ?? "").trim(),
+          bureau: Object.keys(bureau).length ? bureau : undefined,
+        };
+
+        const res = await fetch("/api/sections", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+          const j = (await res.json().catch(() => ({}))) as { message?: string };
+          window.alert(j.message ?? "Création impossible");
+          return;
+        }
+        await fetchSections();
+      }}
+      onDelete={async (id) => {
+        await fetch(`/api/sections/${id}`, { method: "DELETE" });
+        await fetchSections();
       }}
     />
   );

@@ -4,6 +4,11 @@ import { connectDB } from "@/lib/services/connectedDB";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { SemestreModel } from "@/lib/models/Semestre";
 import { SectionModel } from "@/lib/models/Section";
+import { getSessionPayload, isAgentSession } from "@/lib/auth/sessionServer";
+import { sectionWithoutSecrets } from "@/lib/utils/sectionResponse";
+import { STUDENT_CYCLES } from "@/lib/constants/studentCycles";
+
+const CYCLES = new Set<string>([...STUDENT_CYCLES]);
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -22,6 +27,13 @@ const sectionPopulate = {
 };
 
 export async function GET(_: Request, context: RouteContext) {
+  const session = await getSessionPayload();
+  if (!session) {
+    return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
+  }
+  if (!isAgentSession(session)) {
+    return NextResponse.json({ message: "Réservé aux agents" }, { status: 403 });
+  }
   try {
     await connectDB();
     const { id } = await context.params;
@@ -32,7 +44,8 @@ export async function GET(_: Request, context: RouteContext) {
     if (!doc) {
       return NextResponse.json({ message: "Section not found" }, { status: 404 });
     }
-    return NextResponse.json({ data: doc }, { status: 200 });
+    const plain = doc as unknown as Record<string, unknown>;
+    return NextResponse.json({ data: sectionWithoutSecrets(plain) }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to fetch section", error: (error as Error).message },
@@ -42,6 +55,13 @@ export async function GET(_: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
+  const session = await getSessionPayload();
+  if (!session) {
+    return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
+  }
+  if (!isAgentSession(session)) {
+    return NextResponse.json({ message: "Réservé aux agents" }, { status: 403 });
+  }
   try {
     await connectDB();
     const { id } = await context.params;
@@ -55,6 +75,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       website,
       telephone,
       description,
+      cycle: cycleIn,
       bureau: bureauIn,
     } = payload as {
       designation?: string;
@@ -62,6 +83,7 @@ export async function PATCH(request: Request, context: RouteContext) {
       website?: string;
       telephone?: string;
       description?: { title: string; contenu: string }[];
+      cycle?: string;
       bureau?: {
         chefSection?: string;
         chargeEnseignement?: string;
@@ -75,6 +97,13 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (website !== undefined) update.website = website;
     if (telephone !== undefined) update.telephone = telephone;
     if (description !== undefined) update.description = description;
+    if (cycleIn !== undefined) {
+      const c = String(cycleIn).trim();
+      if (!CYCLES.has(c)) {
+        return NextResponse.json({ message: "cycle invalide" }, { status: 400 });
+      }
+      update.cycle = c;
+    }
 
     if (bureauIn !== undefined) {
       const bureau: Record<string, Types.ObjectId> = {};
@@ -96,7 +125,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!doc) {
       return NextResponse.json({ message: "Section not found" }, { status: 404 });
     }
-    return NextResponse.json({ data: doc }, { status: 200 });
+    return NextResponse.json(
+      { data: sectionWithoutSecrets(doc.toObject() as unknown as Record<string, unknown>) },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to update section", error: (error as Error).message },
@@ -106,6 +138,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_: Request, context: RouteContext) {
+  const session = await getSessionPayload();
+  if (!session) {
+    return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
+  }
+  if (!isAgentSession(session)) {
+    return NextResponse.json({ message: "Réservé aux agents" }, { status: 403 });
+  }
   try {
     await connectDB();
     const { id } = await context.params;

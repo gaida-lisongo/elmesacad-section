@@ -11,6 +11,7 @@ const descriptionItemSchema = new Schema(
 export type SectionDoc = {
   _id: Types.ObjectId;
   designation: string;
+  cycle: string;
   slug: string;
   email?: string;
   website?: string;
@@ -24,6 +25,7 @@ export type SectionDoc = {
     chargeEnseignement?: Types.ObjectId;
     chargeRecherche?: Types.ObjectId;
   };
+  logo: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -31,6 +33,7 @@ export type SectionDoc = {
 const sectionSchema = new Schema<SectionDoc>(
   {
     designation: { type: String, required: true },
+    logo: { type: String, required: true },
     slug: { type: String, required: true, unique: true, index: true },
     email: { type: String },
     website: { type: String },
@@ -44,6 +47,7 @@ const sectionSchema = new Schema<SectionDoc>(
       chargeEnseignement: { type: Schema.Types.ObjectId, ref: "Agent" },
       chargeRecherche: { type: Schema.Types.ObjectId, ref: "Agent" },
     },
+    cycle: { type: String, required: true },
   },
   { timestamps: true }
 );

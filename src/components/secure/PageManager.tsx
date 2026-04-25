@@ -239,13 +239,20 @@ export default function PageManager<T extends { id: string }>({
                       }`
                 }`}
               >
-                <button
-                  type="button"
+                <div
+                  role="button"
+                  tabIndex={0}
                   onClick={() => setSelectedId(item.id)}
-                  className="w-full text-left"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(item.id);
+                    }
+                  }}
+                  className="w-full cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-[#082b1c]/40"
                 >
                   <CardItem item={item} />
-                </button>
+                </div>
                 {onDelete && (
                   <button
                     type="button"
