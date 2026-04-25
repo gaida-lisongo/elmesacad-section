@@ -55,7 +55,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       website,
       telephone,
       description,
-      credits,
       bureau: bureauIn,
     } = payload as {
       designation?: string;
@@ -63,7 +62,6 @@ export async function PATCH(request: Request, context: RouteContext) {
       website?: string;
       telephone?: string;
       description?: { title: string; contenu: string }[];
-      credits?: number;
       bureau?: {
         chefSection?: string;
         chargeEnseignement?: string;
@@ -77,7 +75,6 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (website !== undefined) update.website = website;
     if (telephone !== undefined) update.telephone = telephone;
     if (description !== undefined) update.description = description;
-    if (credits !== undefined) update.credits = credits;
 
     if (bureauIn !== undefined) {
       const bureau: Record<string, Types.ObjectId> = {};

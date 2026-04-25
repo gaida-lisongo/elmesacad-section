@@ -47,7 +47,6 @@ export async function POST(request: Request) {
       website,
       telephone,
       description,
-      credits,
       bureau: bureauIn,
     } = payload as {
       designation?: string;
@@ -55,7 +54,6 @@ export async function POST(request: Request) {
       website?: string;
       telephone?: string;
       description?: { title: string; contenu: string }[];
-      credits?: number;
       bureau?: {
         chefSection?: string;
         chargeEnseignement?: string;
@@ -94,7 +92,6 @@ export async function POST(request: Request) {
       website,
       telephone,
       description: description ?? [],
-      credits: credits ?? 0,
       apiKey,
       secretKey,
       programmes: [],
