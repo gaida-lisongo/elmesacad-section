@@ -10,7 +10,9 @@ import { Toaster } from "react-hot-toast";
 import Logo from "@/components/Layout/Header/Logo";
 import { UserDatabaseSearch } from "@/components/secure/UserDatabaseSearch";
 import type { Agent, Authorization, Student } from "@/lib/models/User";
+import { mapJsonUserToAuthUser } from "@/lib/auth/mapToAuthUser";
 import type { AgentListItem, StudentListItem } from "@/lib/services/UserManager";
+import { useAuthStore } from "@/stores/authStore";
 
 type AccountKind = "student" | "agent";
 
@@ -30,6 +32,7 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 
 export function OtpSignInFlow() {
+  const setAuthUser = useAuthStore((s) => s.setUser);
   const router = useRouter();
   const [accountKind, setAccountKind] = useState<AccountKind>("student");
   const [step, setStep] = useState(1);
@@ -94,10 +97,12 @@ export function OtpSignInFlow() {
       }
       if (j.data && isRecord(j.data)) {
         setProfile(j.data);
+        setAuthUser(mapJsonUserToAuthUser(j.data, accountKind));
       } else {
         setProfile(null);
       }
       setStep(3);
+      void router.refresh();
       toast.success("Connexion confirmée.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Code incorrect ou expiré.");

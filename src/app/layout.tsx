@@ -7,42 +7,10 @@ import ScrollToTop from '@/components/ScrollToTop';
 import Aoscompo from "@/utils/aos";
 import { DonationProvider } from "./context/donationContext";
 import { AuthDialogProvider } from "./context/AuthDialogContext";
-import UserFloatingMenu, { AdminMenuItem } from "@/components/UserFloatingMenu";
+import { UserFloatingMenuGate } from "@/components/UserFloatingMenu/UserFloatingMenuGate";
+import { AuthHydrate } from "@/components/Auth/AuthHydrate";
 const montserrat = Montserrat({ subsets: ["latin"] });
 import NextTopLoader from 'nextjs-toploader';
-
-const adminMenu: AdminMenuItem[] = [
-  {
-    item: "Dashboard",
-    path: "/dashboard",
-  },
-  {
-    item: "Agents",
-    path: "/agents",
-  },
-  {
-    item: "Etudiants",
-    path: "/etudiants",
-  },
-  {
-    item: "Sections",
-    path: "/sections",
-  },
-  {
-    item: "Tickets",
-    path: "#",
-    subMenu: [
-      {
-        item: "Etudiants",
-        path: "/tickets/etudiants",
-      },
-      {
-        item: "Agents",
-        path: "/tickets/agents",
-      },
-    ]
-  },
-];
 
 export default function RootLayout({
   children,
@@ -60,6 +28,7 @@ export default function RootLayout({
           enableSystem={true}
           defaultTheme="system"
         >
+          <AuthHydrate />
           <Aoscompo>
             <Header />
             
@@ -68,12 +37,7 @@ export default function RootLayout({
             <Footer />
           </Aoscompo>
           <div className="fixed bottom-8 right-8 z-999 flex items-end gap-3">
-            <UserFloatingMenu
-              matricule="MAT-0000"
-              userName="Utilisateur actif"
-              userEmail="email@exemple.com"
-              adminMenu={adminMenu}
-            />
+            <UserFloatingMenuGate />
             <ScrollToTop />
 
           </div>

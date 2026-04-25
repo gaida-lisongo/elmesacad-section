@@ -15,6 +15,7 @@ import { SuccessfullLogin } from "@/components/Auth/AuthDialog/SuccessfulLogin";
 import AuthDialogContext from "@/app/context/AuthDialogContext";
 import { FailedLogin } from "@/components/Auth/AuthDialog/FailedLogin";
 import { UserRegistered } from "@/components/Auth/AuthDialog/UserRegistered";
+import { HeaderUserArea } from "./HeaderUserArea";
 
 const Header: React.FC = () => {
   const pathUrl = usePathname();
@@ -95,18 +96,9 @@ const Header: React.FC = () => {
                 <path d="M16.6111 15.855C17.591 15.1394 18.3151 14.1979 18.7723 13.1623C16.4824 13.4065 14.1342 12.4631 12.6795 10.4711C11.2248 8.47905 11.0409 5.95516 11.9705 3.84818C10.8449 3.9685 9.72768 4.37162 8.74781 5.08719C5.7759 7.25747 5.12529 11.4308 7.29558 14.4028C9.46586 17.3747 13.6392 18.0253 16.6111 15.855Z" />
               </svg>
             </button>
-            <Link
-              href="/signin"
-              className="hidden lg:block bg-error text-sm hover:bg-error/90 text-white px-4 py-3.5 leading-none rounded-lg font-medium text-nowrap"
-            >
-              Se connecter
-            </Link>
-            <Link
-              href="/signup"
-              className="hidden lg:block text-sm bg-dark hover:bg-dark/90 text-white px-4 py-3.5 leading-none rounded-lg font-medium text-nowrap"
-            >
-              Créer un compte
-            </Link>
+            <div className="hidden max-w-[min(20rem,46vw)] lg:block">
+              <HeaderUserArea />
+            </div>
             <button
               onClick={() => setNavbarOpen(!navbarOpen)}
               className="block lg:hidden p-2 rounded-lg"
@@ -144,21 +136,12 @@ const Header: React.FC = () => {
             {headerData.map((item, index) => (
               <MobileHeaderLink key={index} item={item} />
             ))}
-            <div className="mt-4 flex flex-col space-y-4 w-full">
-              <Link
-                href="/signin"
-                onClick={() => setNavbarOpen(false)}
-                className="bg-transparent border border-primary text-primary px-4 py-2 text-nowrap rounded-lg hover:bg-darkprimary hover:text-white"
-              >
-                Se connecter
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setNavbarOpen(false)}
-                className="bg-primary text-white px-4 py-2 rounded-lg text-nowrap hover:bg-darkprimary"
-              >
-                Créer un compte
-              </Link>
+            <div className="mt-4 w-full">
+              <HeaderUserArea
+                compact
+                onNavigate={() => setNavbarOpen(false)}
+                classNameLink="inline-flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-3 shadow-sm dark:border-gray-600 dark:bg-gray-800"
+              />
             </div>
           </nav>
         </div>
