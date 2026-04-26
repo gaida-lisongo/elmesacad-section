@@ -26,14 +26,7 @@ export const userFloatingMenu: {
       { item: "Agents", path: "/agents" },
       { item: "Etudiants", path: "/etudiants" },
       { item: "Sections", path: "/sections" },
-      {
-        item: "Tickets",
-        path: "#",
-        subMenu: [
-          { item: "Etudiants", path: "/tickets/etudiants" },
-          { item: "Agents", path: "/tickets/agents" },
-        ],
-      },
+      { item: "Tickets", path: "/tickets" },
     ],
     titulaire: [
       { item: "Tableau de bord", path: "/dashboard" },

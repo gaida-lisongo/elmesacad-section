@@ -34,3 +34,10 @@ export function isAgentSession(
 ): p is SessionPayload & { type: "Agent" } {
   return p != null && p.type === "Agent";
 }
+
+/** Tout agent connecté peut gérer les tickets support. */
+export function canManageSupportTickets(
+  p: SessionPayload | null
+): p is SessionPayload & { type: "Agent" } {
+  return isAgentSession(p);
+}

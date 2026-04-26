@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {  useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { headerData } from "../Header/Navigation/menuData";
 import Logo from "./Logo";
 import Image from 'next/image';
@@ -25,6 +25,25 @@ const Header: React.FC = () => {
   const [sticky, setSticky] = useState(false);
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const headerRootRef = useRef<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    const el = headerRootRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const sync = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      if (h > 0) root.style.setProperty("--app-header-h", `${h}px`);
+    };
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    window.addEventListener("resize", sync);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", sync);
+    };
+  }, []);
 
   const handleScroll = () => {
     setSticky(window.scrollY >= 80);
@@ -65,6 +84,7 @@ const Header: React.FC = () => {
 
   return (
     <header
+      ref={headerRootRef}
       className={`fixed top-0 z-50 w-full transition-all ${sticky ? "shadow-lg dark:shadow-darkmd bg-white dark:bg-dark" : "shadow-none"}`}
     >
       <div className="sm:bg-linear-to-r bg-linear-to-l md:from-primary md:to-secondary lg:py-0 py-2 bg-white dark:bg-dark">

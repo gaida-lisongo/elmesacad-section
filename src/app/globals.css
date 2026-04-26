@@ -52,6 +52,9 @@
   --color-darklight: #000f30;
   --color-dark_border: #203535;
   --color-dark: #00180f;
+
+  /** Hauteur du header fixe ; surchargée en px par le composant Header (ResizeObserver). */
+  --app-header-h: 7rem;
 }
 
 @keyframes dashboard-in {
@@ -84,6 +87,11 @@
     transform-origin: bottom;
     animation: bar-rise 0.55s ease-out both;
   }
+
+  /** Contenu sous le menu fixe : --app-header-h vient du Header (client). */
+  .pt-below-site-header {
+    padding-top: calc(var(--app-header-h, 8rem) + 1.5rem);
+  }
 }
 
 /*
@@ -106,6 +114,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--app-header-h, 7rem);
 }
 html,
 body {

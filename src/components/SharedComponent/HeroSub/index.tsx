@@ -35,7 +35,7 @@ const HeroSub = ({ title, items: itemsOverride }: HeroSubProps) => {
   }
 
   return (
-    <section className="bg-[url('/images/background/herosub-banner.png')] bg-cover bg-no-repeat pb-12 pt-28 sm:mt-44 sm:pt-32 md:pb-16 lg:mt-40 lg:pb-20 lg:pt-36">
+    <section className="bg-[url('/images/background/herosub-banner.png')] bg-cover bg-no-repeat pb-12 pt-32 sm:mt-44 sm:pt-32 md:pb-16 lg:mt-44 lg:pb-20 lg:pt-36">
       <div className="container mx-auto max-w-(--breakpoint-xl) px-4">
         <nav aria-label="Fil d’Ariane" className="text-sm text-white/90">
           <ol className="flex flex-wrap items-center gap-x-2 gap-y-1">
