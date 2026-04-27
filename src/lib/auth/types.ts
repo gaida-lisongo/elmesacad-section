@@ -13,6 +13,13 @@ export type AuthUserStudent = {
   accountLabel: "Étudiant";
 };
 
+/** Habilitations liées à l’agent (collection `Authorization`). */
+export type AuthAgentAuthorization = {
+  id: string;
+  code: string;
+  designation: string;
+};
+
 export type AuthUserAgent = {
   kind: "agent";
   id: string;
@@ -22,6 +29,8 @@ export type AuthUserAgent = {
   photo: string;
   role: string;
   accountLabel: string;
+  /** Chargées avec le profil (OTP + `/api/auth/me`). */
+  authorizations?: AuthAgentAuthorization[];
 };
 
 export type AuthUser = AuthUserStudent | AuthUserAgent;

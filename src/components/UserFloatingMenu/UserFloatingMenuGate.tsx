@@ -7,7 +7,6 @@ import { useAuthStore } from "@/stores/authStore";
 
 export function UserFloatingMenuGate() {
   const user = useAuthStore((s) => s.user);
-  console.log("Current User:", user);
   const isHydrated = useAuthStore((s) => s.isHydrated);
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();

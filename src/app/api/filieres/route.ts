@@ -9,17 +9,28 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const offset = Number(searchParams.get("offset") ?? "0");
     const limit = Number(searchParams.get("limit") ?? "50");
+    const search = (searchParams.get("search") ?? "").trim();
     const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
     const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 50;
 
+    const filter =
+      search.length > 0
+        ? {
+            $or: [
+              { designation: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+              { slug: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+            ],
+          }
+        : {};
+
     const [data, total] = await Promise.all([
-      FiliereModel.find()
+      FiliereModel.find(filter)
         .sort({ createdAt: -1 })
         .skip(safeOffset)
         .limit(safeLimit)
         .lean()
         .exec(),
-      FiliereModel.countDocuments(),
+      FiliereModel.countDocuments(filter),
     ]);
 
     return NextResponse.json(

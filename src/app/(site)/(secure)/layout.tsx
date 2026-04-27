@@ -7,7 +7,7 @@ export default function SecureLayout({ children }: { children: React.ReactNode }
       <HeroSub />
 
       <main className="py-12 lg:py-16">
-        <section className="container mx-auto lg:max-w-(--breakpoint-xl) px-4">
+        <section className="mx-auto w-full max-w-none px-4 sm:px-6 lg:px-8">
           {children}
         </section>
       </main>

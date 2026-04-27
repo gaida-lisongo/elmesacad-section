@@ -3,9 +3,20 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@iconify/react";
-import type { DashboardViewProps, DashboardTableRow } from "@/lib/dashboard/types";
+import type {
+  DashboardAdminCapabilities,
+  DashboardViewProps,
+  DashboardTableRow,
+} from "@/lib/dashboard/types";
+import FilieresDataTableSection from "@/components/filiere/FilieresDataTableSection";
 const PAGE_SIZE = 10;
 const TABLE_HEADERS_BASE = ["Nom", "E-mail", "Matricule", "Statut", "Type"];
+
+const DEFAULT_ADMIN_CAPABILITIES: DashboardAdminCapabilities = {
+  canManageUserAccounts: false,
+  canManageFilieres: false,
+  canReadTransactions: false,
+};
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -384,7 +395,15 @@ function AdminAnneeBlock({
 
 type MailAction = { rowId: string; kind: "create" | "reset" } | null;
 
-function AdminUserTableBlock({ listes, filters }: { listes: string[]; filters: string[] }) {
+function AdminUserTableBlock({
+  listes,
+  filters,
+  canManageAccounts,
+}: {
+  listes: string[];
+  filters: string[];
+  canManageAccounts: boolean;
+}) {
   const [listI, setListI] = useState(0);
   const [filterI, setFilterI] = useState(() => {
     const i = filters.indexOf("Inactifs");
@@ -563,24 +582,28 @@ function AdminUserTableBlock({ listes, filters }: { listes: string[]; filters: s
                       </td>
                     ))}
                     <td className="px-3 py-2">
-                      <div className="flex flex-wrap gap-1">
-                        <button
-                          type="button"
-                          disabled={!!busy}
-                          onClick={() => void onMail(email, "create", row.id)}
-                          className="rounded border border-sky-500/60 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300"
-                        >
-                          {busy && mail?.kind === "create" ? "…" : "Créer compte"}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={!!busy}
-                          onClick={() => void onMail(email, "reset", row.id)}
-                          className="rounded border border-amber-500/60 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200"
-                        >
-                          {busy && mail?.kind === "reset" ? "…" : "Réinitialiser"}
-                        </button>
-                      </div>
+                      {canManageAccounts ? (
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            type="button"
+                            disabled={!!busy}
+                            onClick={() => void onMail(email, "create", row.id)}
+                            className="rounded border border-sky-500/60 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300"
+                          >
+                            {busy && mail?.kind === "create" ? "…" : "Créer compte"}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!!busy}
+                            onClick={() => void onMail(email, "reset", row.id)}
+                            className="rounded border border-amber-500/60 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200"
+                          >
+                            {busy && mail?.kind === "reset" ? "…" : "Réinitialiser"}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">Non autorisé</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -612,6 +635,115 @@ function AdminUserTableBlock({ listes, filters }: { listes: string[]; filters: s
         </div>
       </div>
     </div>
+  );
+}
+
+type RechargeRow = {
+  id: string;
+  studentName: string;
+  studentMatricule: string;
+  amount: number;
+  currency: "USD" | "CDF";
+  status: "pending" | "paid" | "failed";
+  createdAt: string;
+};
+
+function TransactionsPanel() {
+  const [rows, setRows] = useState<RechargeRow[]>([]);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 350);
+  const [status, setStatus] = useState<"all" | "pending" | "paid" | "failed">("all");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setErr(null);
+    try {
+      const sp = new URLSearchParams();
+      sp.set("page", "0");
+      sp.set("limit", "8");
+      sp.set("status", status);
+      sp.set("search", debouncedSearch.trim());
+      const res = await fetch(`/api/recharges?${sp.toString()}`);
+      const j = await res.json();
+      if (!res.ok) throw new Error(j.message || "Chargement transactions impossible");
+      setRows(Array.isArray(j.data) ? (j.data as RechargeRow[]) : []);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedSearch, status]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return (
+    <article className="animate-dashboard-in w-full min-w-0 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
+      <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Détail des recharges</h2>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <input
+          className="rounded border border-gray-200 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800"
+          placeholder="Nom, matricule, montant..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <select
+          className="rounded border border-gray-200 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as "all" | "pending" | "paid" | "failed")}
+        >
+          <option value="all">Tous</option>
+          <option value="pending">En attente</option>
+          <option value="paid">Payé</option>
+          <option value="failed">Échoué</option>
+        </select>
+      </div>
+      {err && <p className="mt-2 text-xs text-red-600">{err}</p>}
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-gray-200 dark:border-gray-700">
+              <th className="px-2 py-1.5 text-xs text-gray-500">Étudiant</th>
+              <th className="px-2 py-1.5 text-xs text-gray-500">Montant</th>
+              <th className="px-2 py-1.5 text-xs text-gray-500">Statut</th>
+              <th className="px-2 py-1.5 text-xs text-gray-500">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td className="px-2 py-3 text-gray-500" colSpan={4}>
+                  Chargement...
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td className="px-2 py-3 text-gray-500" colSpan={4}>
+                  Aucune transaction
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => (
+                <tr key={r.id} className="border-b border-gray-100 dark:border-gray-800">
+                  <td className="px-2 py-1.5">
+                    <p className="text-sm text-midnight_text dark:text-white">{r.studentName}</p>
+                    <p className="text-[11px] text-gray-500">{r.studentMatricule}</p>
+                  </td>
+                  <td className="px-2 py-1.5">
+                    {r.amount} {r.currency}
+                  </td>
+                  <td className="px-2 py-1.5">{r.status}</td>
+                  <td className="px-2 py-1.5">{new Date(r.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </article>
   );
 }
 
@@ -670,22 +802,35 @@ export default function DashboardView(props: DashboardViewProps) {
     role,
     userName,
     infoMessage,
+    ui,
+    agentAuthorizations = [],
+    adminCapabilities = DEFAULT_ADMIN_CAPABILITIES,
     metrics,
     whiteList,
     chartData,
     tableData,
     chartYear,
   } = props;
-  const isAdmin = role === "admin";
+
+  const isStudentMinimal =
+    !ui.showMetricsRow && ui.anneesMode === "hidden" && ui.usersTableMode === "hidden";
+
+  const showAdminUsersTable =
+    role !== "admin" ||
+    agentAuthorizations.length === 0 ||
+    adminCapabilities.canManageUserAccounts;
 
   return (
-    <section className="space-y-6">
+    <section className="w-full min-w-0 space-y-6">
       <header className="animate-dashboard-in">
         <h1 className="text-2xl font-bold tracking-tight text-midnight_text dark:text-white md:text-3xl">
           {title}
         </h1>
         {userName && (
           <p className="mt-1 text-sm text-gray-600 transition dark:text-gray-400">Bonjour, {userName}</p>
+        )}
+        {ui.subtitle && (
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{ui.subtitle}</p>
         )}
         {infoMessage && (
           <p className="mt-2 rounded-lg border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-sm text-amber-900 transition-all duration-300 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
@@ -694,100 +839,151 @@ export default function DashboardView(props: DashboardViewProps) {
         )}
       </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {metrics.slice(0, 3).map((metric, mi) => (
-          <article
-            key={metric.title}
-            className="animate-dashboard-in group rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/50 p-4 shadow-sm transition duration-500 ease-out hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/50 dark:shadow-gray-950/30 dark:hover:shadow-lg"
-            style={{ animationDelay: `${80 + mi * 70}ms` }}
-          >
-            <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-              {metric.title}
-            </p>
-            <p className="mt-2 text-2xl font-bold tabular-nums text-midnight_text transition group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
-              {metric.value}
-            </p>
-            <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100/80 dark:bg-gray-800">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700 ease-out dark:from-sky-400 dark:to-secondary"
-                style={{ width: `${Math.min(100, Math.max(0, metric.progress))}%` }}
-              />
-            </div>
-            <p className="mt-1.5 text-xs text-gray-500 tabular-nums dark:text-gray-400">{metric.progress}%</p>
-          </article>
-        ))}
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-5">
+      {isStudentMinimal ? (
         <article
-          className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/20 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/10 dark:hover:shadow-sky-950/20 lg:col-span-3"
-          style={{ animationDelay: "200ms" }}
+          className="animate-dashboard-in rounded-xl border border-dashed border-gray-300 bg-gray-50/50 p-8 text-center dark:border-gray-600 dark:bg-gray-900/40"
+          style={{ animationDelay: "160ms" }}
         >
-          <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Recharges</h2>
-          {isAdmin && chartData.length > 0 ? (
-            <div className="mt-2">
-              <RechargeStatusStackedChart year={chartYear} seriesList={chartData} />
-            </div>
-          ) : (
-            <div className="mt-6 flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 transition dark:border-gray-700">
-              Graphique non disponible pour ce rôle
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Les statistiques et raccourcis de votre parcours étudiant seront regroupés ici.
+          </p>
+        </article>
+      ) : (
+        <>
+          {ui.showMetricsRow && metrics.length > 0 && (
+            <div className="grid gap-4 md:grid-cols-3">
+              {metrics.slice(0, 3).map((metric, mi) => (
+                <article
+                  key={`${metric.title}-${mi}`}
+                  className="animate-dashboard-in group rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/50 p-4 shadow-sm transition duration-500 ease-out hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-900/50 dark:shadow-gray-950/30 dark:hover:shadow-lg"
+                  style={{ animationDelay: `${80 + mi * 70}ms` }}
+                >
+                  <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    {metric.title}
+                  </p>
+                  <p className="mt-2 text-2xl font-bold tabular-nums text-midnight_text transition group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
+                    {metric.value}
+                  </p>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100/80 dark:bg-gray-800">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700 ease-out dark:from-sky-400 dark:to-secondary"
+                      style={{ width: `${Math.min(100, Math.max(0, metric.progress))}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-gray-500 tabular-nums dark:text-gray-400">
+                    {metric.progress}%
+                  </p>
+                </article>
+              ))}
             </div>
           )}
-        </article>
 
-        <article
-          className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/20 dark:hover:shadow-sky-950/20 lg:col-span-2"
-          style={{ animationDelay: "260ms" }}
-        >
-          {isAdmin ? (
-            <AdminAnneeBlock items={whiteList} />
-          ) : (
-            <div>
-              <h2 className="text-sm font-semibold text-midnight_text dark:text-white">
-                Années (aperçu)
-              </h2>
-              {whiteList.length === 0 ? (
-                <p className="mt-3 text-sm text-gray-500">Non disponible</p>
+          <div className="grid gap-4 lg:grid-cols-5">
+            <article
+              className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/20 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/10 dark:hover:shadow-sky-950/20 lg:col-span-3"
+              style={{ animationDelay: "200ms" }}
+            >
+              <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Recharges</h2>
+              {ui.showRechargesChart && chartData.length > 0 ? (
+                <div className="mt-2">
+                  <RechargeStatusStackedChart year={chartYear} seriesList={chartData} />
+                </div>
               ) : (
-                <ul className="mt-3 space-y-2">
-                  {whiteList.slice(0, 8).map((w, wi) => (
-                    <li
-                      key={w.slug}
-                      className="flex animate-dashboard-in items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 text-sm transition hover:border-sky-200/50 dark:border-gray-800 dark:bg-gray-800/50"
-                      style={{ animationDelay: `${wi * 40}ms` }}
-                    >
-                      <span className="font-medium text-midnight_text dark:text-white">
-                        {formatAnneeTitle(w.debut, w.fin)}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
-                          w.status
-                            ? "bg-primary/15 text-primary dark:text-primary"
-                            : "bg-gray-200/80 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        {w.status ? "actif" : "inactif"}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="mt-6 flex h-48 items-center justify-center rounded-lg border border-dashed border-gray-300 text-sm text-gray-500 transition dark:border-gray-700">
+                  {role === "admin"
+                    ? "Aucune donnée de recharge sur la période."
+                    : "Graphique réservé à l’administration."}
+                </div>
               )}
-            </div>
-          )}
-        </article>
-      </div>
+            </article>
 
-      <article
-        className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-950/50 dark:hover:shadow-gray-900/30"
-        style={{ animationDelay: "320ms" }}
-      >
-        <h2 className="mb-2 text-sm font-semibold text-midnight_text dark:text-white">Utilisateurs</h2>
-        {isAdmin ? (
-          <AdminUserTableBlock listes={tableData.listes} filters={tableData.filters} />
-        ) : (
-          <ReadonlyUserTable rows={tableData.rows} headers={tableData.headers} />
-        )}
-      </article>
+            {ui.anneesMode !== "hidden" && (
+              <article
+                className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/20 dark:hover:shadow-sky-950/20 lg:col-span-2"
+                style={{ animationDelay: "260ms" }}
+              >
+                {ui.anneesMode === "crud" ? (
+                  <AdminAnneeBlock items={whiteList} />
+                ) : (
+                  <div>
+                    <h2 className="text-sm font-semibold text-midnight_text dark:text-white">
+                      Années académiques
+                    </h2>
+                    {whiteList.length === 0 ? (
+                      <p className="mt-3 text-sm text-gray-500">Aucune année publiée.</p>
+                    ) : (
+                      <ul className="mt-3 space-y-2">
+                        {whiteList.slice(0, 12).map((w, wi) => (
+                          <li
+                            key={w.slug}
+                            className="flex animate-dashboard-in items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 text-sm transition hover:border-sky-200/50 dark:border-gray-800 dark:bg-gray-800/50"
+                            style={{ animationDelay: `${wi * 40}ms` }}
+                          >
+                            <span className="font-medium text-midnight_text dark:text-white">
+                              {formatAnneeTitle(w.debut, w.fin)}
+                            </span>
+                            <span
+                              className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                                w.status
+                                  ? "bg-primary/15 text-primary dark:text-primary"
+                                  : "bg-gray-200/80 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {w.status ? "actif" : "inactif"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </article>
+            )}
+          </div>
+
+          {ui.usersTableMode !== "hidden" && showAdminUsersTable && (
+            <article
+              className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-950/50 dark:hover:shadow-gray-900/30"
+              style={{ animationDelay: "320ms" }}
+            >
+              <h2 className="mb-2 text-sm font-semibold text-midnight_text dark:text-white">
+                {role === "admin" ? "Comptes utilisateurs" : "Utilisateurs"}
+              </h2>
+              {ui.usersTableMode === "admin" ? (
+                <AdminUserTableBlock
+                  listes={tableData.listes}
+                  filters={tableData.filters}
+                  canManageAccounts={adminCapabilities.canManageUserAccounts}
+                />
+              ) : (
+                <ReadonlyUserTable rows={tableData.rows} headers={tableData.headers} />
+              )}
+            </article>
+          )}
+
+          {role === "admin" &&
+            (adminCapabilities.canManageFilieres || adminCapabilities.canReadTransactions) && (
+              <div
+                className={`grid w-full min-w-0 gap-4 ${
+                  adminCapabilities.canManageFilieres && adminCapabilities.canReadTransactions
+                    ? "lg:grid-cols-2"
+                    : "grid-cols-1"
+                }`}
+              >
+                {adminCapabilities.canManageFilieres && (
+                  <div className="min-w-0">
+                    <FilieresDataTableSection />
+                  </div>
+                )}
+                {adminCapabilities.canReadTransactions && (
+                  <div className="min-w-0">
+                    <TransactionsPanel />
+                  </div>
+                )}
+              </div>
+            )}
+        </>
+      )}
     </section>
   );
 }

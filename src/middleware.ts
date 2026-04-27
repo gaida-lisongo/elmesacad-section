@@ -48,6 +48,8 @@ export const config = {
     "/etudiants/:path*",
     "/sections",
     "/sections/:path*",
+    "/filiere",
+    "/filiere/:path*",
     "/tickets",
     "/tickets/:path*",
   ],

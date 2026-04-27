@@ -1,6 +1,6 @@
-import type { UserType, UserByEmailResult } from "@/lib/services/UserManager";
+import type { UserType, UserByEmailResult, AgentWithAuthorizations } from "@/lib/services/UserManager";
 import type { Agent, Student } from "@/lib/models/User";
-import type { AuthUser, AuthUserAgent, AuthUserStudent } from "./types";
+import type { AuthAgentAuthorization, AuthUser, AuthUserAgent, AuthUserStudent } from "./types";
 
 const DEFAULT_PHOTO = "/images/user.jpg";
 
@@ -23,6 +23,18 @@ function idFromDoc(u: { _id?: { toString: () => string } | string }): string {
   return typeof id === "string" ? id : id.toString();
 }
 
+function mapAgentAuthorizations(user: UserByEmailResult): AuthAgentAuthorization[] | undefined {
+  if (!("authorizations" in user)) return undefined;
+  const agent = user as AgentWithAuthorizations;
+  const list = agent.authorizations;
+  if (!list?.length) return undefined;
+  return list.map((a) => ({
+    id: idFromDoc(a),
+    code: a.code,
+    designation: a.designation,
+  }));
+}
+
 /** À partir d’un document Mongo (profil vérification OTP côté API). */
 export function mapDbUserToAuthUser(user: UserByEmailResult, type: UserType): AuthUser {
   if (type === "Student") {
@@ -42,6 +54,7 @@ export function mapDbUserToAuthUser(user: UserByEmailResult, type: UserType): Au
 
   const a = user as Agent;
   const role = a.role;
+  const auths = mapAgentAuthorizations(user);
   const out: AuthUserAgent = {
     kind: "agent",
     id: idFromDoc(a),
@@ -51,6 +64,7 @@ export function mapDbUserToAuthUser(user: UserByEmailResult, type: UserType): Au
     photo: a.photo || DEFAULT_PHOTO,
     role,
     accountLabel: formatRoleLabel(role),
+    ...(auths != null ? { authorizations: auths } : {}),
   };
   return out;
 }
@@ -87,6 +101,18 @@ export function mapJsonUserToAuthUser(raw: unknown, accountKind: "student" | "ag
     };
   }
   const role = String(u.role ?? "admin");
+  const rawAuths = u.authorizations;
+  let authorizations: AuthAgentAuthorization[] | undefined;
+  if (Array.isArray(rawAuths) && rawAuths.length > 0) {
+    authorizations = rawAuths.map((x) => {
+      const o = x as Record<string, unknown>;
+      return {
+        id: readId(o),
+        code: String(o.code ?? ""),
+        designation: String(o.designation ?? ""),
+      };
+    });
+  }
   return {
     kind: "agent",
     id: readId(u),
@@ -96,5 +122,6 @@ export function mapJsonUserToAuthUser(raw: unknown, accountKind: "student" | "ag
     photo: String(u.photo ?? DEFAULT_PHOTO),
     role,
     accountLabel: formatRoleLabel(role),
+    ...(authorizations != null ? { authorizations } : {}),
   };
 }

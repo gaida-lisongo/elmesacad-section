@@ -1,7 +1,14 @@
 import { getSessionPayload } from "@/lib/auth/sessionServer";
-import type { DashboardRole } from "@/lib/dashboard/types";
-import { loadAdminDashboardData } from "@/lib/services/dashboardAdminData";
-import { loadPlaceholderDashboardData } from "@/lib/services/placeholderDashboardData";
+import type { DashboardAgentAuthorization, DashboardRole } from "@/lib/dashboard/types";
+import {
+  dashboardInfoMessage,
+  resolveDashboardUi,
+} from "@/lib/dashboard/resolveDashboardUi";
+import { resolveAdminCapabilities } from "@/lib/dashboard/adminCapabilitiesFromAuthorizations";
+import { loadDashboardDataByRole } from "@/lib/services/loadDashboardDataByRole";
+import userManager from "@/lib/services/UserManager";
+import { connectDB } from "@/lib/services/connectedDB";
+import type { AgentWithAuthorizations } from "@/lib/services/UserManager";
 import DashboardView from "./DashboardView";
 
 function mapSessionToDashboardRole(
@@ -16,32 +23,41 @@ function mapSessionToDashboardRole(
   return "organisateur";
 }
 
-function roleInfoMessage(role: DashboardRole): string | undefined {
-  if (role === "admin") return undefined;
-  if (role === "student") {
-    return "Espace étudiant : les indicateurs détaillés arriveront ici prochainement.";
-  }
-  if (role === "titulaire") {
-    return "Espace titulaire : le tableau de bord métier sera complété ultérieurement.";
-  }
-  return "Les statistiques avancées pour votre rôle seront affichées ici bientôt.";
+function mapMongoAuthorizations(agent: AgentWithAuthorizations): DashboardAgentAuthorization[] {
+  return agent.authorizations.map((a) => ({
+    id: typeof a._id === "string" ? a._id : a._id.toString(),
+    code: a.code,
+    designation: a.designation,
+  }));
 }
 
 export default async function DashboardPage() {
   const session = await getSessionPayload();
   const role = mapSessionToDashboardRole(session);
-  const isAdmin = role === "admin";
-  const data = isAdmin
-    ? await loadAdminDashboardData()
-    : loadPlaceholderDashboardData();
+
+  let agentAuthorizations: DashboardAgentAuthorization[] = [];
+  if (session?.type === "Agent" && session.email) {
+    await connectDB();
+    const agent = await userManager.getUserByEmail("Agent", session.email);
+    if (agent && "authorizations" in agent) {
+      agentAuthorizations = mapMongoAuthorizations(agent as AgentWithAuthorizations);
+    }
+  }
+
+  const data = await loadDashboardDataByRole(role);
   const userName = session?.name || session?.email;
+  const ui = resolveDashboardUi(role, agentAuthorizations);
+  const adminCapabilities = resolveAdminCapabilities(role, agentAuthorizations);
 
   return (
     <DashboardView
       title="Tableau de bord"
       role={role}
       userName={userName}
-      infoMessage={roleInfoMessage(role)}
+      infoMessage={dashboardInfoMessage(role)}
+      ui={ui}
+      agentAuthorizations={agentAuthorizations}
+      adminCapabilities={adminCapabilities}
       chartYear={data.chartYear}
       metrics={data.metrics}
       whiteList={data.whiteList}

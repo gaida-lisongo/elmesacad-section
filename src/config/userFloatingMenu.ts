@@ -40,12 +40,13 @@ export const userFloatingMenu: {
     ],
     titulaire: [
       { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Descripteurs", path: "/titulaire/descripteurs"},
+      { item: "Présences", path: "/titulaire/presences"},
       { item: "Activités", path: "#", subMenu: [
         { item: "TP", path: "/titulaire/tp" },
         { item: "QCM", path: "/titulaire/qcm" },
       ]},
       { item: "Notes", path: "/titulaire/notes" },
-      { item: "Recources", path: "/titulaire/recources" },
     ],
     organisateur: [
       { item: "Tableau de bord", path: "/dashboard" },

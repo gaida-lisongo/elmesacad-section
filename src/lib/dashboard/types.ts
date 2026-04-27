@@ -50,12 +50,46 @@ export type DashboardRole =
   | "gestionnaire"
   | "student";
 
+/** Autorisations agent (chargées en amont côté serveur + `/api/auth/me`). */
+export type DashboardAgentAuthorization = {
+  id: string;
+  code: string;
+  designation: string;
+};
+
+export type DashboardAnneesMode = "crud" | "readonly" | "hidden";
+export type DashboardUsersTableMode = "admin" | "readonly" | "hidden";
+
+export type DashboardUiConfig = {
+  subtitle?: string;
+  showMetricsRow: boolean;
+  showRechargesChart: boolean;
+  anneesMode: DashboardAnneesMode;
+  usersTableMode: DashboardUsersTableMode;
+};
+
+/** Capacités dashboard admin dérivées des codes `Authorization.code`. */
+export type DashboardAdminCapabilities = {
+  /** SA — filières. */
+  canManageFilieres: boolean;
+  /** MD — comptes utilisateurs (créer / réinitialiser). */
+  canManageUserAccounts: boolean;
+  /** WM — recharges (détails). */
+  canReadTransactions: boolean;
+};
+
 export type DashboardViewProps = {
   title: string;
   role: DashboardRole;
   userName?: string;
   /** Message si données non dispo pour ce rôle */
   infoMessage?: string;
+  /** Présentation par type de compte (comme le menu flottant). */
+  ui: DashboardUiConfig;
+  /** Agents uniquement : habilitations Mongo, résolues au rendu SSR. */
+  agentAuthorizations?: DashboardAgentAuthorization[];
+  /** Permissions effectives calculées côté serveur. */
+  adminCapabilities?: DashboardAdminCapabilities;
   metrics: DashboardMetric[];
   whiteList: DashboardWhiteListItem[];
   chartData: DashboardChartSeries[];
