@@ -9,11 +9,113 @@ import { creditsMatiereDepasseUnite } from "@/lib/validation/creditsCoherence";
 const EDIT_TAB_UNITE = "unite";
 const EDIT_TAB_COURS = "cours";
 
+export type DescriptionBloc = { title: string; contenu: string };
+
+function cloneDescription(src?: DescriptionBloc[] | null): DescriptionBloc[] {
+  if (!src?.length) return [];
+  return src.map((b) => ({ title: b.title ?? "", contenu: b.contenu ?? "" }));
+}
+
+/** Garde uniquement les blocs avec titre et contenu non vides ; signale les blocs incomplets. */
+function parseDescriptionForSave(
+  items: DescriptionBloc[]
+): { ok: true; value: DescriptionBloc[] } | { ok: false; message: string } {
+  const value: DescriptionBloc[] = [];
+  for (const b of items) {
+    const t = b.title.trim();
+    const c = b.contenu.trim();
+    if (!t && !c) continue;
+    if (!t || !c) {
+      return {
+        ok: false,
+        message: "Chaque bloc de description doit avoir un titre et un texte, ou supprimez le bloc incomplet.",
+      };
+    }
+    value.push({ title: t, contenu: c });
+  }
+  return { ok: true, value };
+}
+
+function DescriptionBlocsEditor({
+  label,
+  hint,
+  items,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  items: DescriptionBloc[];
+  onChange: (next: DescriptionBloc[]) => void;
+}) {
+  const add = () => onChange([...items, { title: "", contenu: "" }]);
+  const remove = (i: number) => onChange(items.filter((_, j) => j !== i));
+  const patch = (i: number, field: keyof DescriptionBloc, value: string) => {
+    onChange(items.map((b, j) => (j === i ? { ...b, [field]: value } : b)));
+  };
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{label}</span>
+          {hint ? <p className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">{hint}</p> : null}
+        </div>
+        <button
+          type="button"
+          onClick={add}
+          className="rounded-md border border-gray-300 px-2 py-1 text-xs font-medium dark:border-gray-600"
+        >
+          + Bloc
+        </button>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-xs text-gray-500 dark:text-gray-400">Aucun bloc — ajoutez des paragraphes (titre + texte).</p>
+      ) : (
+        <ul className="space-y-3">
+          {items.map((b, i) => (
+            <li key={i} className="rounded-lg border border-gray-200 bg-white p-2 dark:border-gray-700 dark:bg-gray-900/50">
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => remove(i)}
+                  className="text-[11px] text-red-600 hover:underline dark:text-red-400"
+                >
+                  Retirer ce bloc
+                </button>
+              </div>
+              <label className="mt-1 block text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                Titre du bloc
+                <input
+                  className="mt-0.5 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  value={b.title}
+                  onChange={(e) => patch(i, "title", e.target.value)}
+                  placeholder="ex. Objectifs"
+                />
+              </label>
+              <label className="mt-2 block text-[11px] font-medium text-gray-600 dark:text-gray-400">
+                Contenu
+                <textarea
+                  className="mt-0.5 min-h-[72px] w-full resize-y rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  value={b.contenu}
+                  onChange={(e) => patch(i, "contenu", e.target.value)}
+                  placeholder="Texte…"
+                  rows={3}
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export type MatiereLite = {
   _id: string;
   designation: string;
   credits: number;
   code?: string;
+  description?: DescriptionBloc[];
 };
 
 export type UniteLite = {
@@ -21,6 +123,7 @@ export type UniteLite = {
   designation: string;
   code: string;
   credits: number;
+  description?: DescriptionBloc[];
   matieres?: MatiereLite[];
 };
 
@@ -63,6 +166,7 @@ function MatiereEditRow({
   const [designation, setDesignation] = useState(matiere.designation);
   const [credits, setCredits] = useState(String(matiere.credits ?? ""));
   const [code, setCode] = useState(matiere.code ?? "");
+  const [description, setDescription] = useState<DescriptionBloc[]>(() => cloneDescription(matiere.description));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [localErr, setLocalErr] = useState<string | null>(null);
@@ -71,8 +175,9 @@ function MatiereEditRow({
     setDesignation(matiere.designation);
     setCredits(String(matiere.credits ?? ""));
     setCode(matiere.code ?? "");
+    setDescription(cloneDescription(matiere.description));
     setLocalErr(null);
-  }, [matiere._id, matiere.designation, matiere.credits, matiere.code]);
+  }, [matiere._id, matiere.designation, matiere.credits, matiere.code, matiere.description]);
 
   const save = async () => {
     const des = designation.trim();
@@ -92,13 +197,23 @@ function MatiereEditRow({
       );
       return;
     }
+    const descParsed = parseDescriptionForSave(description);
+    if (!descParsed.ok) {
+      setLocalErr(descParsed.message);
+      return;
+    }
     setSaving(true);
     setLocalErr(null);
     try {
       const res = await fetch(`/api/unites/${uniteId}/matieres/${matiere._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ designation: des, credits: c, code: cd || undefined }),
+        body: JSON.stringify({
+          designation: des,
+          credits: c,
+          code: cd || undefined,
+          description: descParsed.value,
+        }),
       });
       const j = (await res.json()) as { message?: string };
       if (!res.ok) throw new Error(j.message || "Mise à jour impossible");
@@ -158,6 +273,14 @@ function MatiereEditRow({
             onChange={(e) => setCode(e.target.value)}
           />
         </label>
+      </div>
+      <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-700">
+        <DescriptionBlocsEditor
+          label="Description du cours"
+          hint="Blocs optionnels (titre + texte). Laissez vide si sans description."
+          items={description}
+          onChange={setDescription}
+        />
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         <button
@@ -221,10 +344,12 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
   const [editDesignation, setEditDesignation] = useState("");
   const [editCredits, setEditCredits] = useState("");
   const [editCode, setEditCode] = useState("");
+  const [editDescription, setEditDescription] = useState<DescriptionBloc[]>([]);
   const [savingEdit, setSavingEdit] = useState(false);
   const [newMatiereDesignation, setNewMatiereDesignation] = useState("");
   const [newMatiereCredits, setNewMatiereCredits] = useState("");
   const [newMatiereCode, setNewMatiereCode] = useState("");
+  const [newMatiereDescription, setNewMatiereDescription] = useState<DescriptionBloc[]>([]);
   const [addingMatiere, setAddingMatiere] = useState(false);
 
   const filiereId = idOf(data);
@@ -295,9 +420,11 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
     setEditDesignation(u.designation);
     setEditCredits(String(u.credits ?? ""));
     setEditCode(u.code);
+    setEditDescription(cloneDescription(u.description));
     setNewMatiereDesignation("");
     setNewMatiereCredits("");
     setNewMatiereCode("");
+    setNewMatiereDescription([]);
     setErr(null);
   };
 
@@ -305,9 +432,11 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
     setErr(null);
     setEditUe(null);
     setEditModalTab(EDIT_TAB_UNITE);
+    setEditDescription([]);
     setNewMatiereDesignation("");
     setNewMatiereCredits("");
     setNewMatiereCode("");
+    setNewMatiereDescription([]);
   };
 
   const submitAddMatiere = async () => {
@@ -330,6 +459,11 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
       );
       return;
     }
+    const newDesc = parseDescriptionForSave(newMatiereDescription);
+    if (!newDesc.ok) {
+      setErr(newDesc.message);
+      return;
+    }
     setAddingMatiere(true);
     setErr(null);
     try {
@@ -340,6 +474,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
           designation: des,
           credits: c,
           code: cd || undefined,
+          description: newDesc.value,
         }),
       });
       const j = (await res.json()) as { message?: string };
@@ -347,6 +482,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
       setNewMatiereDesignation("");
       setNewMatiereCredits("");
       setNewMatiereCode("");
+      setNewMatiereDescription([]);
       await refreshUniteInModal();
     } catch (e) {
       setErr((e as Error).message);
@@ -375,13 +511,18 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
       );
       return;
     }
+    const descParsed = parseDescriptionForSave(editDescription);
+    if (!descParsed.ok) {
+      setErr(descParsed.message);
+      return;
+    }
     setSavingEdit(true);
     setErr(null);
     try {
       const res = await fetch(`/api/unites/${editUe._id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ designation: des, code: cd, credits: c }),
+        body: JSON.stringify({ designation: des, code: cd, credits: c, description: descParsed.value }),
       });
       const j = (await res.json()) as { message?: string };
       if (!res.ok) throw new Error(j.message || "Mise à jour impossible");
@@ -439,49 +580,56 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
           role="dialog"
           aria-modal="true"
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-900">
-            <h3 className="text-lg font-semibold text-midnight_text dark:text-white">Modifier l’unité</h3>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {editUe.code} · {editUe.designation}
-            </p>
+          <div
+            className="flex h-[720px] w-full max-w-3xl max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+          >
+            <div className="shrink-0 border-b border-gray-100 px-5 py-4 dark:border-gray-800">
+              <h3 className="text-lg font-semibold text-midnight_text dark:text-white">Modifier l’unité</h3>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {editUe.code} · {editUe.designation}
+              </p>
 
-            <div className="mt-4 flex flex-wrap gap-2 border-b border-gray-100 pb-3 dark:border-gray-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditModalTab(EDIT_TAB_UNITE);
-                  setErr(null);
-                }}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  editModalTab === EDIT_TAB_UNITE
-                    ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
-                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-                }`}
-              >
-                Unité d’enseignement
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditModalTab(EDIT_TAB_COURS);
-                  setErr(null);
-                }}
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  editModalTab === EDIT_TAB_COURS
-                    ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
-                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-                }`}
-              >
-                Cours (matières)
-              </button>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalTab(EDIT_TAB_UNITE);
+                    setErr(null);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    editModalTab === EDIT_TAB_UNITE
+                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  }`}
+                >
+                  Unité d’enseignement
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalTab(EDIT_TAB_COURS);
+                    setErr(null);
+                  }}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    editModalTab === EDIT_TAB_COURS
+                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  }`}
+                >
+                  Cours (matières)
+                </button>
+              </div>
             </div>
 
-            {err && (
-              <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
-                {err}
-              </p>
-            )}
+            {err ? (
+              <div className="shrink-0 border-b border-red-100 bg-red-50/80 px-5 py-2 dark:border-red-900/30 dark:bg-red-950/20">
+                <p className="text-sm text-red-700 dark:text-red-300" role="alert">
+                  {err}
+                </p>
+              </div>
+            ) : null}
 
+            <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
             {editModalTab === EDIT_TAB_UNITE ? (
               <>
                 <div className="mt-4 space-y-3">
@@ -509,6 +657,14 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                       onChange={(e) => setEditCredits(e.target.value)}
                     />
                   </label>
+                  <div className="border-t border-gray-100 pt-4 dark:border-gray-800">
+                    <DescriptionBlocsEditor
+                      label="Description de l’unité"
+                      hint="Blocs structurés (titre + texte). Optionnel."
+                      items={editDescription}
+                      onChange={setEditDescription}
+                    />
+                  </div>
                 </div>
                 <div className="mt-5 flex justify-end gap-2">
                   <button
@@ -605,6 +761,13 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                       />
                     </label>
                   </div>
+                  <div className="mt-3 border-t border-gray-200 pt-3 dark:border-gray-600">
+                    <DescriptionBlocsEditor
+                      label="Description du nouveau cours"
+                      items={newMatiereDescription}
+                      onChange={setNewMatiereDescription}
+                    />
+                  </div>
                   <button
                     type="button"
                     disabled={addingMatiere}
@@ -626,6 +789,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                 </div>
               </>
             )}
+            </div>
           </div>
         </div>
       )}

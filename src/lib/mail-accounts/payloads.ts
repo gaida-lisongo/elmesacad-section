@@ -8,6 +8,9 @@ import { resolveMailAccountPasswordScheme } from "./audience";
 /** Limite de saisie côté app (compatible bcrypt ; MD5-CRYPT accepte des mots de passe plus courts en pratique). */
 export const MAIL_ACCOUNT_PASSWORD_MAX_LENGTH = 72;
 
+/** Longueur minimale imposée pour les boîtes mail (création admin, inscription, etc.). */
+export const MAIL_ACCOUNT_PASSWORD_MIN_LENGTH = 8;
+
 export type AgentMailAccountCreatePayload = {
   email: string;
   password: string;

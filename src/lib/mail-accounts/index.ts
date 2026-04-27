@@ -29,6 +29,7 @@ export type {
 } from "./payloads";
 export {
   MAIL_ACCOUNT_PASSWORD_MAX_LENGTH,
+  MAIL_ACCOUNT_PASSWORD_MIN_LENGTH,
   buildAgentMailAccountPayload,
   buildStudentMailAccountPayload,
   buildAdminMailAccountPayload,

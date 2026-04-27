@@ -519,6 +519,72 @@ class UserManager {
         return { items, total };
     }
 
+    /**
+     * Recharges sur une plage de dates (export rapports WM). Limite de sécurité côté serveur.
+     */
+    public async getRechargesInDateRange(range: {
+        start: Date;
+        end: Date;
+        limit?: number;
+    }): Promise<AdminRechargeListItem[]> {
+        const limit = Math.min(Math.max(1, range.limit ?? 50_000), 100_000);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const pipeline: any[] = [
+            {
+                $match: {
+                    createdAt: { $gte: range.start, $lte: range.end },
+                },
+            },
+            {
+                $lookup: {
+                    from: "students",
+                    let: { sid: "$studentId" },
+                    pipeline: [
+                        { $match: { $expr: { $eq: ["$_id", "$$sid"] } } },
+                        { $project: { name: 1, email: 1, matricule: 1 } },
+                    ],
+                    as: "student",
+                },
+            },
+            { $unwind: { path: "$student", preserveNullAndEmptyArrays: true } },
+            { $sort: { createdAt: -1 } },
+            { $limit: limit },
+            {
+                $project: {
+                    _id: 1,
+                    studentId: 1,
+                    orderNumber: 1,
+                    amount: 1,
+                    currency: 1,
+                    phoneNumber: 1,
+                    status: 1,
+                    createdAt: 1,
+                    studentName: "$student.name",
+                    studentEmail: "$student.email",
+                    studentMatricule: "$student.matricule",
+                },
+            },
+        ];
+
+        const rows = await RechargeModel.aggregate(pipeline);
+
+        return rows.map((d: Record<string, unknown>) => ({
+            id: String(d._id),
+            studentId: String(d.studentId),
+            studentName: d.studentName != null ? String(d.studentName) : "—",
+            studentEmail: d.studentEmail != null ? String(d.studentEmail) : "—",
+            studentMatricule: d.studentMatricule != null ? String(d.studentMatricule) : "—",
+            orderNumber: d.orderNumber != null ? String(d.orderNumber) : undefined,
+            amount: d.amount as number,
+            currency: d.currency as "USD" | "CDF",
+            phoneNumber: String(d.phoneNumber),
+            status: d.status as "pending" | "paid" | "failed",
+            createdAt: d.createdAt
+                ? new Date(d.createdAt as string | Date).toISOString()
+                : new Date(0).toISOString(),
+        }));
+    }
+
     // Agents CRUD
     public async createAgent(payload: AgentCreateInput): Promise<Agent> {
         return AgentModel.create(payload);

@@ -8,6 +8,7 @@ import AuthDialogContext from "@/app/context/AuthDialogContext";
 import { UserDatabaseSearch } from "@/components/secure/UserDatabaseSearch";
 import {
   MAIL_ACCOUNT_PASSWORD_MAX_LENGTH,
+  MAIL_ACCOUNT_PASSWORD_MIN_LENGTH,
   createMailAccountAction,
   mailAccountExistsAction,
 } from "@/lib/mail-accounts";
@@ -85,8 +86,8 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
     if (!selected) {
       return;
     }
-    if (password.length < 8) {
-      toast.error("Le mot de passe doit contenir au moins 8 caractères.");
+    if (password.length < MAIL_ACCOUNT_PASSWORD_MIN_LENGTH) {
+      toast.error(`Le mot de passe doit contenir au moins ${MAIL_ACCOUNT_PASSWORD_MIN_LENGTH} caractères.`);
       return;
     }
     if (password !== confirm) {
@@ -307,7 +308,8 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                 maxLength={MAIL_ACCOUNT_PASSWORD_MAX_LENGTH}
               />
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                8–{MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caractères (limite imposée par le serveur mail).
+                {MAIL_ACCOUNT_PASSWORD_MIN_LENGTH}–{MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caractères (limite imposée par le
+                serveur mail).
               </p>
             </div>
             <div>

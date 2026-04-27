@@ -9,6 +9,11 @@ import type {
   DashboardTableRow,
 } from "@/lib/dashboard/types";
 import FilieresDataTableSection from "@/components/filiere/FilieresDataTableSection";
+import {
+  MAIL_ACCOUNT_PASSWORD_MAX_LENGTH,
+  MAIL_ACCOUNT_PASSWORD_MIN_LENGTH,
+} from "@/lib/mail-accounts";
+import type { RechargeExportPeriod } from "@/lib/recharges/exportPeriodRange";
 const PAGE_SIZE = 10;
 const TABLE_HEADERS_BASE = ["Nom", "E-mail", "Matricule", "Statut", "Type"];
 
@@ -393,7 +398,140 @@ function AdminAnneeBlock({
   );
 }
 
-type MailAction = { rowId: string; kind: "create" | "reset" } | null;
+type MailModalState = { email: string; rowId: string; kind: "create" | "reset" } | null;
+
+function MailAccountPasswordModal({
+  state,
+  busy,
+  apiErr,
+  onClose,
+  onSubmitPassword,
+}: {
+  state: MailModalState;
+  busy: boolean;
+  apiErr: string | null;
+  onClose: () => void;
+  onSubmitPassword: (password: string) => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [localErr, setLocalErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (state) {
+      setPassword("");
+      setConfirm("");
+      setLocalErr(null);
+    }
+  }, [state]);
+
+  if (!state) return null;
+
+  const title =
+    state.kind === "create" ? "Créer le compte mail" : "Réinitialiser le mot de passe mail";
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalErr(null);
+    if (password.length < MAIL_ACCOUNT_PASSWORD_MIN_LENGTH) {
+      setLocalErr(`Le mot de passe doit contenir au moins ${MAIL_ACCOUNT_PASSWORD_MIN_LENGTH} caractères.`);
+      return;
+    }
+    if (password.length > MAIL_ACCOUNT_PASSWORD_MAX_LENGTH) {
+      setLocalErr(`Maximum ${MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caractères.`);
+      return;
+    }
+    if (password !== confirm) {
+      setLocalErr("Les mots de passe ne correspondent pas.");
+      return;
+    }
+    if (password.trim().toLowerCase() === state.email) {
+      setLocalErr("Le mot de passe ne doit pas être identique à l’e-mail.");
+      return;
+    }
+    onSubmitPassword(password);
+  };
+
+  const displayErr = localErr || apiErr;
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mail-account-password-title"
+    >
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-xl dark:border-gray-700 dark:bg-gray-900"
+      >
+        <h3
+          id="mail-account-password-title"
+          className="text-lg font-semibold text-midnight_text dark:text-white"
+        >
+          {title}
+        </h3>
+        <p className="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">{state.email}</p>
+        <p className="mt-2 text-xs text-gray-600 dark:text-gray-300">
+          Définissez le mot de passe réel de la boîte mail côté serveur (Dovecot / account-service). Il sera transmis
+          de façon sécurisée (HTTPS) puis haché par le service.
+        </p>
+
+        {displayErr ? (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
+            {displayErr}
+          </p>
+        ) : null}
+
+        <label className="mt-4 block text-xs font-medium text-gray-600 dark:text-gray-300">
+          Mot de passe
+          <input
+            type="password"
+            autoComplete="new-password"
+            maxLength={MAIL_ACCOUNT_PASSWORD_MAX_LENGTH}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={busy}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </label>
+        <label className="mt-3 block text-xs font-medium text-gray-600 dark:text-gray-300">
+          Confirmer le mot de passe
+          <input
+            type="password"
+            autoComplete="new-password"
+            maxLength={MAIL_ACCOUNT_PASSWORD_MAX_LENGTH}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            disabled={busy}
+            className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+          />
+        </label>
+        <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+          {MAIL_ACCOUNT_PASSWORD_MIN_LENGTH}–{MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caractères.
+        </p>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onClose}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+          >
+            {busy ? "…" : state.kind === "create" ? "Créer le compte" : "Appliquer"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
 
 function AdminUserTableBlock({
   listes,
@@ -416,7 +554,9 @@ function AdminUserTableBlock({
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [mail, setMail] = useState<MailAction>(null);
+  const [mailModal, setMailModal] = useState<MailModalState>(null);
+  const [mailModalErr, setMailModalErr] = useState<string | null>(null);
+  const [mailBusy, setMailBusy] = useState(false);
 
   const listLabel = listes[listI] ?? listes[0] ?? "Étudiants";
   const userType: "Agent" | "Student" = /^agents$/i.test(listLabel.trim()) ? "Agent" : "Student";
@@ -461,22 +601,30 @@ function AdminUserTableBlock({
     if (page !== pageSafe) setPage(pageSafe);
   }, [page, pageSafe]);
 
-  const onMail = async (email: string, kind: "create" | "reset", rowId: string) => {
-    if (!email) return;
-    setErr(null);
-    setMail({ rowId, kind });
+  const closeMailModal = () => {
+    if (mailBusy) return;
+    setMailModal(null);
+    setMailModalErr(null);
+  };
+
+  const submitMailPassword = async (password: string) => {
+    if (!mailModal) return;
+    setMailModalErr(null);
+    setMailBusy(true);
     try {
       const res = await fetch("/api/dashboard/mail-accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, action: kind }),
+        body: JSON.stringify({ email: mailModal.email, action: mailModal.kind, password }),
       });
       const j = await res.json();
       if (!res.ok) throw new Error(j.message || "Action impossible");
+      setMailModal(null);
+      setMailModalErr(null);
     } catch (e) {
-      setErr((e as Error).message);
+      setMailModalErr((e as Error).message);
     } finally {
-      setMail(null);
+      setMailBusy(false);
     }
   };
 
@@ -565,9 +713,7 @@ function AdminUserTableBlock({
             {!loading &&
               rows.map((row) => {
                 const email = row.columns[1] ?? "";
-                const busy =
-                  mail?.rowId === row.id &&
-                  (mail.kind === "create" || mail.kind === "reset");
+                const rowMailBusy = mailBusy && mailModal?.rowId === row.id;
                 return (
                   <tr
                     key={row.id}
@@ -586,19 +732,25 @@ function AdminUserTableBlock({
                         <div className="flex flex-wrap gap-1">
                           <button
                             type="button"
-                            disabled={!!busy}
-                            onClick={() => void onMail(email, "create", row.id)}
+                            disabled={mailBusy}
+                            onClick={() => {
+                              setMailModalErr(null);
+                              setMailModal({ email, rowId: row.id, kind: "create" });
+                            }}
                             className="rounded border border-sky-500/60 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-300"
                           >
-                            {busy && mail?.kind === "create" ? "…" : "Créer compte"}
+                            {rowMailBusy && mailModal?.kind === "create" ? "…" : "Créer compte"}
                           </button>
                           <button
                             type="button"
-                            disabled={!!busy}
-                            onClick={() => void onMail(email, "reset", row.id)}
+                            disabled={mailBusy}
+                            onClick={() => {
+                              setMailModalErr(null);
+                              setMailModal({ email, rowId: row.id, kind: "reset" });
+                            }}
                             className="rounded border border-amber-500/60 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200"
                           >
-                            {busy && mail?.kind === "reset" ? "…" : "Réinitialiser"}
+                            {rowMailBusy && mailModal?.kind === "reset" ? "…" : "Réinitialiser"}
                           </button>
                         </div>
                       ) : (
@@ -634,6 +786,14 @@ function AdminUserTableBlock({
           </button>
         </div>
       </div>
+
+      <MailAccountPasswordModal
+        state={mailModal}
+        busy={mailBusy}
+        apiErr={mailModalErr}
+        onClose={closeMailModal}
+        onSubmitPassword={(pwd) => void submitMailPassword(pwd)}
+      />
     </div>
   );
 }
@@ -655,6 +815,10 @@ function TransactionsPanel() {
   const [status, setStatus] = useState<"all" | "pending" | "paid" | "failed">("all");
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [exportPeriod, setExportPeriod] = useState<RechargeExportPeriod>("daily");
+  const [exportDate, setExportDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportErr, setExportErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -680,9 +844,94 @@ function TransactionsPanel() {
     void load();
   }, [load]);
 
+  const downloadExport = async () => {
+    setExportLoading(true);
+    setExportErr(null);
+    try {
+      const sp = new URLSearchParams();
+      sp.set("period", exportPeriod);
+      sp.set("date", exportDate);
+      const res = await fetch(`/api/recharges/export?${sp.toString()}`);
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(j.message || "Export impossible");
+      }
+      const blob = await res.blob();
+      const cd = res.headers.get("Content-Disposition");
+      let filename = `recharges-rapport-${exportPeriod}-${exportDate}.xlsx`;
+      const m = cd?.match(/filename="([^"]+)"/);
+      if (m?.[1]) filename = m[1];
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setExportErr((e as Error).message);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   return (
     <article className="animate-dashboard-in w-full min-w-0 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900/70">
       <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Détail des recharges</h2>
+
+      <div className="mt-3 rounded-lg border border-sky-200/80 bg-sky-50/50 p-3 dark:border-sky-900/40 dark:bg-sky-950/20">
+        <p className="text-xs font-medium text-midnight_text dark:text-white">Rapports Excel (webmaster)</p>
+        <p className="mt-1 text-[11px] text-gray-600 dark:text-gray-400">
+          Fichier avec feuille <strong>Synthèse</strong> et feuille <strong>Données sources</strong>. Périodes en UTC
+          (calendrier grégorien) ; le semestre = janv.–juin / juil.–déc.
+        </p>
+        <div className="mt-2 flex flex-wrap items-end gap-2">
+          <label className="text-[11px] text-gray-600 dark:text-gray-300">
+            Période
+            <select
+              className="mt-0.5 block rounded border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800"
+              value={exportPeriod}
+              onChange={(e) => setExportPeriod(e.target.value as RechargeExportPeriod)}
+              disabled={exportLoading}
+            >
+              <option value="daily">Journalier</option>
+              <option value="monthly">Mensuel</option>
+              <option value="semester">Semestriel</option>
+              <option value="annual">Annuel</option>
+            </select>
+          </label>
+          <label className="text-[11px] text-gray-600 dark:text-gray-300">
+            Date de référence
+            <input
+              type="date"
+              className="mt-0.5 block rounded border border-gray-200 bg-white px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800"
+              value={exportDate}
+              onChange={(e) => setExportDate(e.target.value)}
+              disabled={exportLoading}
+            />
+          </label>
+          <button
+            type="button"
+            disabled={exportLoading}
+            onClick={() => void downloadExport()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+          >
+            {exportLoading ? (
+              <Icon icon="svg-spinners:ring-resize" className="size-4" />
+            ) : (
+              <Icon icon="solar:document-text-bold" className="size-4" />
+            )}
+            Télécharger Excel
+          </button>
+        </div>
+        {exportErr ? (
+          <p className="mt-2 text-xs text-red-600 dark:text-red-400" role="alert">
+            {exportErr}
+          </p>
+        ) : null}
+      </div>
+
       <div className="mt-3 flex flex-wrap gap-2">
         <input
           className="rounded border border-gray-200 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-800"
