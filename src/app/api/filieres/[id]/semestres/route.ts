@@ -31,6 +31,13 @@ export async function GET(_: Request, context: RouteContext) {
   }
 }
 
+type SemestreCreateItem = {
+  designation?: string;
+  credits?: number;
+  description?: { title: string; contenu: string }[];
+  unites?: string[];
+};
+
 export async function POST(request: Request, context: RouteContext) {
   try {
     await connectDB();
@@ -44,13 +51,53 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ message: "Filiere not found" }, { status: 404 });
     }
 
-    const payload = await request.json();
-    const { designation, credits, description, unites: uniteIds } = payload as {
-      designation?: string;
-      credits?: number;
-      description?: { title: string; contenu: string }[];
-      unites?: string[];
-    };
+    const payload = (await request.json()) as SemestreCreateItem & { semestres?: SemestreCreateItem[] };
+
+    /** Création groupée : insertMany + mise à jour de la filière en une fois. */
+    if (Array.isArray(payload.semestres)) {
+      const items = payload.semestres.filter((s) => s?.designation?.trim());
+      if (items.length === 0) {
+        return NextResponse.json({ data: [] }, { status: 201 });
+      }
+      for (const s of items) {
+        const uniteIds = s.unites;
+        if (uniteIds?.length) {
+          const unites = parseObjectIdArray(uniteIds);
+          const c = await UniteEnseignementModel.countDocuments({ _id: { $in: unites } });
+          if (c !== unites.length) {
+            return NextResponse.json({ message: "One or more unites are invalid" }, { status: 400 });
+          }
+        }
+      }
+
+      const last = await SemestreModel.find({ filiere: fid, programme: { $exists: false } })
+        .sort({ order: -1 })
+        .limit(1);
+      let nextOrder = (last[0]?.order ?? -1) + 1;
+
+      const docs = items.map((s) => {
+        const unites = parseObjectIdArray(s.unites ?? []);
+        const doc: Record<string, unknown> = {
+          designation: String(s.designation).trim(),
+          description: Array.isArray(s.description) ? s.description : [],
+          unites,
+          filiere: fid,
+          order: nextOrder++,
+        };
+        if (s.credits !== undefined && Number.isFinite(s.credits) && s.credits >= 0) {
+          doc.credits = s.credits;
+        }
+        return doc;
+      });
+
+      const created = await SemestreModel.insertMany(docs);
+      const ids = created.map((d) => d._id);
+      await FiliereModel.findByIdAndUpdate(fid, { $push: { semestres: { $each: ids } } });
+
+      return NextResponse.json({ data: created }, { status: 201 });
+    }
+
+    const { designation, credits, description, unites: uniteIds } = payload;
     if (!designation?.trim()) {
       return NextResponse.json({ message: "designation is required" }, { status: 400 });
     }

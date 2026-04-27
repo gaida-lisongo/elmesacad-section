@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
+import { requireAdminManageFilieres } from "@/lib/auth/requireAdminManageFilieresApi";
 import { connectDB } from "@/lib/services/connectedDB";
 import { MatiereModel } from "@/lib/models/Matiere";
 import { SemestreModel } from "@/lib/models/Semestre";
 import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
+import { verifierNouveauxCreditsUnite } from "@/lib/validation/uniteMatiereCredits";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -29,6 +31,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const gate = await requireAdminManageFilieres();
+    if (gate instanceof NextResponse) return gate;
+
     await connectDB();
     const { id } = await context.params;
     if (!Types.ObjectId.isValid(id)) {
@@ -51,6 +56,23 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ message: "No valid fields to update" }, { status: 400 });
     }
 
+    if (credits !== undefined) {
+      const coh = await verifierNouveauxCreditsUnite({
+        uniteId: new Types.ObjectId(id),
+        nouveauxCreditsUnite: credits,
+      });
+      if (!coh.ok) {
+        return NextResponse.json(
+          {
+            message: coh.message,
+            creditsUnite: coh.creditsUnite,
+            sommeMatiereActuelle: coh.sommeMatiereActuelle,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const doc = await UniteEnseignementModel.findByIdAndUpdate(id, { $set: update }, { new: true, runValidators: true });
     if (!doc) {
       return NextResponse.json({ message: "Unite not found" }, { status: 404 });
@@ -70,6 +92,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   try {
+    const gate = await requireAdminManageFilieres();
+    if (gate instanceof NextResponse) return gate;
+
     await connectDB();
     const { id } = await context.params;
     if (!Types.ObjectId.isValid(id)) {

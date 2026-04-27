@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAdminManageFilieres } from "@/lib/auth/requireAdminManageFilieresApi";
 import { connectDB } from "@/lib/services/connectedDB";
 import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
 
@@ -35,6 +36,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const gate = await requireAdminManageFilieres();
+    if (gate instanceof NextResponse) return gate;
+
     await connectDB();
     const payload = await request.json();
     const { designation, credits, code, description } = payload as {

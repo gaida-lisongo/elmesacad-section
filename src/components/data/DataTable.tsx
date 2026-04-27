@@ -26,6 +26,10 @@ export type DataTableModalProps = {
   onClose: () => void;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Classes du panneau (largeur / hauteur), ex. `max-w-7xl w-full …` */
+  panelClassName?: string;
+  /** Classes de la zone de contenu scrollable */
+  bodyClassName?: string;
 };
 
 type DataTableProps<T extends { id: string }> = {
@@ -68,7 +72,15 @@ function DataTableSkeleton({ colCount, rows = 6 }: { colCount: number; rows?: nu
   );
 }
 
-function DataTableModal({ open, title, onClose, children, footer }: DataTableModalProps) {
+function DataTableModal({
+  open,
+  title,
+  onClose,
+  children,
+  footer,
+  panelClassName,
+  bodyClassName,
+}: DataTableModalProps) {
   const titleId = useId();
   useEffect(() => {
     if (!open) return;
@@ -81,30 +93,35 @@ function DataTableModal({ open, title, onClose, children, footer }: DataTableMod
 
   if (!open) return null;
 
+  const panel =
+    panelClassName?.trim() ||
+    "max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900";
+  const body = bodyClassName?.trim() || "px-4 py-4 sm:px-5 sm:py-5";
+
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-3 sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
-        <div className="flex items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
-          <h2 id={titleId} className="text-base font-semibold text-midnight_text dark:text-white">
+      <div className={panel}>
+        <div className="flex items-start justify-between gap-3 border-b border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
+          <h2 id={titleId} className="pr-2 text-lg font-semibold text-midnight_text dark:text-white">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-gray-500 transition hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="shrink-0 rounded-lg p-1 text-gray-500 transition hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Fermer"
           >
             <Icon icon="solar:close-circle-linear" className="size-6" />
           </button>
         </div>
-        <div className="px-4 py-4">{children}</div>
+        <div className={body}>{children}</div>
         {footer && (
-          <div className="flex justify-end gap-2 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+          <div className="flex flex-wrap justify-end gap-2 border-t border-gray-200 px-4 py-3 sm:px-6 dark:border-gray-700">
             {footer}
           </div>
         )}
@@ -337,6 +354,8 @@ export function DataTable<T extends { id: string }>(props: DataTableProps<T>) {
       title={modal.title}
       onClose={modal.onClose}
       footer={modal.footer}
+      panelClassName={modal.panelClassName}
+      bodyClassName={modal.bodyClassName}
     >
       {modal.children}
     </DataTableModal>

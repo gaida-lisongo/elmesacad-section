@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
+import { requireAdminManageFilieres } from "@/lib/auth/requireAdminManageFilieresApi";
 import { connectDB } from "@/lib/services/connectedDB";
 import { MatiereModel } from "@/lib/models/Matiere";
 import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
+import { verifierMatiereDansUnite } from "@/lib/validation/uniteMatiereCredits";
 
 type RouteContext = { params: Promise<{ id: string; matiereId: string }> };
 
@@ -31,6 +33,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
+    const gate = await requireAdminManageFilieres();
+    if (gate instanceof NextResponse) return gate;
+
     await connectDB();
     const { id, matiereId } = await context.params;
     if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(matiereId)) {
@@ -52,6 +57,9 @@ export async function PATCH(request: Request, context: RouteContext) {
       unite?: string;
     };
 
+    let finalUniteId = oid;
+    let finalCredits = m.credits;
+
     if (newUnite !== undefined) {
       if (!Types.ObjectId.isValid(newUnite)) {
         return NextResponse.json({ message: "Invalid unite id for target" }, { status: 400 });
@@ -61,6 +69,30 @@ export async function PATCH(request: Request, context: RouteContext) {
       if (!exists) {
         return NextResponse.json({ message: "Target unite not found" }, { status: 404 });
       }
+      if (!target.equals(oid)) {
+        finalUniteId = target;
+      }
+    }
+    if (credits !== undefined) finalCredits = credits;
+
+    const coh = await verifierMatiereDansUnite({
+      uniteCibleId: finalUniteId,
+      matiereId: matId,
+      creditsFinaux: finalCredits,
+    });
+    if (!coh.ok) {
+      return NextResponse.json(
+        {
+          message: coh.message,
+          creditsUnite: coh.creditsUnite,
+          sommeMatiereActuelle: coh.sommeMatiereActuelle,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (newUnite !== undefined) {
+      const target = new Types.ObjectId(newUnite);
       if (!target.equals(oid)) {
         await UniteEnseignementModel.findByIdAndUpdate(oid, { $pull: { matieres: matId } });
         await UniteEnseignementModel.findByIdAndUpdate(target, { $addToSet: { matieres: matId } });
@@ -85,6 +117,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   try {
+    const gate = await requireAdminManageFilieres();
+    if (gate instanceof NextResponse) return gate;
+
     await connectDB();
     const { id, matiereId } = await context.params;
     if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(matiereId)) {
