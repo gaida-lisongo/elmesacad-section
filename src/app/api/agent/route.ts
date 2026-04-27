@@ -150,6 +150,7 @@ export async function PATCH(request: Request) {
             { status: 400 }
         );
     } catch (error) {
+        console.error("An error occurred while authenticating agent: ", (error as Error).message);
         const code = (error as Error).message;
         if (code === "user_not_found") {
             return NextResponse.json({ message: "Agent not found" }, { status: 404 });

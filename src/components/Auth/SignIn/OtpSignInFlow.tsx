@@ -56,6 +56,7 @@ export function OtpSignInFlow() {
       const path = accountKind === "student" ? "/api/student" : "/api/agent";
       const res = await fetch(path, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "requestOtp", email: selected.email }),
       });
@@ -85,6 +86,7 @@ export function OtpSignInFlow() {
       const path = accountKind === "student" ? "/api/student" : "/api/agent";
       const res = await fetch(path, {
         method: "PATCH",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "verifyOtp", email, otp: otp.trim() }),
       });

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { tryAuthSessionSecret } from "@/lib/auth/jwtSecret";
 
 const COOKIE = "auth_session";
 
@@ -15,8 +16,8 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  const secret = process.env.AUTH_JWT_SECRET;
-  if (!secret || secret.length < 16) {
+  const secret = tryAuthSessionSecret();
+  if (!secret) {
     return NextResponse.redirect(new URL("/signin?error=auth_config", request.url));
   }
 

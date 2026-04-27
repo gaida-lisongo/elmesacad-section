@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { jwtVerify, SignJWT } from "jose";
+import { resolveAuthSessionSecret } from "@/lib/auth/jwtSecret";
 import { sendMail } from "@/lib/mail/Mail";
 import userManager, { UserByEmailResult, UserType } from "@/lib/services/UserManager";
 
@@ -46,11 +47,7 @@ class AuthManager {
     }
 
     private getJwtSecret(): Uint8Array {
-        const secret = process.env.AUTH_JWT_SECRET;
-        if (!secret || secret.trim().length < 16) {
-            throw new Error("AUTH_JWT_SECRET is missing or too short (min 16 chars).");
-        }
-        return new TextEncoder().encode(secret);
+        return new TextEncoder().encode(resolveAuthSessionSecret());
     }
 
     private generateOtp(): string {
@@ -152,6 +149,7 @@ class AuthManager {
     }
 
     public async verifySession(token: string) {
+        console.log("Verifying session with token: ", token);
         const verified = await jwtVerify(token, this.getJwtSecret());
         return verified.payload as SessionPayload;
     }

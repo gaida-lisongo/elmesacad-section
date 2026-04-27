@@ -37,21 +37,25 @@
   --z-index-2: 2;
   --z-index-999: 999;
 
-  --color-primary: #2cdd9b;
-  --color-darkprimary: #28cf91;
-  --color-secondary: #1dc8cd;
-  --color-midnight_text: #263238;
-  --color-muted: #8d97b7;
-  --color-error: #ff4d7e;
-  --color-warning: #ff6a5b;
+  /* Palette INBTP — charge graphique (tokens Tailwind existants) */
+  --color-primary: #058ac5;
+  --color-darkprimary: #04719e;
+  --color-secondary: #e76067;
+  --color-black: #272826;
+  --color-gray: #8e8d8b;
+  --color-white: #ffffff;
+  --color-midnight_text: #272826;
+  --color-muted: #8e8d8b;
+  --color-error: #e76067;
+  --color-warning: #e76067;
   --color-light_grey: #e9ecef;
   --color-grey: #f5f7fa;
   --color-border: #e1e1e1;
-  --color-success: #3cd278;
-  --color-darkmode: #0a2219;
-  --color-darklight: #000f30;
-  --color-dark_border: #203535;
-  --color-dark: #00180f;
+  --color-success: #058ac5;
+  --color-darkmode: #272826;
+  --color-darklight: #1e1f1d;
+  --color-dark_border: #3d3c3a;
+  --color-dark: #1e1f1d;
 
   /** Hauteur du header fixe ; surchargée en px par le composant Header (ResizeObserver). */
   --app-header-h: 7rem;

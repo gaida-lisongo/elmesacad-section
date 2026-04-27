@@ -110,12 +110,13 @@ export async function GET(request: Request) {
             ?.split("=")[1];
 
         const sessionToken = token || cookieToken;
+        /** Même logique que /api/auth/me : absence de jeton = non connecté, pas 401. */
         if (!sessionToken) {
-            return NextResponse.json({ message: "Session token missing" }, { status: 401 });
+            return NextResponse.json({ data: null, authenticated: false }, { status: 200 });
         }
 
         const session = await authManager.verifySession(sessionToken);
-        return NextResponse.json({ data: session }, { status: 200 });
+        return NextResponse.json({ data: session, authenticated: true }, { status: 200 });
     } catch (error) {
         return NextResponse.json(
             { message: "Invalid session", error: (error as Error).message },

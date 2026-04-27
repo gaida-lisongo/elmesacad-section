@@ -17,7 +17,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setHydrated: (v) => set({ isHydrated: v }),
   hydrate: async () => {
     try {
-      const r = await fetch("/api/auth/me", { credentials: "include" });
+      const r = await fetch("/api/auth/me", {
+        credentials: "include",
+        cache: "no-store",
+      });
       if (r.ok) {
         const j = (await r.json()) as { user: AuthUser | null };
         set({ user: j.user ?? null, isHydrated: true });

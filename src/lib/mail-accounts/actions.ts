@@ -1,9 +1,17 @@
 "use server";
 
 import * as accountClient from "./client";
+import { MAIL_ACCOUNT_PASSWORD_MAX_LENGTH } from "./payloads";
 import type { MailAccountRow, MailAccountsActionResult } from "./types";
 
 const trim = (s: string) => s.trim();
+
+function assertMailPasswordLength(password: string): string | null {
+  if (password.length > MAIL_ACCOUNT_PASSWORD_MAX_LENGTH) {
+    return `Mot de passe trop long (maximum ${MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caracteres pour la boite mail).`;
+  }
+  return null;
+}
 
 function toActionError(
   r: { message: string; code?: string }
@@ -12,7 +20,7 @@ function toActionError(
 }
 
 /**
- * Liste les comptes mail (email + maildir) exposés par le microservice account-service (GET /mail-accounts).
+ * Liste les boîtes (audience admin — tableau de bord).
  */
 export async function listMailAccountsAction(): Promise<
   MailAccountsActionResult<{ rows: MailAccountRow[] }>
@@ -24,8 +32,62 @@ export async function listMailAccountsAction(): Promise<
   return { success: true, data: { rows: result.data.rows } };
 }
 
+function mapCreateResult(
+  result: Awaited<ReturnType<typeof accountClient.createAgentMailAccount>>
+): MailAccountsActionResult<{ account: MailAccountRow; status: string }> {
+  if (!result.ok) {
+    return toActionError(result);
+  }
+  const account: MailAccountRow = {
+    id: result.data.id,
+    email: result.data.user.email,
+    domain_id: 0,
+    domain_name: result.data.user.domain,
+  };
+  return {
+    success: true,
+    data: { account, status: result.data.status },
+  };
+}
+
+/** Inscription wizard — agent (payload + audience `agent`). */
+export async function createAgentMailboxAction(
+  email: string,
+  password: string
+): Promise<MailAccountsActionResult<{ account: MailAccountRow; status: string }>> {
+  const e = trim(email);
+  const p = password;
+  if (!e) {
+    return { success: false, error: "L’adresse e-mail est requise" };
+  }
+  if (!p) {
+    return { success: false, error: "Le mot de passe est requis" };
+  }
+  return mapCreateResult(await accountClient.createAgentMailAccount(e, p));
+}
+
+/** Inscription wizard — étudiant (payload + audience `student`). */
+export async function createStudentMailboxAction(
+  email: string,
+  password: string
+): Promise<MailAccountsActionResult<{ account: MailAccountRow; status: string }>> {
+  const e = trim(email);
+  const p = password;
+  if (!e) {
+    return { success: false, error: "L’adresse e-mail est requise" };
+  }
+  if (!p) {
+    return { success: false, error: "Le mot de passe est requis" };
+  }
+  const lenErr = assertMailPasswordLength(p);
+  if (lenErr) {
+    return { success: false, error: lenErr };
+  }
+  return mapCreateResult(await accountClient.createStudentMailAccount(e, p));
+}
+
 /**
- * Crée un compte Dovecot côté serveur mail (POST /mail-accounts). Le mot de passe est hashé côté service.
+ * Création côté admin (dashboard) — audience `admin`.
  */
 export async function createMailAccountAction(
   email: string,
@@ -39,20 +101,13 @@ export async function createMailAccountAction(
   if (!p) {
     return { success: false, error: "Le mot de passe est requis" };
   }
-
-  const result = await accountClient.createMailAccount(e, p);
-  if (!result.ok) {
-    return toActionError(result);
+  const lenErr = assertMailPasswordLength(p);
+  if (lenErr) {
+    return { success: false, error: lenErr };
   }
-  return {
-    success: true,
-    data: { account: result.data.account, status: result.data.status },
-  };
+  return mapCreateResult(await accountClient.createMailAccount(e, p));
 }
 
-/**
- * Met à jour le mot de passe d’un compte existant (PUT /mail-accounts).
- */
 export async function updateMailAccountAction(
   email: string,
   password: string
@@ -65,6 +120,10 @@ export async function updateMailAccountAction(
   if (!p) {
     return { success: false, error: "Le mot de passe est requis" };
   }
+  const lenErr = assertMailPasswordLength(p);
+  if (lenErr) {
+    return { success: false, error: lenErr };
+  }
 
   const result = await accountClient.updateMailAccount(e, p);
   if (!result.ok) {
@@ -73,9 +132,6 @@ export async function updateMailAccountAction(
   return { success: true, data: { updated: result.data.updated } };
 }
 
-/**
- * Supprime le compte en base (DELETE /mail-accounts) pour l’e-mail indiqué.
- */
 export async function deleteMailAccountAction(
   email: string
 ): Promise<MailAccountsActionResult<{ deleted: boolean }>> {
@@ -91,9 +147,41 @@ export async function deleteMailAccountAction(
   return { success: true, data: { deleted: result.data.deleted } };
 }
 
-/**
- * Vérifie si un compte mail existe déjà (GET /mail-accounts/exists?email=...).
- */
+export async function agentMailboxExistsAction(
+  email: string
+): Promise<MailAccountsActionResult<{ exists: boolean; email: string }>> {
+  const e = trim(email);
+  if (!e) {
+    return { success: false, error: "L’adresse e-mail est requise" };
+  }
+  const result = await accountClient.mailAccountExistsAgent(e);
+  if (!result.ok) {
+    return toActionError(result);
+  }
+  return {
+    success: true,
+    data: { exists: result.data.exists, email: result.data.email },
+  };
+}
+
+export async function studentMailboxExistsAction(
+  email: string
+): Promise<MailAccountsActionResult<{ exists: boolean; email: string }>> {
+  const e = trim(email);
+  if (!e) {
+    return { success: false, error: "L’adresse e-mail est requise" };
+  }
+  const result = await accountClient.mailAccountExistsStudent(e);
+  if (!result.ok) {
+    return toActionError(result);
+  }
+  return {
+    success: true,
+    data: { exists: result.data.exists, email: result.data.email },
+  };
+}
+
+/** Existence — audience admin (comportement historique). */
 export async function mailAccountExistsAction(
   email: string
 ): Promise<MailAccountsActionResult<{ exists: boolean; email: string }>> {

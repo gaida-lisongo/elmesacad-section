@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import AuthDialogContext from "@/app/context/AuthDialogContext";
 import { UserDatabaseSearch } from "@/components/secure/UserDatabaseSearch";
 import {
+  MAIL_ACCOUNT_PASSWORD_MAX_LENGTH,
   createMailAccountAction,
   mailAccountExistsAction,
 } from "@/lib/mail-accounts";
@@ -95,6 +96,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
 
     setStep2Loading(true);
     try {
+      /** Un seul flux : microservice mail (ACCOUNT_SERVICE) — GET exists puis POST création boîte. */
       const existsRes = await mailAccountExistsAction(selected.email);
       if (!existsRes.success) {
         toast.error(existsRes.error);
@@ -106,7 +108,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
           toast.error(createRes.error);
           return;
         }
-        toast.success("Boîte mail créée.");
+        toast.success("Boîte mail créée sur le serveur mail.");
       }
       setStep(3);
     } finally {
@@ -140,6 +142,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
 
       const res = await fetch(path, {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
@@ -301,7 +304,11 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={MAIL_ACCOUNT_PASSWORD_MAX_LENGTH}
               />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                8–{MAIL_ACCOUNT_PASSWORD_MAX_LENGTH} caractères (limite imposée par le serveur mail).
+              </p>
             </div>
             <div>
               <label className={labelClass}>Confirmer le mot de passe</label>
@@ -312,6 +319,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
                 minLength={8}
+                maxLength={MAIL_ACCOUNT_PASSWORD_MAX_LENGTH}
               />
             </div>
             <div className="flex flex-wrap justify-end gap-2">

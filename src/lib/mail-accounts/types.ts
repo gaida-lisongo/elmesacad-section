@@ -1,6 +1,8 @@
 export type MailAccountRow = {
+  id: number;
   email: string;
-  maildir: string;
+  domain_id: number;
+  domain_name: string;
 };
 
 export type ListMailAccountsResponse = {
@@ -8,20 +10,31 @@ export type ListMailAccountsResponse = {
   rows: MailAccountRow[];
 };
 
+export type MailAccountDetailResponse = {
+  ok: true;
+  user: MailAccountRow;
+};
+
 export type CreateMailAccountResponse = {
   ok: true;
   status: string;
-  account: MailAccountRow;
+  id: number;
+  user: {
+    email: string;
+    domain: string;
+  };
 };
 
 export type UpdateMailAccountResponse = {
   ok: true;
   updated: boolean;
+  id: number;
 };
 
 export type DeleteMailAccountResponse = {
   ok: true;
   deleted: boolean;
+  id: number;
 };
 
 export type MailAccountExistsResponse = {
@@ -32,7 +45,7 @@ export type MailAccountExistsResponse = {
 
 export type AccountServiceErrorBody = {
   ok: false;
-  code: string;
+  code?: string;
   message: string;
 };
 
