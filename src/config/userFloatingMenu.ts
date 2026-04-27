@@ -17,8 +17,18 @@ export const userFloatingMenu: {
 } = {
   student: [
     { item: "Tableau de bord", path: "/dashboard" },
-    { item: "Etudiants", path: "/etudiants" },
-    { item: "Sections", path: "/sections" },
+    { item: "Macarons", path: "student/macarons" },
+    { item: "Documents", path: "#", subMenu: [
+      { item: "Relevés de cotes", path: "/student/releves" },
+      { item: "Bulletins de notes", path: "/student/bulletins" },
+      { item: "Fiche de Validation", path: "/student/fiche-validation" },      
+    ]},
+    { item: "Activités", path: "#", subMenu: [
+      { item: "TP", path: "/student/tp" },
+      { item: "QCM", path: "/student/qcm" },
+      { item: "Laboratoires", path: "/student/laboratoires" },
+    ]},
+    { item: "Dépots", path: "/student/depots" },
   ],
   agent: {
     admin: [
@@ -31,11 +41,28 @@ export const userFloatingMenu: {
     titulaire: [
       { item: "Tableau de bord", path: "/dashboard" },
       { item: "Activités", path: "#", subMenu: [
-        { item: "TP", path: "/activites/tp" },
-        { item: "QCM", path: "/activites/qcm" },
+        { item: "TP", path: "/titulaire/tp" },
+        { item: "QCM", path: "/titulaire/qcm" },
       ]},
-      { item: "Notes", path: "/notes" },
-      { item: "Recources", path: "/recources" },
+      { item: "Notes", path: "/titulaire/notes" },
+      { item: "Recources", path: "/titulaire/recources" },
+    ],
+    organisateur: [
+      { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Programmes", path: "/section/programmes" },
+      { item: "Activités", path: "#", subMenu: [
+        { item: "TP", path: "/section/tp" },
+        { item: "QCM", path: "/section/qcm" }
+      ]},
+      { item: "Jury", path: "/section/jury" },
+      { item: "Archivage", path: "/section/archivages" },
+    ],
+    gestionnaire: [
+      { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Enrollements", path: "/section/enrollements" },
+      { item: "Fiches de validation", path: "/section/fiches-validation" },
+      { item: "Relevés de cotes", path: "/section/releves" },
+      { item: "Laboratoires", path: "/section/laboratoires" },
     ],
   },
   agentFallback: [
