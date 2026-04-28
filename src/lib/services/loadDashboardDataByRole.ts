@@ -34,7 +34,7 @@ async function mapAnneesToWhiteList(): Promise<DashboardWhiteListItem[]> {
         ? String(d.designation).trim()
         : "";
     return {
-      id: undefined,
+      id: String(d._id),
       debut: d.debut,
       fin: d.fin,
       designation: des,

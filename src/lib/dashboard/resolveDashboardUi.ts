@@ -15,7 +15,7 @@ function staffSubtitle(role: DashboardRole): string | undefined {
     case "titulaire":
       return "Activités pédagogiques, notes et ressources.";
     case "organisateur":
-      return "Programmes, activités, jury et archivage.";
+      return "Programmes, tableau de bord section (bureau), activités et archivage.";
     case "gestionnaire":
       return "Enrollements, fiches de validation, relevés et laboratoires.";
     default:
@@ -88,7 +88,7 @@ export function dashboardInfoMessage(role: DashboardRole): string | undefined {
     return "Espace titulaire : les indicateurs métier (TP, QCM, notes) seront branchés ici progressivement.";
   }
   if (role === "organisateur") {
-    return "Espace organisateur : statistiques programmes / jury à venir sur ce tableau de bord.";
+    return "Espace organisateur : le suivi bureau (enseignement, recherche) est sur « Tableau de bord section ». Le bloc tableau ci‑dessous s’adapte à votre habilitation (CE : charges horaires par programme ; autres : aperçu des comptes en lecture seule).";
   }
   if (role === "gestionnaire") {
     return "Espace gestionnaire : indicateurs d’enrollement et de validation seront affichés ici bientôt.";

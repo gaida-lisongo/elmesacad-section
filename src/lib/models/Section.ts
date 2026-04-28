@@ -25,6 +25,22 @@ export type SectionDoc = {
     chargeEnseignement?: Types.ObjectId;
     chargeRecherche?: Types.ObjectId;
   };
+  gestionnaires?: {
+    secretaire?: Types.ObjectId;
+    appariteur?: Types.ObjectId;
+  };
+  jury?: {
+    cours?: {
+      president?: Types.ObjectId;
+      secretaire?: Types.ObjectId;
+      membres?: Types.ObjectId[];
+    };
+    recherche?: {
+      president?: Types.ObjectId;
+      secretaire?: Types.ObjectId;
+      membres?: Types.ObjectId[];
+    };
+  };
   logo: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -46,6 +62,22 @@ const sectionSchema = new Schema<SectionDoc>(
       chefSection: { type: Schema.Types.ObjectId, ref: "Agent" },
       chargeEnseignement: { type: Schema.Types.ObjectId, ref: "Agent" },
       chargeRecherche: { type: Schema.Types.ObjectId, ref: "Agent" },
+    },
+    gestionnaires: {
+      secretaire: { type: Schema.Types.ObjectId, ref: "Agent" },
+      appariteur: { type: Schema.Types.ObjectId, ref: "Agent" },
+    },
+    jury: {
+      cours: {
+        president: { type: Schema.Types.ObjectId, ref: "Agent" },
+        secretaire: { type: Schema.Types.ObjectId, ref: "Agent" },
+        membres: [{ type: Schema.Types.ObjectId, ref: "Agent" }],
+      },
+      recherche: {
+        president: { type: Schema.Types.ObjectId, ref: "Agent" },
+        secretaire: { type: Schema.Types.ObjectId, ref: "Agent" },
+        membres: [{ type: Schema.Types.ObjectId, ref: "Agent" }],
+      },
     },
     cycle: { type: String, required: true },
   },

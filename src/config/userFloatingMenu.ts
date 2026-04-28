@@ -50,12 +50,13 @@ export const userFloatingMenu: {
     ],
     organisateur: [
       { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Tableau de bord section", path: "/section/dashboard" },
       { item: "Programmes", path: "/section/programmes" },
       { item: "Activités", path: "#", subMenu: [
         { item: "TP", path: "/section/tp" },
         { item: "QCM", path: "/section/qcm" }
       ]},
-      { item: "Jury", path: "/section/jury" },
+      { item: "Autorisations", path: "/section/autorisations" },
       { item: "Archivage", path: "/section/archivages" },
     ],
     gestionnaire: [

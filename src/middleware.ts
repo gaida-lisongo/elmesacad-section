@@ -52,5 +52,9 @@ export const config = {
     "/filiere/:path*",
     "/tickets",
     "/tickets/:path*",
+    "/section",
+    "/section/:path*",
+    "/charge-matiere",
+    "/charge-matiere/:path*",
   ],
 };

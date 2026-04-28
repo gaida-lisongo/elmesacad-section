@@ -10,8 +10,9 @@ type RouteContext = { params: Promise<{ id: string; programmeId: string }> };
 
 export async function GET(_: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id, programmeId } = await context.params;
+
+    await connectDB();
     if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(programmeId)) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }
@@ -35,8 +36,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id, programmeId } = await context.params;
+
+    await connectDB();
     if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(programmeId)) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }

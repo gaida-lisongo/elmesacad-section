@@ -1,10 +1,8 @@
 import { getSessionPayload } from "@/lib/auth/sessionServer";
 import type { DashboardAgentAuthorization, DashboardRole } from "@/lib/dashboard/types";
-import {
-  dashboardInfoMessage,
-  resolveDashboardUi,
-} from "@/lib/dashboard/resolveDashboardUi";
+import { dashboardInfoMessage, resolveDashboardUi } from "@/lib/dashboard/resolveDashboardUi";
 import { resolveAdminCapabilities } from "@/lib/dashboard/adminCapabilitiesFromAuthorizations";
+import { buildOrganisateurTableData } from "@/lib/dashboard/buildOrganisateurTableData";
 import { loadDashboardDataByRole } from "@/lib/services/loadDashboardDataByRole";
 import userManager from "@/lib/services/UserManager";
 import { connectDB } from "@/lib/services/connectedDB";
@@ -49,12 +47,19 @@ export default async function DashboardPage() {
   const ui = resolveDashboardUi(role, agentAuthorizations);
   const adminCapabilities = resolveAdminCapabilities(role, agentAuthorizations);
 
+  let tableData = data.tableData;
+  if (role === "organisateur" && session?.type === "Agent" && session.sub) {
+    tableData = await buildOrganisateurTableData(session.sub, agentAuthorizations);
+  }
+
+  const infoMessage = dashboardInfoMessage(role);
+
   return (
     <DashboardView
       title="Tableau de bord"
       role={role}
-      userName={userName}
-      infoMessage={dashboardInfoMessage(role)}
+      {...(userName ? { userName } : {})}
+      {...(infoMessage ? { infoMessage } : {})}
       ui={ui}
       agentAuthorizations={agentAuthorizations}
       adminCapabilities={adminCapabilities}
@@ -62,7 +67,7 @@ export default async function DashboardPage() {
       metrics={data.metrics}
       whiteList={data.whiteList}
       chartData={data.chartData}
-      tableData={data.tableData}
+      tableData={tableData}
     />
   );
 }

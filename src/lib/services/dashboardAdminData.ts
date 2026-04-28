@@ -2,8 +2,8 @@ import { AgentModel, StudentModel } from "@/lib/models/User";
 import { SectionModel } from "@/lib/models/Section";
 import { AnneeModel } from "@/lib/models/Annee";
 import { RechargeModel } from "@/lib/models/Recharge";
-import userManager from "@/lib/services/UserManager";
 import { connectDB } from "@/lib/services/connectedDB";
+import { loadDashboardUsersSampleTable } from "@/lib/services/dashboardUsersSampleTable";
 import type {
   DashboardChartSeries,
   DashboardMetric,
@@ -154,27 +154,7 @@ export async function loadAdminDashboardData(): Promise<{
   ];
 
   const limit = 10;
-  const search = "";
-  const stuRows = await userManager.getStudentsList({ search, offset: 0, limit, status: "inactive" });
-  const tableData: DashboardTableData = {
-    headers: ["Nom", "E-mail", "Matricule", "Statut", "Type"],
-    listes: ["Étudiants", "Agents"],
-    filters: ["Tous", "Actifs", "Inactifs"],
-    rows: stuRows.map((u) => ({
-      id: u.id,
-      columns: [u.name, u.email, u.matricule, u.status, "Étudiant"],
-    })),
-  };
-  if (tableData.rows.length < limit) {
-    const need = limit - tableData.rows.length;
-    const ag = await userManager.getAgentsPaginated({ search, offset: 0, limit: need, status: "inactive" });
-    for (const u of ag) {
-      tableData.rows.push({
-        id: u.id,
-        columns: [u.name, u.email, u.matricule, u.status, `Agent (${u.role})`],
-      });
-    }
-  }
+  const tableData: DashboardTableData = await loadDashboardUsersSampleTable(limit);
 
   return { metrics, whiteList, chartData, tableData, chartYear };
 }

@@ -32,15 +32,38 @@ export type DashboardTableRow = {
   columns: string[];
 };
 
+/** Ligne UE pour le tableau charges (dashboard CE), rattachée à un programme. */
+export type OrganisateurCeChargeRow = {
+  key: string;
+  programmeId: string;
+  sectionId: string;
+  sectionDesignation: string;
+  programmeDesignation: string;
+  semestreDesignation: string;
+  uniteDesignation: string;
+  uniteCode: string;
+  uniteId: string;
+};
+
+/** Données SSR : une section d’attache, liste des programmes (filtre), toutes les lignes UE. */
+export type OrganisateurCeChargesHorairesPayload = {
+  sectionId: string;
+  sectionDesignation: string;
+  programmes: { _id: string; designation: string; slug: string }[];
+  rows: OrganisateurCeChargeRow[];
+};
+
 /**
  * - listes: valeurs des filtres (ex. type de liste, étudiants / agents)
  * - filters: ex. actif / inactif
+ * - chargesHoraires: réservé à l’organisateur **CE** — si présent, la vue affiche le tableau charges à la place du listing utilisateurs.
  */
 export type DashboardTableData = {
   headers: string[];
   listes: string[];
   filters: string[];
   rows: DashboardTableRow[];
+  chargesHoraires?: OrganisateurCeChargesHorairesPayload;
 };
 
 export type DashboardRole =

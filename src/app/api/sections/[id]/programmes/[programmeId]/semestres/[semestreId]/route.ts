@@ -10,8 +10,9 @@ type RouteContext = { params: Promise<{ id: string; programmeId: string; semestr
 
 export async function GET(_: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id, programmeId, semestreId } = await context.params;
+
+    await connectDB();
     if (![id, programmeId, semestreId].every((x) => Types.ObjectId.isValid(x))) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }
@@ -42,8 +43,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id, programmeId, semestreId } = await context.params;
+
+    await connectDB();
     if (![id, programmeId, semestreId].every((x) => Types.ObjectId.isValid(x))) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }
@@ -82,7 +84,17 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (description !== undefined) s.description = description;
     if (order !== undefined) s.order = order;
     await s.save();
-    return NextResponse.json({ data: s }, { status: 200 });
+    return NextResponse.json(
+      {
+        data: s,
+        affectation: {
+          programmeId: String(pid),
+          semestreId: String(sem),
+          uniteIds: s.unites.map((u) => String(u)),
+        },
+      },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to update semestre", error: (error as Error).message },
@@ -93,8 +105,9 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id, programmeId, semestreId } = await context.params;
+
+    await connectDB();
     if (![id, programmeId, semestreId].every((x) => Types.ObjectId.isValid(x))) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }

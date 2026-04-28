@@ -31,8 +31,9 @@ export async function GET(_: Request, context: RouteContext) {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    await connectDB();
     const { id } = await context.params;
+
+    await connectDB();
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: "Invalid id" }, { status: 400 });
     }
