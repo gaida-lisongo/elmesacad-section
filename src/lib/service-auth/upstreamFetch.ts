@@ -1,4 +1,5 @@
 import { getServiceJwt } from "./getServiceJwt";
+import { getSessionToken, refreshSessionJwtFromDb } from "@/lib/auth/sessionServer";
 
 function normalizeBase(envVal: string | undefined): string | null {
   const u = envVal?.trim();
@@ -30,8 +31,27 @@ function mergeHeaders(
   return h;
 }
 
+async function buildAuthHeaders(
+  init: RequestInit | undefined,
+  bearer?: string
+): Promise<Headers> {
+  const jwt = bearer ?? (await getSessionToken()) ?? (await getServiceJwt());
+  return mergeHeaders(init, {
+    ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+  });
+}
+
+async function doFetch(url: string, init: RequestInit | undefined, headers: Headers): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    cache: "no-store",
+    headers,
+  });
+}
+
 /**
  * GET/POST/etc. vers le service titulaire (Traefik) avec Authorization: Bearer.
+ * Sur 401: tente un refresh session, puis rejoue la requête.
  */
 export async function fetchTitulaireService(
   path: string,
@@ -41,15 +61,16 @@ export async function fetchTitulaireService(
   if (!base) {
     throw new Error("TITULAIRE_SERVICE manquant dans l’environnement");
   }
-  const jwt = await getServiceJwt();
+
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
-  return fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: mergeHeaders(init, {
-      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-    }),
-  });
+  let res = await doFetch(url, init, await buildAuthHeaders(init));
+  if (res.status !== 401) return res;
+
+  const refreshed = await refreshSessionJwtFromDb();
+  if (!refreshed) return res;
+
+  res = await doFetch(url, init, await buildAuthHeaders(init, refreshed.token));
+  return res;
 }
 
 /**
@@ -63,13 +84,14 @@ export async function fetchEtudiantService(
   if (!base) {
     throw new Error("ETUDIANT_SERVICE manquant dans l’environnement");
   }
-  const jwt = await getServiceJwt();
+
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
-  return fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: mergeHeaders(init, {
-      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
-    }),
-  });
+  let res = await doFetch(url, init, await buildAuthHeaders(init));
+  if (res.status !== 401) return res;
+
+  const refreshed = await refreshSessionJwtFromDb();
+  if (!refreshed) return res;
+
+  res = await doFetch(url, init, await buildAuthHeaders(init, refreshed.token));
+  return res;
 }

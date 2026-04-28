@@ -9,7 +9,7 @@ type OtpEntry = {
     expiresAt: number;
 };
 
-type SessionPayload = {
+export type SessionPayload = {
     sub: string;
     email: string;
     type: UserType;
@@ -67,6 +67,15 @@ class AuthManager {
             role,
             name: generic.name,
         };
+    }
+
+    public async createSessionToken(payload: SessionPayload): Promise<string> {
+        return new SignJWT(payload)
+            .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+            .setIssuedAt()
+            .setJti(randomUUID())
+            .setExpirationTime(Math.floor((Date.now() + this.sessionTtlMs) / 1000))
+            .sign(this.getJwtSecret());
     }
 
     public async requestOtp(type: UserType, rawEmail: string) {
@@ -134,12 +143,7 @@ class AuthManager {
         this.otpStore.delete(this.keyOf(type, email));
         const payload = this.buildSessionPayload(type, email, user);
 
-        const token = await new SignJWT(payload)
-            .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-            .setIssuedAt()
-            .setJti(randomUUID())
-            .setExpirationTime(Math.floor((Date.now() + this.sessionTtlMs) / 1000))
-            .sign(this.getJwtSecret());
+        const token = await this.createSessionToken(payload);
 
         return {
             token,
@@ -149,7 +153,6 @@ class AuthManager {
     }
 
     public async verifySession(token: string) {
-        console.log("Verifying session with token: ", token);
         const verified = await jwtVerify(token, this.getJwtSecret());
         return verified.payload as SessionPayload;
     }

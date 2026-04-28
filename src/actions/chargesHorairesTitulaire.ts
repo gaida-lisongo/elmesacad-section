@@ -6,7 +6,6 @@ import { EMPTY_CHARGE_DESCRIPT } from "@/lib/charges/chargePayloadDefaults";
 import { gateOrganisateurSectionBureau } from "@/lib/auth/gateOrganisateurSectionBureau";
 import {
   gateSectionChargesHoraires,
-  gateUniteChargesHoraires,
 } from "@/lib/auth/gateSectionChargesHoraires";
 import { MatiereModel } from "@/lib/models/Matiere";
 import { ProgrammeModel } from "@/lib/models/Programme";
@@ -175,7 +174,7 @@ export async function getUniteChargeContextAction(
 
 export async function listChargesHorairesAction(
   sectionId: string,
-  filters?: { code_unite?: string }
+  filters?: { code_unite?: string; matiere_reference?: string }
 ): Promise<ChargesActionResult<unknown[]>> {
   try {
     void sectionId;
@@ -216,21 +215,15 @@ export async function createChargeHoraireAction(body: {
   sectionId: string;
   uniteId: string;
   matiereId: string;
+  semestreDesignation?: string;
   promotion?: { designation: string; reference: string };
   titulaire: Record<string, unknown>;
   horaire: Record<string, unknown>;
-  status?: boolean;
+  status?: "pending" | "finish" | "no";
 }): Promise<ChargesActionResult<unknown>> {
   const { programmeId, sectionId, uniteId, matiereId, titulaire, horaire } = body;
   if (!programmeId || !sectionId || !uniteId || !matiereId) {
     return { ok: false, message: "programmeId, sectionId, uniteId et matiereId requis" };
-  }
-  const gateU = await gateUniteChargesHoraires(uniteId);
-  if (!gateU.ok) {
-    return { ok: false, message: await messageFromGateResponse(gateU.response) };
-  }
-  if (gateU.sectionId !== sectionId) {
-    return { ok: false, message: "L’unité ne correspond pas à cette section." };
   }
   if (!titulaire || typeof titulaire !== "object" || !horaire || typeof horaire !== "object") {
     return { ok: false, message: "titulaire et horaire requis" };
@@ -264,7 +257,7 @@ export async function createChargeHoraireAction(body: {
       unite: {
         designation: unite.designation,
         code_unite: unite.code,
-        semestre: sem?.designation ?? "—",
+        semestre: body.semestreDesignation?.trim() || sem?.designation || "—",
       },
       promotion: {
         designation: (prom?.designation ?? "").trim() || "—",
@@ -272,7 +265,7 @@ export async function createChargeHoraireAction(body: {
       },
       titulaire,
       horaire,
-      status: body.status !== false,
+      status: body.status ?? "no",
       descripteur: EMPTY_CHARGE_DESCRIPT,
     };
 

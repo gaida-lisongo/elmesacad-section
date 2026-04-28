@@ -10,6 +10,8 @@ import {
   updateChargeHoraireAction,
 } from "@/actions/chargesHorairesTitulaire";
 import { PageListe } from "@/components/Layout/PageListe";
+import { SearchUser } from "@/components/secure/UserDatabaseSearch";
+import type { AgentListItem } from "@/lib/services/UserManager";
 
 type MatiereRow = { _id: string; designation: string; credits: number; code: string };
 type ChargeContext = {
@@ -21,6 +23,54 @@ type ChargeContext = {
   unite: { _id: string; designation: string; code: string; credits: number };
   matieres: MatiereRow[];
 };
+
+type ChargeStatus = "pending" | "finish" | "no";
+
+const chargeStatusLabel: Record<ChargeStatus, string> = {
+  pending: "En cours",
+  finish: "Terminée",
+  no: "Programmé",
+};
+
+function safeStr(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function parseChargeStatus(v: unknown): ChargeStatus {
+  return v === "pending" || v === "finish" || v === "no" ? v : "no";
+}
+
+function parseChargeForEdit(charge: unknown): {
+  titulaire: typeof emptyTitulaire;
+  horaire: typeof emptyHoraire;
+  status: ChargeStatus;
+} {
+  if (!charge || typeof charge !== "object") {
+    return { titulaire: emptyTitulaire, horaire: emptyHoraire, status: "no" };
+  }
+  const o = charge as {
+    titulaire?: Partial<typeof emptyTitulaire>;
+    horaire?: Partial<typeof emptyHoraire>;
+    status?: unknown;
+  };
+  return {
+    titulaire: {
+      name: safeStr(o.titulaire?.name),
+      matricule: safeStr(o.titulaire?.matricule),
+      email: safeStr(o.titulaire?.email),
+      telephone: safeStr(o.titulaire?.telephone),
+      disponibilite: safeStr(o.titulaire?.disponibilite),
+    },
+    horaire: {
+      jour: safeStr(o.horaire?.jour),
+      heure_debut: safeStr(o.horaire?.heure_debut),
+      heure_fin: safeStr(o.horaire?.heure_fin),
+      date_debut: safeStr(o.horaire?.date_debut),
+      date_fin: safeStr(o.horaire?.date_fin),
+    },
+    status: parseChargeStatus(o.status),
+  };
+}
 
 function chargeId(c: unknown): string | null {
   if (!c || typeof c !== "object") return null;
@@ -86,12 +136,12 @@ export default function ChargeMatiereClient({
   const [activeMatiereId, setActiveMatiereId] = useState<string | null>(null);
 
   const [modal, setModal] = useState<"create" | "edit" | null>(null);
+  const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [promoDes, setPromoDes] = useState("");
-  const [promoRef, setPromoRef] = useState("");
+  const [selectedAgent, setSelectedAgent] = useState<AgentListItem | null>(null);
   const [titulaire, setTitulaire] = useState(emptyTitulaire);
   const [horaire, setHoraire] = useState(emptyHoraire);
-  const [status, setStatus] = useState(true);
+  const [status, setStatus] = useState<ChargeStatus>("no");
   const [saving, setSaving] = useState(false);
   const [formErr, setFormErr] = useState<string | null>(null);
 
@@ -120,11 +170,15 @@ export default function ChargeMatiereClient({
     }
   }, [programmeId, uniteId]);
 
-  const loadCharges = useCallback(async (sectionId: string, uniteCode: string) => {
+  const loadCharges = useCallback(
+    async (sectionId: string, uniteCode: string, matiereReference: string | undefined) => {
     setLoadingCharges(true);
     setChargesErr(null);
     try {
-      const r = await listChargesHorairesAction(sectionId, { code_unite: uniteCode });
+      const r = await listChargesHorairesAction(sectionId, {
+        code_unite: uniteCode,
+        matiere_reference: matiereReference,
+      });
       if (!r.ok) {
         setCharges([]);
         setChargesErr(r.message);
@@ -137,20 +191,23 @@ export default function ChargeMatiereClient({
     } finally {
       setLoadingCharges(false);
     }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
     loadContext();
   }, [loadContext]);
 
-  useEffect(() => {
-    if (ctx?.sectionId && ctx?.unite?.code) loadCharges(ctx.sectionId, ctx.unite.code);
-  }, [ctx?.sectionId, ctx?.unite?.code, loadCharges]);
-
   const activeMatiere = useMemo(
     () => ctx?.matieres.find((m) => m._id === activeMatiereId) ?? null,
     [ctx, activeMatiereId]
   );
+
+  useEffect(() => {
+    if (!ctx?.sectionId || !ctx?.unite?.code || !activeMatiere?._id) return;
+    loadCharges(ctx.sectionId, ctx.unite.code, activeMatiere._id);
+  }, [ctx?.sectionId, ctx?.unite?.code, activeMatiere?._id, loadCharges]);
 
   const matieresFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -172,32 +229,27 @@ export default function ChargeMatiereClient({
   const openCreate = () => {
     if (!activeMatiere || !ctx) return;
     setModal("create");
+    setFormStep(1);
+    setSelectedAgent(null);
     setEditingId(null);
     setFormErr(null);
-    setPromoDes("");
-    setPromoRef("");
     setTitulaire(emptyTitulaire);
     setHoraire(emptyHoraire);
-    setStatus(true);
+    setStatus("no");
   };
 
   const openEdit = (c: unknown) => {
     const id = chargeId(c);
     if (!id || !ctx) return;
-    const o = c as {
-      titulaire?: typeof emptyTitulaire;
-      horaire?: typeof emptyHoraire;
-      status?: boolean;
-      promotion?: { designation?: string; reference?: string };
-    };
+    const parsed = parseChargeForEdit(c);
     setModal("edit");
+    setFormStep(1);
+    setSelectedAgent(null);
     setEditingId(id);
     setFormErr(null);
-    setPromoDes(o.promotion?.designation ?? "");
-    setPromoRef(o.promotion?.reference ?? "");
-    setTitulaire({ ...emptyTitulaire, ...o.titulaire });
-    setHoraire({ ...emptyHoraire, ...o.horaire });
-    setStatus(o.status !== false);
+    setTitulaire(parsed.titulaire);
+    setHoraire(parsed.horaire);
+    setStatus(parsed.status);
   };
 
   const submitCreate = async () => {
@@ -218,10 +270,11 @@ export default function ChargeMatiereClient({
         sectionId: ctx.sectionId,
         uniteId: ctx.unite._id,
         matiereId: activeMatiere._id,
-        promotion:
-          promoDes.trim() || promoRef.trim()
-            ? { designation: promoDes.trim(), reference: promoRef.trim() }
-            : undefined,
+        semestreDesignation: ctx.semestreDesignation,
+        promotion: {
+          designation: ctx.programmeDesignation,
+          reference: ctx.programmeId,
+        },
         titulaire: {
           name: titulaire.name.trim(),
           matricule: titulaire.matricule.trim(),
@@ -240,13 +293,33 @@ export default function ChargeMatiereClient({
       });
       if (!r.ok) throw new Error(r.message);
       setModal(null);
-      await loadCharges(ctx.sectionId, ctx.unite.code);
+      await loadCharges(ctx.sectionId, ctx.unite.code, activeMatiere._id);
     } catch (e) {
       setFormErr((e as Error).message);
     } finally {
       setSaving(false);
     }
   };
+
+  function validateCreateStep1(): string | null {
+    if (modal === "create" && !selectedAgent) return "Sélectionnez un agent titulaire.";
+    if (!titulaire.name.trim() || !titulaire.email.trim()) {
+      return "Nom et e-mail du titulaire requis.";
+    }
+    if (!titulaire.disponibilite.trim()) return "Définissez la disponibilité du titulaire.";
+    return null;
+  }
+
+  function validateCreateStep2(): string | null {
+    if (!horaire.jour.trim()) return "Renseignez le jour du cours.";
+    if (!horaire.heure_debut.trim() || !horaire.heure_fin.trim()) {
+      return "Heure de début et heure de fin requises.";
+    }
+    if (!horaire.date_debut.trim() || !horaire.date_fin.trim()) {
+      return "Date de début et date de fin requises.";
+    }
+    return null;
+  }
 
   const submitEdit = async () => {
     if (!ctx || !editingId) return;
@@ -255,6 +328,19 @@ export default function ChargeMatiereClient({
     try {
       const r = await updateChargeHoraireAction(ctx.sectionId, editingId, {
         status,
+        matiere: {
+          designation: activeMatiere?.designation ?? "",
+          reference: activeMatiere?._id ?? "",
+        },
+        unite: {
+          designation: ctx.unite.designation,
+          code_unite: ctx.unite.code,
+          semestre: ctx.semestreDesignation || "—",
+        },
+        promotion: {
+          designation: ctx.programmeDesignation,
+          reference: ctx.programmeId,
+        },
         titulaire: {
           name: titulaire.name.trim(),
           matricule: titulaire.matricule.trim(),
@@ -269,14 +355,10 @@ export default function ChargeMatiereClient({
           date_debut: horaire.date_debut.trim() || undefined,
           date_fin: horaire.date_fin.trim() || undefined,
         },
-        promotion:
-          promoDes.trim() || promoRef.trim()
-            ? { designation: promoDes.trim(), reference: promoRef.trim() }
-            : undefined,
       });
       if (!r.ok) throw new Error(r.message);
       setModal(null);
-      await loadCharges(ctx.sectionId, ctx.unite.code);
+      await loadCharges(ctx.sectionId, ctx.unite.code, activeMatiere?._id);
     } catch (e) {
       setFormErr((e as Error).message);
     } finally {
@@ -289,7 +371,7 @@ export default function ChargeMatiereClient({
     try {
       const r = await deleteChargeHoraireAction(ctx.sectionId, id);
       if (!r.ok) throw new Error(r.message);
-      await loadCharges(ctx.sectionId, ctx.unite.code);
+      await loadCharges(ctx.sectionId, ctx.unite.code, activeMatiere?._id);
     } catch (e) {
       alert((e as Error).message);
     }
@@ -400,14 +482,13 @@ export default function ChargeMatiereClient({
                 ) : (
                   chargesForActive.map((c, idx) => {
                     const id = chargeId(c);
-                    const st =
-                      c && typeof c === "object" && (c as { status?: boolean }).status !== false;
+                    const st = (c && typeof c === "object" ? (c as { status?: ChargeStatus }).status : undefined) ?? "no";
                     return (
                       <tr key={id ?? `charge-row-${idx}`}>
                         <td className="px-3 py-2 text-midnight_text dark:text-white">
                           {formatChargeSummary(c)}
                         </td>
-                        <td className="px-3 py-2">{st ? "Actif" : "Inactif"}</td>
+                        <td className="px-3 py-2">{chargeStatusLabel[st]}</td>
                         <td className="px-3 py-2 text-right">
                           {id ? (
                             <span className="inline-flex gap-2">
@@ -444,6 +525,7 @@ export default function ChargeMatiereClient({
             <h2 className="text-lg font-semibold text-midnight_text dark:text-white">
               {modal === "create" ? "Nouvelle charge" : "Modifier la charge"}
             </h2>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Étape {formStep} sur 3</p>
             {activeMatiere ? (
               <p className="mt-1 text-xs text-gray-500">
                 Matière : <strong>{activeMatiere.designation}</strong> ({activeMatiere.code || activeMatiere._id})
@@ -453,42 +535,142 @@ export default function ChargeMatiereClient({
               <p className="mt-2 text-sm text-red-600 dark:text-red-400">{formErr}</p>
             ) : null}
             <div className="mt-4 space-y-3">
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Promotion (optionnel)</p>
-              <input
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Désignation promotion"
-                value={promoDes}
-                onChange={(e) => setPromoDes(e.target.value)}
-              />
-              <input
-                className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                placeholder="Référence promotion"
-                value={promoRef}
-                onChange={(e) => setPromoRef(e.target.value)}
-              />
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Titulaire</p>
-              {(["name", "matricule", "email", "telephone", "disponibilite"] as const).map((k) => (
-                <input
-                  key={k}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                  placeholder={k}
-                  value={titulaire[k]}
-                  onChange={(e) => setTitulaire((t) => ({ ...t, [k]: e.target.value }))}
-                />
-              ))}
-              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Horaire</p>
-              {(["jour", "heure_debut", "heure_fin", "date_debut", "date_fin"] as const).map((k) => (
-                <input
-                  key={k}
-                  className="w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                  placeholder={k === "date_debut" || k === "date_fin" ? `${k} (ISO optionnel)` : k}
-                  value={horaire[k]}
-                  onChange={(e) => setHoraire((h) => ({ ...h, [k]: e.target.value }))}
-                />
-              ))}
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={status} onChange={(e) => setStatus(e.target.checked)} />
-                Actif
+              {formStep === 1 ? (
+                <>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Rechercher le titulaire (agent)
+                  </p>
+                  <SearchUser
+                    kind="agent"
+                    clearOnSelect
+                    onSelect={(agent) => {
+                      setSelectedAgent(agent);
+                      setTitulaire((prev) => ({
+                        ...prev,
+                        name: agent.name ?? "",
+                        email: agent.email ?? "",
+                        matricule: agent.matricule ?? "",
+                      }));
+                    }}
+                    placeholder="Nom, e-mail ou matricule du titulaire…"
+                  />
+                  {selectedAgent ? (
+                    <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800/60">
+                      <p className="font-medium text-gray-700 dark:text-gray-200">{selectedAgent.name}</p>
+                      <p className="text-gray-500 dark:text-gray-400">{selectedAgent.email}</p>
+                      <p className="text-gray-500 dark:text-gray-400">Matricule: {selectedAgent.matricule}</p>
+                    </div>
+                  ) : null}
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Disponibilité
+                    <input
+                      className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      placeholder="Ex. lun-mer 08h-12h"
+                      value={titulaire.disponibilite}
+                      onChange={(e) => setTitulaire((t) => ({ ...t, disponibilite: e.target.value }))}
+                    />
+                  </label>
+                </>
+              ) : null}
+
+              {formStep === 2 ? (
+                <>
+                  <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Définition de l’horaire</p>
+                  <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                    Jour
+                    <input
+                      className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      placeholder="Ex. Mercredi"
+                      value={horaire.jour}
+                      onChange={(e) => setHoraire((h) => ({ ...h, jour: e.target.value }))}
+                    />
+                  </label>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                      Heure début
+                      <input
+                        type="time"
+                        className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        value={horaire.heure_debut}
+                        onChange={(e) => setHoraire((h) => ({ ...h, heure_debut: e.target.value }))}
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                      Heure fin
+                      <input
+                        type="time"
+                        className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        value={horaire.heure_fin}
+                        onChange={(e) => setHoraire((h) => ({ ...h, heure_fin: e.target.value }))}
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                      Date début
+                      <input
+                        type="date"
+                        className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        value={horaire.date_debut}
+                        onChange={(e) => setHoraire((h) => ({ ...h, date_debut: e.target.value }))}
+                      />
+                    </label>
+                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                      Date fin
+                      <input
+                        type="date"
+                        className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                        value={horaire.date_fin}
+                        onChange={(e) => setHoraire((h) => ({ ...h, date_fin: e.target.value }))}
+                      />
+                    </label>
+                  </div>
+                </>
+              ) : null}
+
+              {formStep === 3 ? (
+                <div className="space-y-3 text-sm">
+                  <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Titulaire</p>
+                    <p className="mt-1 font-medium text-midnight_text dark:text-white">{titulaire.name || "—"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{titulaire.email || "—"}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Matricule: {titulaire.matricule || "—"} · Disponibilité: {titulaire.disponibilite || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Horaire</p>
+                    <p className="mt-1 text-gray-700 dark:text-gray-200">
+                      {horaire.jour} · {horaire.heure_debut}–{horaire.heure_fin}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Du {horaire.date_debut} au {horaire.date_fin}
+                    </p>
+                  </div>
+                  <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800/60">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Payload ciblé</p>
+                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                      Matière: {activeMatiere?.designation} (ref: {activeMatiere?._id})
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      Unité: {ctx.unite.designation} ({ctx.unite.code})
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">
+                      Promotion: {ctx.programmeDesignation} (ref: {ctx.programmeId})
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300">Descripteur: vide (sous-propriétés initialisées)</p>
+                  </div>
+                </div>
+              ) : null}
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                Statut du cours
+                <select
+                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as ChargeStatus)}
+                >
+                  <option value="no">Programmé</option>
+                  <option value="pending">En cours</option>
+                  <option value="finish">Terminée</option>
+                </select>
               </label>
             </div>
             <div className="mt-6 flex justify-end gap-2">
@@ -500,14 +682,66 @@ export default function ChargeMatiereClient({
               >
                 Annuler
               </button>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => (modal === "create" ? submitCreate() : submitEdit())}
-                className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
-              >
-                {saving ? "…" : "Enregistrer"}
-              </button>
+              <>
+                {formStep > 1 ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      setFormErr(null);
+                      setFormStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
+                    }}
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm dark:border-gray-600"
+                  >
+                    Retour
+                  </button>
+                ) : null}
+                {formStep < 3 ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={() => {
+                      setFormErr(null);
+                      if (formStep === 1) {
+                        const err = validateCreateStep1();
+                        if (err) {
+                          setFormErr(err);
+                          return;
+                        }
+                      }
+                      if (formStep === 2) {
+                        const err = validateCreateStep2();
+                        if (err) {
+                          setFormErr(err);
+                          return;
+                        }
+                      }
+                      setFormStep((s) => ((s + 1) as 1 | 2 | 3));
+                    }}
+                    className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  >
+                    Suivant
+                  </button>
+                ) : modal === "create" ? (
+                  <button
+                    type="button"
+                    disabled={saving}
+                    onClick={submitCreate}
+                    className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  >
+                    {saving ? "…" : "Confirmer et soumettre"}
+                  </button>
+                ) : (
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={submitEdit}
+                  className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                >
+                  {saving ? "…" : "Confirmer et modifier"}
+                </button>
+                )}
+              </>
             </div>
           </div>
         </div>
