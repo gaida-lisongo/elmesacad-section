@@ -208,7 +208,7 @@ export function TableChargeHoraire({ payload }: Props) {
                   <td className="px-3 py-2 text-center tabular-nums font-medium">{u.matieresCount}</td>
                   <td className="px-3 py-2">
                     <Link
-                      href={`/charge-matiere/${u.uniteId}`}
+                      href={`/charge-matiere/${activeProgrammeId}_${u.uniteId}`}
                       className="font-medium text-[#082b1c] underline dark:text-[#5ec998]"
                     >
                       Gérer

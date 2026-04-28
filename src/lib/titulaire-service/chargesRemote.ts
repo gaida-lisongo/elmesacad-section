@@ -20,8 +20,16 @@ function normalizeList(data: unknown): unknown[] {
   return [];
 }
 
-export async function titulaireFetchChargesAll(): Promise<{ ok: boolean; status: number; items: unknown[]; raw?: unknown }> {
-  const res = await fetch(titulaireUrl("/charges/all"), {
+export async function titulaireFetchChargesAll(
+  filters?: Record<string, string | undefined>
+): Promise<{ ok: boolean; status: number; items: unknown[]; raw?: unknown }> {
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(filters ?? {})) {
+    const val = (v ?? "").trim();
+    if (val) sp.set(k, val);
+  }
+  const qs = sp.toString();
+  const res = await fetch(titulaireUrl(`/charges/all${qs ? `?${qs}` : ""}`), {
     method: "GET",
     cache: "no-store",
   });

@@ -114,48 +114,43 @@ export async function getSectionChargeStructureAction(
 
 /** Contexte unité + matières pour la page charge-matière. */
 export async function getUniteChargeContextAction(
+  programmeId: string,
   uniteId: string
 ): Promise<ChargesActionResult<Record<string, unknown>>> {
-  const gate = await gateUniteChargesHoraires(uniteId);
-  if (!gate.ok) {
-    return { ok: false, message: await messageFromGateResponse(gate.response) };
-  }
-  if (!Types.ObjectId.isValid(uniteId)) {
-    return { ok: false, message: "Unité invalide" };
+  if (!Types.ObjectId.isValid(programmeId) || !Types.ObjectId.isValid(uniteId)) {
+    return { ok: false, message: "Programme ou unité invalide" };
   }
   try {
     await connectDB();
+    const pid = new Types.ObjectId(programmeId);
     const uid = new Types.ObjectId(uniteId);
-    const unite = await UniteEnseignementModel.findById(uid).lean();
+    const programme = await ProgrammeModel.findById(pid).select("designation slug section").lean();
+    if (!programme) return { ok: false, message: "Programme introuvable" };
+    if (!programme.section) return { ok: false, message: "Programme sans section" };
+
+    const unite = await UniteEnseignementModel.findById(uid).populate("matieres").lean();
     if (!unite) return { ok: false, message: "Unité introuvable" };
 
-    const matieres = await MatiereModel.find({ unite: uid }).sort({ designation: 1 }).lean();
     const sem = await SemestreModel.findOne({
       unites: uid,
-      programme: { $exists: true, $ne: null },
     })
       .select("designation order programme")
       .lean();
 
-    let programmeDesignation = "";
-    let programmeSlug = "";
-    let programmeId = "";
-    if (sem?.programme) {
-      programmeId = String(sem.programme);
-      const prog = await ProgrammeModel.findById(sem.programme).select("designation slug").lean();
-      if (prog) {
-        programmeDesignation = prog.designation ?? "";
-        programmeSlug = prog.slug ?? "";
-      }
-    }
+    const matieres = (Array.isArray(unite.matieres) ? unite.matieres : []) as Array<{
+      _id: Types.ObjectId;
+      designation?: string;
+      credits?: number;
+      code?: string;
+    }>;
 
     return {
       ok: true,
       data: {
-        sectionId: gate.sectionId,
-        programmeId,
-        programmeDesignation,
-        programmeSlug,
+        sectionId: String(programme.section),
+        programmeId: String(programme._id),
+        programmeDesignation: programme.designation ?? "",
+        programmeSlug: programme.slug ?? "",
         semestreDesignation: sem?.designation ?? "",
         unite: {
           _id: String(unite._id),
@@ -163,12 +158,14 @@ export async function getUniteChargeContextAction(
           code: unite.code,
           credits: unite.credits,
         },
-        matieres: matieres.map((m) => ({
-          _id: String(m._id),
-          designation: m.designation,
-          credits: m.credits,
-          code: m.code ?? "",
-        })),
+        matieres: matieres
+          .sort((a, b) => String(a.designation ?? "").localeCompare(String(b.designation ?? "")))
+          .map((m) => ({
+            _id: String(m._id),
+            designation: m.designation ?? "",
+            credits: Number(m.credits ?? 0),
+            code: m.code ?? "",
+          })),
       },
     };
   } catch (e) {
@@ -177,14 +174,12 @@ export async function getUniteChargeContextAction(
 }
 
 export async function listChargesHorairesAction(
-  sectionId: string
+  sectionId: string,
+  filters?: { code_unite?: string }
 ): Promise<ChargesActionResult<unknown[]>> {
-  const gate = await gateSectionChargesHoraires(sectionId);
-  if (!gate.ok) {
-    return { ok: false, message: await messageFromGateResponse(gate.response) };
-  }
   try {
-    const r = await titulaireFetchChargesAll();
+    void sectionId;
+    const r = await titulaireFetchChargesAll(filters);
     if (!r.ok) {
       return {
         ok: false,
@@ -217,6 +212,7 @@ export async function getChargeHoraireAction(
 }
 
 export async function createChargeHoraireAction(body: {
+  programmeId: string;
   sectionId: string;
   uniteId: string;
   matiereId: string;
@@ -225,9 +221,9 @@ export async function createChargeHoraireAction(body: {
   horaire: Record<string, unknown>;
   status?: boolean;
 }): Promise<ChargesActionResult<unknown>> {
-  const { sectionId, uniteId, matiereId, titulaire, horaire } = body;
-  if (!sectionId || !uniteId || !matiereId) {
-    return { ok: false, message: "sectionId, uniteId et matiereId requis" };
+  const { programmeId, sectionId, uniteId, matiereId, titulaire, horaire } = body;
+  if (!programmeId || !sectionId || !uniteId || !matiereId) {
+    return { ok: false, message: "programmeId, sectionId, uniteId et matiereId requis" };
   }
   const gateU = await gateUniteChargesHoraires(uniteId);
   if (!gateU.ok) {
@@ -242,7 +238,7 @@ export async function createChargeHoraireAction(body: {
 
   try {
     await connectDB();
-    if (!Types.ObjectId.isValid(matiereId) || !Types.ObjectId.isValid(uniteId)) {
+    if (!Types.ObjectId.isValid(programmeId) || !Types.ObjectId.isValid(matiereId) || !Types.ObjectId.isValid(uniteId)) {
       return { ok: false, message: "Identifiants invalides" };
     }
     const matiere = await MatiereModel.findOne({
@@ -255,15 +251,15 @@ export async function createChargeHoraireAction(body: {
     if (!unite) return { ok: false, message: "Unité introuvable" };
 
     const sem = await SemestreModel.findOne({
+      programme: new Types.ObjectId(programmeId),
       unites: new Types.ObjectId(uniteId),
-      programme: { $exists: true, $ne: null },
     }).lean();
 
     const prom = body.promotion;
     const payload = {
       matiere: {
         designation: matiere.designation,
-        reference: matiere.code?.trim() || String(matiere._id),
+        reference: String(matiere._id),
       },
       unite: {
         designation: unite.designation,
@@ -272,7 +268,7 @@ export async function createChargeHoraireAction(body: {
       },
       promotion: {
         designation: (prom?.designation ?? "").trim() || "—",
-        reference: (prom?.reference ?? "").trim() || "—",
+        reference: String(programmeId),
       },
       titulaire,
       horaire,
@@ -285,7 +281,7 @@ export async function createChargeHoraireAction(body: {
       return { ok: false, message: "Création refusée par le service des charges" };
     }
     revalidatePath("/dashboard");
-    revalidatePath(`/charge-matiere/${uniteId}`);
+    revalidatePath(`/charge-matiere/${programmeId}_${uniteId}`);
     return { ok: true, data: r.data };
   } catch (e) {
     return { ok: false, message: (e as Error).message };

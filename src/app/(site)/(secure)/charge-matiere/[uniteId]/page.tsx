@@ -6,10 +6,12 @@ type Props = { params: Promise<{ uniteId: string }> };
 
 export default async function ChargeMatierePage({ params }: Props) {
   const { uniteId: raw } = await params;
-  const uniteId = decodeURIComponent(raw ?? "").trim();
-  if (!uniteId || !Types.ObjectId.isValid(uniteId)) {
+  const composite = decodeURIComponent(raw ?? "").trim();
+  const [programmeId = "", uniteId = ""] = composite.split("_");
+
+  if (!programmeId || !uniteId || !Types.ObjectId.isValid(programmeId) || !Types.ObjectId.isValid(uniteId)) {
     notFound();
   }
 
-  return <ChargeMatiereClient uniteId={uniteId} />;
+  return <ChargeMatiereClient programmeId={programmeId} uniteId={uniteId} />;
 }

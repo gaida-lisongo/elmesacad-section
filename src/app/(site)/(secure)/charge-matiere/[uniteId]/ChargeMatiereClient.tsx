@@ -68,7 +68,13 @@ const emptyHoraire = {
   date_fin: "",
 };
 
-export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
+export default function ChargeMatiereClient({
+  programmeId,
+  uniteId,
+}: {
+  programmeId: string;
+  uniteId: string;
+}) {
   const [ctx, setCtx] = useState<ChargeContext | null>(null);
   const [ctxErr, setCtxErr] = useState<string | null>(null);
   const [charges, setCharges] = useState<unknown[]>([]);
@@ -93,7 +99,7 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
     setLoadingCtx(true);
     setCtxErr(null);
     try {
-      const r = await getUniteChargeContextAction(uniteId);
+      const r = await getUniteChargeContextAction(programmeId, uniteId);
       if (!r.ok) {
         setCtx(null);
         setCtxErr(r.message);
@@ -112,13 +118,13 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
     } finally {
       setLoadingCtx(false);
     }
-  }, [uniteId]);
+  }, [programmeId, uniteId]);
 
-  const loadCharges = useCallback(async (sectionId: string) => {
+  const loadCharges = useCallback(async (sectionId: string, uniteCode: string) => {
     setLoadingCharges(true);
     setChargesErr(null);
     try {
-      const r = await listChargesHorairesAction(sectionId);
+      const r = await listChargesHorairesAction(sectionId, { code_unite: uniteCode });
       if (!r.ok) {
         setCharges([]);
         setChargesErr(r.message);
@@ -138,8 +144,8 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
   }, [loadContext]);
 
   useEffect(() => {
-    if (ctx?.sectionId) loadCharges(ctx.sectionId);
-  }, [ctx?.sectionId, loadCharges]);
+    if (ctx?.sectionId && ctx?.unite?.code) loadCharges(ctx.sectionId, ctx.unite.code);
+  }, [ctx?.sectionId, ctx?.unite?.code, loadCharges]);
 
   const activeMatiere = useMemo(
     () => ctx?.matieres.find((m) => m._id === activeMatiereId) ?? null,
@@ -208,6 +214,7 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
     setFormErr(null);
     try {
       const r = await createChargeHoraireAction({
+        programmeId: ctx.programmeId,
         sectionId: ctx.sectionId,
         uniteId: ctx.unite._id,
         matiereId: activeMatiere._id,
@@ -233,7 +240,7 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
       });
       if (!r.ok) throw new Error(r.message);
       setModal(null);
-      await loadCharges(ctx.sectionId);
+      await loadCharges(ctx.sectionId, ctx.unite.code);
     } catch (e) {
       setFormErr((e as Error).message);
     } finally {
@@ -269,7 +276,7 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
       });
       if (!r.ok) throw new Error(r.message);
       setModal(null);
-      await loadCharges(ctx.sectionId);
+      await loadCharges(ctx.sectionId, ctx.unite.code);
     } catch (e) {
       setFormErr((e as Error).message);
     } finally {
@@ -282,7 +289,7 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
     try {
       const r = await deleteChargeHoraireAction(ctx.sectionId, id);
       if (!r.ok) throw new Error(r.message);
-      await loadCharges(ctx.sectionId);
+      await loadCharges(ctx.sectionId, ctx.unite.code);
     } catch (e) {
       alert((e as Error).message);
     }
