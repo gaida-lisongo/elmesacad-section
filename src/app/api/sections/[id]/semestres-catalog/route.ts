@@ -66,6 +66,7 @@ export async function GET(request: Request, context: RouteContext) {
       const m = meta.get(fid) ?? { label: "Filière", slug: "" };
       return {
         id: String(s._id),
+        filiereId: fid,
         designation: s.designation,
         credits: s.credits,
         description: Array.isArray(s.description) ? s.description : [],

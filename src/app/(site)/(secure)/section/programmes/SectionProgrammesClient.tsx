@@ -13,27 +13,66 @@ import type { SemestreCatalogPick } from "@/lib/semestre-search/fetchSemestreCat
 
 type SectionBureauRow = { _id: string; designation: string; slug: string; cycle: string };
 
+type DescriptionItem = { title: string; contenu: string };
+
+type MatiereRow = {
+  _id: string;
+  designation: string;
+  credits?: number;
+  code?: string;
+  description?: DescriptionItem[];
+};
+
+type UniteRow = {
+  _id: string;
+  designation: string;
+  credits?: number;
+  code?: string;
+  description?: DescriptionItem[];
+  matieres?: MatiereRow[];
+};
+
+type FiliereRow = {
+  _id: string;
+  designation?: string;
+  slug?: string;
+  description?: DescriptionItem[];
+  semestres?: string[];
+};
+
+type SemestreRow = {
+  _id: string;
+  designation: string;
+  credits?: number;
+  order?: number;
+  filiere?: FiliereRow | null;
+  unites?: UniteRow[];
+  description?: DescriptionItem[];
+};
+
 type ProgrammeRow = {
   _id: string;
+  section?: string;
   designation: string;
   slug: string;
   credits: number;
-  description?: { title: string; contenu: string }[];
-  semestres?: unknown[];
+  description?: DescriptionItem[];
+  semestres?: SemestreRow[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 type DraftSemestre = {
   key: string;
-  designation: string;
-  creditsStr: string;
-  description: DescriptionBloc[];
+  pick: SemestreCatalogPick | null;
 };
 
 type EditSemestreRow = {
   _id: string;
   designation: string;
   credits?: number;
-  filiere?: { _id: string; designation?: string; slug?: string } | null;
+  filiere?: FiliereRow | null;
+  unites?: UniteRow[];
 };
 
 function newKey() {
@@ -63,10 +102,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
   const [editDesignation, setEditDesignation] = useState("");
   const [editCreditsStr, setEditCreditsStr] = useState("");
   const [editTab, setEditTab] = useState<"info" | "semestres">("info");
-  const [editSemestres, setEditSemestres] = useState<EditSemestreRow[]>([]);
-  const [semestresLoading, setSemestresLoading] = useState(false);
-  const [newSemDesignation, setNewSemDesignation] = useState("");
-  const [newSemCreditsStr, setNewSemCreditsStr] = useState("");
+  const [newSemPick, setNewSemPick] = useState<SemestreCatalogPick | null>(null);
   const [semSubmitBusy, setSemSubmitBusy] = useState(false);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
@@ -117,8 +153,6 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
         return;
       }
 
-      console.log("json", json);
-
       setProgrammes((json.data || []) as ProgrammeRow[]);
     } finally {
       setProgLoading(false);
@@ -150,7 +184,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
     setDesignation("");
     setCreditsStr("180");
     setDescriptionBlocs([]);
-    setDraftSemestres([{ key: newKey(), designation: "", creditsStr: "", description: [] }]);
+    setDraftSemestres([{ key: newKey(), pick: null }]);
   }
 
   function closeModal() {
@@ -158,41 +192,14 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
     setModalOpen(false);
   }
 
-  async function loadEditProgrammeDetail(sectionId: string, programmeId: string) {
-    setSemestresLoading(true);
-    try {
-      const res = await fetch(`/api/sections/${sectionId}/programmes/${programmeId}`);
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setEditSemestres([]);
-        return;
-      }
-      const sems = ((json.data?.semestres as EditSemestreRow[] | undefined) ?? []).map((s) => ({
-        _id: String(s._id),
-        designation: s.designation ?? "",
-        credits: s.credits,
-        filiere: s.filiere ?? null,
-      }));
-
-      console.log("sems", sems);
-      setEditSemestres(sems);
-    } finally {
-      setSemestresLoading(false);
-    }
-  }
-
-  async function openEditModal(p: ProgrammeRow) {
+  function openEditModal(p: ProgrammeRow) {
     setEditingProgrammeId(p._id);
     setEditDesignation(p.designation);
     setEditCreditsStr(String(p.credits));
     setEditTab("info");
-    setNewSemDesignation("");
-    setNewSemCreditsStr("");
+    setNewSemPick(null);
     setEditError(null);
     setEditOpen(true);
-    if (activeId) {
-      await loadEditProgrammeDetail(activeId, p._id);
-    }
   }
 
   function closeEditModal() {
@@ -200,7 +207,6 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
     setEditOpen(false);
     setEditingProgrammeId(null);
     setEditError(null);
-    setEditSemestres([]);
   }
 
   function validateStep1(): string | null {
@@ -214,14 +220,13 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
 
   function validateStep2(): string | null {
     if (!draftSemestres.length) return "Ajoutez au moins un semestre.";
+    const seen = new Set<string>();
     for (const s of draftSemestres) {
-      if (!s.designation.trim()) return "Chaque semestre doit avoir une désignation.";
-      if (s.creditsStr.trim()) {
-        const c = Number(s.creditsStr);
-        if (!Number.isFinite(c) || c < 0) return `Crédits invalides pour « ${s.designation || "…"} ».`;
+      if (!s.pick) return "Sélectionnez un semestre existant pour chaque ligne.";
+      if (seen.has(s.pick.id)) {
+        return `Semestre en double: « ${s.pick.designation} ».`;
       }
-      const d = parseDescriptionForSave(s.description);
-      if (!d.ok) return d.message;
+      seen.add(s.pick.id);
     }
     return null;
   }
@@ -270,22 +275,17 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
       }
 
       for (const s of draftSemestres) {
-        const sd = parseDescriptionForSave(s.description);
-        if (!sd.ok) continue;
-        const semCredits = s.creditsStr.trim() ? Number(s.creditsStr) : undefined;
+        if (!s.pick?.id) continue;
         const resS = await fetch(`/api/sections/${activeId}/programmes/${programmeId}/semestres`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            designation: s.designation.trim(),
-            credits: semCredits,
-            description: sd.value,
-            unites: [],
+            semestreId: s.pick.id,
           }),
         });
         if (!resS.ok) {
           const js = await resS.json().catch(() => ({}));
-          setFormError((js.message as string) || "Erreur lors de l’ajout d’un semestre.");
+          setFormError((js.message as string) || "Erreur lors de l’association d’un semestre.");
           setSubmitting(false);
           return;
         }
@@ -340,27 +340,18 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
 
   async function addSemestreToProgramme() {
     if (!activeId || !editingProgrammeId) return;
-    if (!newSemDesignation.trim()) {
-      setEditError("Indiquez la désignation du semestre.");
+    if (!newSemPick) {
+      setEditError("Sélectionnez un semestre via la recherche filière.");
       return;
     }
     setSemSubmitBusy(true);
     setEditError(null);
     try {
-      const credits = newSemCreditsStr.trim() ? Number(newSemCreditsStr) : undefined;
-      if (newSemCreditsStr.trim() && (!Number.isFinite(credits) || (credits as number) < 0)) {
-        setEditError("Crédits du semestre invalides.");
-        setSemSubmitBusy(false);
-        return;
-      }
       const res = await fetch(`/api/sections/${activeId}/programmes/${editingProgrammeId}/semestres`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          designation: newSemDesignation.trim(),
-          credits,
-          description: [],
-          unites: [],
+          semestreId: newSemPick.id,
         }),
       });
       const json = await res.json().catch(() => ({}));
@@ -368,9 +359,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
         setEditError((json.message as string) || "Ajout du semestre impossible.");
         return;
       }
-      setNewSemDesignation("");
-      setNewSemCreditsStr("");
-      await loadEditProgrammeDetail(activeId, editingProgrammeId);
+      setNewSemPick(null);
       await loadProgrammes(activeId);
     } catch {
       setEditError("Erreur réseau.");
@@ -394,7 +383,6 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
         setEditError((json.message as string) || "Suppression du semestre impossible.");
         return;
       }
-      await loadEditProgrammeDetail(activeId, editingProgrammeId);
       await loadProgrammes(activeId);
     } catch {
       setEditError("Erreur réseau.");
@@ -402,6 +390,12 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
       setSemSubmitBusy(false);
     }
   }
+
+  const editingProgrammeSemestres = useMemo(() => {
+    if (!editingProgrammeId) return [];
+    const semestres = programmes.find((p) => p._id === editingProgrammeId)?.semestres ?? [];
+    return semestres as EditSemestreRow[];
+  }, [programmes, editingProgrammeId]);
 
   async function deleteProgramme(programmeId: string) {
     if (!activeId) return;
@@ -481,14 +475,14 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
             type="button"
             onClick={openModal}
             disabled={!activeSection}
-            className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+            className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#082b1c]/30 disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900 dark:focus:ring-[#5ec998]/30"
           >
             Nouveau programme
           </button>
         }
         sidebar={
           <div className="space-y-4">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
               <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Section active
               </h2>
@@ -506,7 +500,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
               ) : null}
             </div>
             {sections.length > 1 ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-md transition-shadow duration-200 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   Autres sections
                 </h2>
@@ -549,21 +543,34 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                 title={p.designation}
                 meta={`${p.credits} crédits · ${p.semestres?.length ?? 0} semestre(s) · slug : ${p.slug}`}
               >
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Programme rattaché à <strong>{activeSection?.designation}</strong>.
-                </p>
+                <div className="rounded-xl border border-gray-200/80 bg-gradient-to-br from-white to-gray-50 p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:from-gray-900 dark:to-gray-900/60">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Programme rattaché à <strong>{activeSection?.designation}</strong>.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                    <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      {p.credits} crédits
+                    </span>
+                    <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      {p.semestres?.length ?? 0} semestre(s)
+                    </span>
+                    <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      {p.slug}
+                    </span>
+                  </div>
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => openEditModal(p)}
-                    className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium dark:border-gray-600"
+                    className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm dark:border-gray-600"
                   >
                     Modifier
                   </button>
                   <button
                     type="button"
                     onClick={() => void deleteProgramme(p._id)}
-                    className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 dark:border-red-800 dark:text-red-300"
+                    className="rounded-md border border-red-300 px-2.5 py-1 text-xs font-medium text-red-700 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm dark:border-red-800 dark:text-red-300"
                   >
                     Supprimer
                   </button>
@@ -575,7 +582,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
       </PageListe>
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900">
             <header className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-midnight_text dark:text-white">Nouveau programme</h2>
@@ -627,17 +634,15 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                 <div className="space-y-4">
                   <div className="flex justify-between gap-2">
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                      Ordre du premier au dernier. Sous chaque ligne, tapez le <strong>slug</strong> ou la{" "}
-                      <strong>désignation</strong> d’une <strong>filière</strong> : la liste propose les semestres de cette
-                      filière ; choisissez-en un pour copier désignation, crédits et description (comme la recherche agents /
-                      étudiants).
+                      Association de semestres existants uniquement. Recherchez via le <strong>slug</strong> ou la{" "}
+                      <strong>désignation</strong> d’une <strong>filière</strong>, puis sélectionnez le semestre à lier.
                     </p>
                     <button
                       type="button"
                       onClick={() =>
                         setDraftSemestres((prev) => [
                           ...prev,
-                          { key: newKey(), designation: "", creditsStr: "", description: [] },
+                          { key: newKey(), pick: null },
                         ])
                       }
                       className="shrink-0 rounded-md border border-gray-300 px-2 py-1 text-xs font-medium dark:border-gray-600"
@@ -694,7 +699,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                         </div>
                         <div className="mt-2">
                           <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                            Semestre depuis une filière (slug ou désignation)
+                            Semestre existant depuis une filière (slug ou désignation)
                           </span>
                           <div className="mt-1">
                             <SemestreCatalogSearch
@@ -709,17 +714,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                                     x.key === s.key
                                       ? {
                                           ...x,
-                                          designation: item.designation,
-                                          creditsStr:
-                                            item.credits != null && Number.isFinite(item.credits)
-                                              ? String(item.credits)
-                                              : "",
-                                          description: item.description?.length
-                                            ? item.description.map((d) => ({
-                                                title: d.title ?? "",
-                                                contenu: d.contenu ?? "",
-                                              }))
-                                            : [],
+                                          pick: item,
                                         }
                                       : x
                                   )
@@ -729,44 +724,17 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                             />
                           </div>
                         </div>
-                        <label className="mt-2 block text-sm">
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Désignation</span>
-                          <input
-                            className="mt-0.5 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                            value={s.designation}
-                            onChange={(e) =>
-                              setDraftSemestres((prev) =>
-                                prev.map((x) => (x.key === s.key ? { ...x, designation: e.target.value } : x))
-                              )
-                            }
-                            placeholder="ex. Semestre 1"
-                          />
-                        </label>
-                        <label className="mt-2 block text-sm">
-                          <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Crédits (optionnel)</span>
-                          <input
-                            type="number"
-                            min={0}
-                            className="mt-0.5 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                            value={s.creditsStr}
-                            onChange={(e) =>
-                              setDraftSemestres((prev) =>
-                                prev.map((x) => (x.key === s.key ? { ...x, creditsStr: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </label>
-                        <div className="mt-3">
-                          <DescriptionBlocsEditor
-                            label="Description du semestre (optionnel)"
-                            items={s.description}
-                            onChange={(next) =>
-                              setDraftSemestres((prev) =>
-                                prev.map((x) => (x.key === s.key ? { ...x, description: next } : x))
-                              )
-                            }
-                          />
-                        </div>
+                        {s.pick ? (
+                          <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs dark:border-gray-700 dark:bg-gray-800/60">
+                            <p className="font-medium text-gray-700 dark:text-gray-200">{s.pick.designation}</p>
+                            <p className="text-gray-500 dark:text-gray-400">Filière: {s.pick.filiereLabel}</p>
+                            <p className="text-gray-500 dark:text-gray-400">
+                              Crédits: {s.pick.credits != null ? s.pick.credits : "—"}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">Aucun semestre sélectionné.</p>
+                        )}
                       </li>
                     ))}
                   </ul>
@@ -796,8 +764,9 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                     <ol className="mt-2 list-inside list-decimal space-y-1 text-gray-600 dark:text-gray-400">
                       {draftSemestres.map((s) => (
                         <li key={s.key}>
-                          {s.designation.trim() || "—"}
-                          {s.creditsStr.trim() ? ` — ${s.creditsStr} cr.` : ""}
+                          {s.pick?.designation || "—"}
+                          {s.pick?.filiereLabel ? ` — ${s.pick.filiereLabel}` : ""}
+                          {s.pick?.credits != null ? ` — ${s.pick.credits} cr.` : ""}
                         </li>
                       ))}
                     </ol>
@@ -876,8 +845,8 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
       ) : null}
 
       {editOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white shadow-xl dark:bg-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-900">
             <header className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
               <h2 className="text-lg font-semibold text-midnight_text dark:text-white">Modifier le programme</h2>
               <div className="mt-3 flex gap-2">
@@ -905,7 +874,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                 </button>
               </div>
             </header>
-            <div className="space-y-4 px-6 py-4">
+            <div className="min-h-0 space-y-4 overflow-y-auto px-6 py-4">
               {editError ? (
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200">
                   {editError}
@@ -934,71 +903,71 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                 </>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900/40">
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                      Ajouter un semestre
+                      Association d’un semestre existant (aucune création)
                     </p>
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      <input
-                        className="rounded-md border border-gray-300 px-2.5 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                        placeholder="Désignation"
-                        value={newSemDesignation}
-                        onChange={(e) => setNewSemDesignation(e.target.value)}
-                      />
-                      <input
-                        type="number"
-                        min={0}
-                        className="rounded-md border border-gray-300 px-2.5 py-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
-                        placeholder="Crédits (optionnel)"
-                        value={newSemCreditsStr}
-                        onChange={(e) => setNewSemCreditsStr(e.target.value)}
+                    <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                      Recherchez via le slug ou la désignation de filière, sélectionnez un semestre existant, puis
+                      associez-le au programme.
+                    </p>
+                    <div className="mt-2">
+                      <SemestreCatalogSearch
+                        key={`edit-sem-search-${activeId ?? "no-section"}-${editingProgrammeId ?? "no-programme"}`}
+                        sectionId={activeId ?? ""}
+                        disabled={!activeId || !editingProgrammeId || semSubmitBusy}
+                        aria-label="Trouver un semestre par filière pour ce programme"
+                        placeholder="Ex. genie-civil ou Génie civil…"
+                        onPick={(item) => setNewSemPick(item)}
+                        clearOnSelect
                       />
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => void addSemestreToProgramme()}
-                      disabled={semSubmitBusy}
-                      className="mt-3 rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
-                    >
-                      Ajouter
-                    </button>
+                    {newSemPick ? (
+                      <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 px-2.5 py-2 text-xs dark:border-gray-700 dark:bg-gray-800/60">
+                        <p className="font-medium text-gray-700 dark:text-gray-200">{newSemPick.designation}</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Filière: {newSemPick.filiereLabel} {newSemPick.filiereSlug ? `(${newSemPick.filiereSlug})` : ""}
+                        </p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Crédits: {newSemPick.credits != null ? newSemPick.credits : "—"}
+                        </p>
+                      </div>
+                    ) : null}
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => void addSemestreToProgramme()}
+                        disabled={semSubmitBusy || !newSemPick}
+                        className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 dark:bg-[#5ec998] dark:text-gray-900"
+                      >
+                        {semSubmitBusy ? "Association..." : "Associer ce semestre"}
+                      </button>
+                    </div>
                   </div>
 
-                  {semestresLoading ? (
-                    <p className="text-sm text-gray-500">Chargement des semestres…</p>
-                  ) : editSemestres.length === 0 ? (
-                    <p className="text-sm text-gray-500">Aucun semestre pour ce programme.</p>
+                  {!editingProgrammeId ? (
+                    <p className="text-sm text-gray-500">Veuillez sélectionner un programme</p>
+                  ) : editingProgrammeSemestres.length === 0 ? (
+                    <p className="text-sm text-gray-500">Aucun semestre associé à ce programme.</p>
                   ) : (
-                    <ul className="space-y-2">
-                      {editSemestres.map((s) => (
+                    <ul className="space-y-3">
+                      {editingProgrammeSemestres.map((s) => (
                         <li
                           key={s._id}
-                          className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 dark:border-gray-700"
+                          className="flex items-start justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/40"
                         >
                           <div className="min-w-0">
-                            <p className="text-sm font-medium text-midnight_text dark:text-white">{s.designation}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">{s.credits ?? 0} cr.</p>
-                            {s.filiere ? (
-                              <div className="mt-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs dark:border-gray-700 dark:bg-gray-800/60">
-                                <p className="font-medium text-gray-700 dark:text-gray-200">
-                                  Filière: {s.filiere.designation ?? "—"}
-                                </p>
-                                <p className="text-gray-500 dark:text-gray-400">
-                                  Slug: {s.filiere.slug ?? "—"}
-                                </p>
-                                <p className="truncate text-gray-500 dark:text-gray-400">
-                                  ID: {s.filiere._id}
-                                </p>
-                              </div>
-                            ) : (
-                              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Filière: —</p>
-                            )}
+                            <p className="text-sm font-semibold text-midnight_text dark:text-white">{s.designation}</p>
+                            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{s.credits ?? 0} cr.</p>
+                            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                              Filière: {s?.filiere?.designation ?? "—"}
+                            </p>
                           </div>
                           <button
                             type="button"
                             onClick={() => void removeSemestre(s._id)}
                             disabled={semSubmitBusy}
-                            className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 dark:border-red-800 dark:text-red-300"
+                            className="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-700 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm dark:border-red-800 dark:text-red-300"
                           >
                             Supprimer
                           </button>

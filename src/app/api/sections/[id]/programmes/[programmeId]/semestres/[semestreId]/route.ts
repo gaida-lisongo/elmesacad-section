@@ -25,7 +25,6 @@ export async function GET(_: Request, context: RouteContext) {
     const doc = await SemestreModel.findOne({
       _id: new Types.ObjectId(semestreId),
       programme: pid,
-      filiere: { $exists: false },
     })
       .populate("unites")
       .lean();
@@ -56,7 +55,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!prog) {
       return NextResponse.json({ message: "Programme not found" }, { status: 404 });
     }
-    const s = await SemestreModel.findOne({ _id: sem, programme: pid, filiere: { $exists: false } });
+    const s = await SemestreModel.findOne({ _id: sem, programme: pid });
     if (!s) {
       return NextResponse.json({ message: "Semestre not found" }, { status: 404 });
     }
@@ -121,7 +120,6 @@ export async function DELETE(_: Request, context: RouteContext) {
     const del = await SemestreModel.findOneAndDelete({
       _id: sem,
       programme: pid,
-      filiere: { $exists: false },
     });
     if (!del) {
       return NextResponse.json({ message: "Semestre not found" }, { status: 404 });

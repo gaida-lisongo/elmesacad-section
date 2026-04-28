@@ -19,7 +19,14 @@ export async function GET(_: Request, context: RouteContext) {
     if (!section) {
       return NextResponse.json({ message: "Section not found" }, { status: 404 });
     }
-    const data = await ProgrammeModel.find({ section: sid }).sort({ createdAt: 1 }).lean();
+    const data = await ProgrammeModel.find({ section: sid })
+    .populate("semestres")
+    .populate([
+      { path: "semestres", model: "Semestre", populate: { path: "filiere", model: "Filiere" } },
+      { path: "semestres", model: "Semestre", populate: { path: "unites", model: "UniteEnseignement", populate: { path: "matieres", model: "Matiere" } } },
+    ])
+    .sort({ createdAt: 1 })
+    .lean();
     return NextResponse.json({ data }, { status: 200 });
   } catch (error) {
     return NextResponse.json(

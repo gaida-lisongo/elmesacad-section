@@ -21,47 +21,18 @@ export async function GET(_: Request, context: RouteContext) {
     }
     const pid = new Types.ObjectId(programmeId);
     const sid = new Types.ObjectId(id);
-    const programme = await ProgrammeModel.findOne({ _id: pid, section: sid }).lean();
+    const programme = await ProgrammeModel.findOne({ _id: pid, section: sid })
+    .populate("semestres")
+    .populate([
+      { path: "semestres", model: "Semestre", populate: { path: "filiere", model: "Filiere" } },
+      { path: "semestres", model: "Semestre", populate: { path: "unites", model: "UniteEnseignement", populate: { path: "matieres", model: "Matiere" } } },
+    ])
+    .lean();
     if (!programme) {
       return NextResponse.json({ message: "Programme not found" }, { status: 404 });
     }
 
-    // Force model registration before deep populate (prevents null/empty populate drift).
-    void FiliereModel;
-    void UniteEnseignementModel;
-    void MatiereModel;
-
-    const semestres = await SemestreModel.find({ programme: pid})
-      .sort({ order: 1, createdAt: 1 })
-      .populate([
-        { path: "filiere", model: "Filiere" },
-        { path: "unites", model: "UniteEnseignement", populate: { path: "matieres", model: "Matiere" } },
-      ])
-      .lean();
-
-    console.log("semestres avec filiere", semestres);
-
-    // Also include programme-specific semestres that don't reference a filiere.
-    // const semestresSansFiliere = await SemestreModel.find({
-    //   programme: pid,
-    //   $or: [{ filiere: { $exists: false } }, { filiere: null }],
-    // })
-    //   .sort({ order: 1, createdAt: 1 })
-    //   .populate([{ path: "unites", model: "UniteEnseignement", populate: { path: "matieres", model: "Matiere" } }])
-    //   .lean();
-
-    // console.log("semestres sans filiere", semestresSansFiliere);
-
-    const merged = [...semestres].sort((a, b) => {
-      const ao = (a as { order?: number }).order ?? 0;
-      const bo = (b as { order?: number }).order ?? 0;
-      if (ao !== bo) return ao - bo;
-      const ac = (a as { createdAt?: Date }).createdAt ? new Date((a as { createdAt?: Date }).createdAt!).getTime() : 0;
-      const bc = (b as { createdAt?: Date }).createdAt ? new Date((b as { createdAt?: Date }).createdAt!).getTime() : 0;
-      return ac - bc;
-    });
-
-    return NextResponse.json({ data: { ...programme, semestres: merged } }, { status: 200 });
+    return NextResponse.json({ data: programme }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { message: "Failed to fetch programme", error: (error as Error).message },

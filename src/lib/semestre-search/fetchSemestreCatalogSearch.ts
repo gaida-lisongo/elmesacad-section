@@ -1,5 +1,6 @@
 export type SemestreCatalogPick = {
   id: string;
+  filiereId: string;
   designation: string;
   credits?: number;
   description: { title: string; contenu: string }[];
