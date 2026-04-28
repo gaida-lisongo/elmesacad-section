@@ -49,7 +49,7 @@ export type OrganisateurCeChargeRow = {
 export type OrganisateurCeChargesHorairesPayload = {
   sectionId: string;
   sectionDesignation: string;
-  programmes: { _id: string; designation: string; slug: string }[];
+  programmes: { _id: string; designation: string; credits: number }[];
   rows: OrganisateurCeChargeRow[];
 };
 

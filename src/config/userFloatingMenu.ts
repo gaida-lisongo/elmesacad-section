@@ -50,7 +50,6 @@ export const userFloatingMenu: {
     ],
     organisateur: [
       { item: "Tableau de bord", path: "/dashboard" },
-      { item: "Tableau de bord section", path: "/section/dashboard" },
       { item: "Programmes", path: "/section/programmes" },
       { item: "Activités", path: "#", subMenu: [
         { item: "TP", path: "/section/tp" },

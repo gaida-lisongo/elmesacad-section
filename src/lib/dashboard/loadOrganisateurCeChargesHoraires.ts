@@ -69,14 +69,14 @@ export async function loadOrganisateurCeChargesHoraires(
 
   const sec = sections[0];
   const programmes = await ProgrammeModel.find({ section: sec._id })
-    .select("_id designation slug")
+    .select("_id designation credits")
     .sort({ designation: 1 })
     .lean();
 
   const programmeOptions = programmes.map((p) => ({
     _id: String(p._id),
     designation: (p as { designation?: string }).designation ?? "",
-    slug: (p as { slug?: string }).slug ?? "",
+    credits: Number((p as { credits?: number }).credits ?? 0),
   }));
 
   const rows: OrganisateurCeChargeRow[] = [];

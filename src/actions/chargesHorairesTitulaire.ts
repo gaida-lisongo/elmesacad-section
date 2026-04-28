@@ -285,7 +285,6 @@ export async function createChargeHoraireAction(body: {
       return { ok: false, message: "Création refusée par le service des charges" };
     }
     revalidatePath("/dashboard");
-    revalidatePath("/section/dashboard");
     revalidatePath(`/charge-matiere/${uniteId}`);
     return { ok: true, data: r.data };
   } catch (e) {
@@ -308,7 +307,6 @@ export async function updateChargeHoraireAction(
       return { ok: false, message: "Mise à jour refusée" };
     }
     revalidatePath("/dashboard");
-    revalidatePath("/section/dashboard");
     return { ok: true, data: r.data };
   } catch (e) {
     return { ok: false, message: (e as Error).message };
@@ -332,7 +330,6 @@ export async function deleteChargeHoraireAction(
       return { ok: false, message: "Suppression refusée" };
     }
     revalidatePath("/dashboard");
-    revalidatePath("/section/dashboard");
     return { ok: true, data: null };
   } catch (e) {
     return { ok: false, message: (e as Error).message };

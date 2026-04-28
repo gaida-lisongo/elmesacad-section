@@ -315,10 +315,10 @@ export default function ChargeMatiereClient({ uniteId }: { uniteId: string }) {
         toolbar={
           <div className="flex flex-wrap gap-2">
             <Link
-              href="/section/dashboard"
+              href="/dashboard"
               className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600"
             >
-              Dashboard section
+              Tableau de bord
             </Link>
             <button
               type="button"

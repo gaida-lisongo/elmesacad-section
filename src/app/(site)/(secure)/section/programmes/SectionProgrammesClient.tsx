@@ -541,7 +541,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
               <PageListeCategoryCard
                 key={p._id}
                 title={p.designation}
-                meta={`${p.credits} crédits · ${p.semestres?.length ?? 0} semestre(s) · slug : ${p.slug}`}
+                meta={`${p.credits} crédits · ${p.semestres?.length ?? 0} semestre(s)`}
               >
                 <div className="rounded-xl border border-gray-200/80 bg-gradient-to-br from-white to-gray-50 p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:from-gray-900 dark:to-gray-900/60">
                   <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -553,9 +553,6 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                     </span>
                     <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
                       {p.semestres?.length ?? 0} semestre(s)
-                    </span>
-                    <span className="rounded-full border border-gray-200 bg-white px-2 py-0.5 text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                      {p.slug}
                     </span>
                   </div>
                 </div>

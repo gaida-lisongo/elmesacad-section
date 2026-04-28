@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import type { DashboardAdminCapabilities, DashboardTableData } from "@/lib/dashboard/types";
 import type { DashboardTabulationCapabilities } from "@/lib/dashboard/resolveDashboardTabulation";
@@ -30,12 +29,6 @@ export function renderDashboardTabulation({
           service titulaire via actions serveur.
         </p>
         <TableChargeHoraire payload={chargesPayload} />
-        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          <Link href="/section/dashboard" className="font-medium text-[#082b1c] underline dark:text-[#5ec998]">
-            Tableau de bord section
-          </Link>{" "}
-          — vue détaillée et autres blocs bureau.
-        </p>
       </>
     );
   }
