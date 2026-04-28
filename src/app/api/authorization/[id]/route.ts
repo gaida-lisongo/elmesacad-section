@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/services/connectedDB";
 import { AuthorizationModel } from "@/lib/models/User";
+import { getSessionPayload, isAgentSession } from "@/lib/auth/sessionServer";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -9,6 +10,11 @@ type RouteContext = {
 
 export async function DELETE(_: Request, context: RouteContext) {
   try {
+    const session = await getSessionPayload();
+    if (!isAgentSession(session)) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
     await connectDB();
     const { id } = await context.params;
 

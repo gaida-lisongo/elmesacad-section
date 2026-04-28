@@ -9,7 +9,17 @@ import { StatusSwitch } from "@/components/dashboard/StatusSwitch";
 
 type AnneeFormState = { designation: string; debut: string; fin: string; status: boolean };
 
-export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListItem[] }) {
+export function AdminAnneeBlock({
+  items: initial,
+  canCreate = true,
+  canToggleStatus = true,
+  canDelete = true,
+}: {
+  items: DashboardWhiteListItem[];
+  canCreate?: boolean;
+  canToggleStatus?: boolean;
+  canDelete?: boolean;
+}) {
   const router = useRouter();
   const [items, setItems] = useState(initial);
   const [formOpen, setFormOpen] = useState(false);
@@ -38,7 +48,7 @@ export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListI
           designation: form.designation.trim(),
           debut: Number(form.debut) || 0,
           fin: Number(form.fin) || 0,
-          status: form.status,
+          status: canToggleStatus ? form.status : false,
         }),
       });
       const j = await res.json();
@@ -92,21 +102,23 @@ export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListI
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Années académiques</h2>
-        <button
-          type="button"
-          onClick={() => {
-            setFormOpen((o) => !o);
-            setErr(null);
-          }}
-          className="group inline-flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-50/90 px-3 py-2 text-xs font-medium text-sky-900 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-sky-500/50 hover:bg-sky-100 hover:shadow-md active:scale-[0.98] dark:border-sky-500/25 dark:bg-sky-950/50 dark:text-sky-100 dark:hover:border-sky-400/40 dark:hover:bg-sky-900/60"
-        >
-          <Icon
-            icon={formOpen ? "solar:close-circle-linear" : "solar:add-circle-linear"}
-            className="size-4 transition-transform duration-300 group-hover:rotate-90"
-            aria-hidden
-          />
-          <span>{formOpen ? "Fermer" : "Ajouter une année"}</span>
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            onClick={() => {
+              setFormOpen((o) => !o);
+              setErr(null);
+            }}
+            className="group inline-flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-50/90 px-3 py-2 text-xs font-medium text-sky-900 shadow-sm transition-all duration-300 hover:scale-[1.02] hover:border-sky-500/50 hover:bg-sky-100 hover:shadow-md active:scale-[0.98] dark:border-sky-500/25 dark:bg-sky-950/50 dark:text-sky-100 dark:hover:border-sky-400/40 dark:hover:bg-sky-900/60"
+          >
+            <Icon
+              icon={formOpen ? "solar:close-circle-linear" : "solar:add-circle-linear"}
+              className="size-4 transition-transform duration-300 group-hover:rotate-90"
+              aria-hidden
+            />
+            <span>{formOpen ? "Fermer" : "Ajouter une année"}</span>
+          </button>
+        )}
       </div>
 
       {err && (
@@ -137,12 +149,18 @@ export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListI
               />
               <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white/50 px-3 py-2 dark:border-gray-600 dark:bg-gray-800/50">
                 <span className="text-xs text-gray-500">Actif</span>
-                <StatusSwitch
-                  active={form.status}
-                  busy={false}
-                  disabled={false}
-                  onToggle={() => setForm((f) => ({ ...f, status: !f.status }))}
-                />
+                {canToggleStatus ? (
+                  <StatusSwitch
+                    active={form.status}
+                    busy={false}
+                    disabled={false}
+                    onToggle={() => setForm((f) => ({ ...f, status: !f.status }))}
+                  />
+                ) : (
+                  <span className="rounded-full bg-gray-200/80 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    Non modifiable
+                  </span>
+                )}
               </div>
               <input
                 type="number"
@@ -199,7 +217,7 @@ export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListI
                   {sub && <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{sub}</p>}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {it.id && (
+                  {it.id && canToggleStatus && (
                     <StatusSwitch
                       active={it.status}
                       busy={busy === it.id}
@@ -207,7 +225,7 @@ export function AdminAnneeBlock({ items: initial }: { items: DashboardWhiteListI
                       onToggle={() => void toggleStatus(it.id!, it.status)}
                     />
                   )}
-                  {it.id && (
+                  {it.id && canDelete && (
                     <button
                       type="button"
                       title="Supprimer"

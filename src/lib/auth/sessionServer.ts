@@ -52,6 +52,11 @@ export function canEditSensitiveFields(payload: SessionPayload): boolean {
   return payload.type === "Agent" && payload.role === "admin";
 }
 
+/** Seul admin peut créer/activer/supprimer des années académiques. */
+export function canManageAnnees(payload: SessionPayload): boolean {
+  return payload.type === "Agent" && payload.role === "admin";
+}
+
 export function isAgentSession(
   p: SessionPayload | null
 ): p is SessionPayload & { type: "Agent" } {

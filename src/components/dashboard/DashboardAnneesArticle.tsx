@@ -1,15 +1,21 @@
 "use client";
 
-import type { DashboardAnneesMode, DashboardWhiteListItem } from "@/lib/dashboard/types";
+import type { DashboardAnneesMode, DashboardRole, DashboardWhiteListItem } from "@/lib/dashboard/types";
 import { formatAnneeTitle } from "@/lib/dashboard/formatAnneeTitle";
 import { AdminAnneeBlock } from "@/components/dashboard/AdminAnneeBlock";
 
 export function DashboardAnneesArticle({
   anneesMode,
+  role,
   whiteList,
+  currentAnneeId,
+  onCurrentAnneeChange,
 }: {
   anneesMode: DashboardAnneesMode;
+  role: DashboardRole;
   whiteList: DashboardWhiteListItem[];
+  currentAnneeId?: string;
+  onCurrentAnneeChange?: (anneeId: string) => void;
 }) {
   if (anneesMode === "hidden") return null;
 
@@ -19,7 +25,12 @@ export function DashboardAnneesArticle({
       style={{ animationDelay: "260ms" }}
     >
       {anneesMode === "crud" ? (
-        <AdminAnneeBlock items={whiteList} />
+        <AdminAnneeBlock
+          items={whiteList}
+          canCreate={role === "admin"}
+          canToggleStatus={role === "admin"}
+          canDelete={role === "admin"}
+        />
       ) : (
         <div>
           <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Années académiques</h2>
@@ -33,9 +44,18 @@ export function DashboardAnneesArticle({
                   className="flex animate-dashboard-in items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 text-sm transition hover:border-sky-200/50 dark:border-gray-800 dark:bg-gray-800/50"
                   style={{ animationDelay: `${wi * 40}ms` }}
                 >
-                  <span className="font-medium text-midnight_text dark:text-white">
+                  <button
+                    type="button"
+                    onClick={() => w.id && onCurrentAnneeChange?.(w.id)}
+                    disabled={!w.id || !onCurrentAnneeChange}
+                    className={`font-medium text-midnight_text dark:text-white ${
+                      currentAnneeId && w.id === currentAnneeId
+                        ? "underline decoration-emerald-500 decoration-2 underline-offset-4"
+                        : ""
+                    }`}
+                  >
                     {formatAnneeTitle(w.debut, w.fin)}
-                  </span>
+                  </button>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
                       w.status

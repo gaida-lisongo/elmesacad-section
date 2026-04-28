@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
 import { AnneeModel } from "@/lib/models/Annee";
-import { getSessionPayload, isAgentSession, canEditSensitiveFields } from "@/lib/auth/sessionServer";
+import { getSessionPayload, isAgentSession, canManageAnnees } from "@/lib/auth/sessionServer";
 import { slugifyDesignation, buildUniqueSlug } from "@/lib/utils/formationSlug";
 
 export async function GET() {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   if (!session) {
     return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
   }
-  if (!canEditSensitiveFields(session)) {
+  if (!canManageAnnees(session)) {
     return NextResponse.json({ message: "Réservé aux administrateurs" }, { status: 403 });
   }
   try {
@@ -51,6 +51,12 @@ export async function POST(request: Request) {
       slug,
       status: body.status === true,
     });
+    if (created.status) {
+      await AnneeModel.updateMany(
+        { _id: { $ne: created._id }, status: true },
+        { $set: { status: false } }
+      );
+    }
     return NextResponse.json({ data: created });
   } catch (e) {
     return NextResponse.json({ message: (e as Error).message }, { status: 500 });

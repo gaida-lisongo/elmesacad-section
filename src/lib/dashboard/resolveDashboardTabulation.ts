@@ -118,6 +118,7 @@ export function dashboardTabulationTitle(
 ): string {
   if (!caps.canShowTabulationArticle) return "";
   if (caps.canRenderTabulationChargesHoraires) return "Charges horaires";
+  if (caps.canGestionnaireRenderReadonlyTabulation) return "Parcours étudiants";
   if (role === "admin") return "Comptes utilisateurs";
   return "Utilisateurs";
 }

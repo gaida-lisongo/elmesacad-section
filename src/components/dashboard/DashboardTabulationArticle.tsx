@@ -9,11 +9,15 @@ export function DashboardTabulationArticle({
   tableData,
   tabulation,
   adminCapabilities,
+  currentAnneeId,
+  currentAnneeLabel,
 }: {
   tabulationTitle: string;
   tableData: DashboardTableData;
   tabulation: DashboardTabulationCapabilities;
   adminCapabilities: DashboardAdminCapabilities;
+  currentAnneeId?: string;
+  currentAnneeLabel?: string;
 }) {
   if (!tabulation.canShowTabulationArticle) return null;
 
@@ -27,6 +31,8 @@ export function DashboardTabulationArticle({
         tableData,
         tabulation,
         adminCapabilities,
+        currentAnneeId,
+        currentAnneeLabel,
       })}
     </article>
   );

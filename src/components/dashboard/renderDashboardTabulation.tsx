@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DashboardAdminCapabilities, DashboardTableData } from "@/lib/dashboard/types";
 import type { DashboardTabulationCapabilities } from "@/lib/dashboard/resolveDashboardTabulation";
 import { AdminUserTableBlock } from "@/components/dashboard/tables/AdminUsersTable";
+import { GestionnaireParcoursTable } from "@/components/dashboard/tables/GestionnaireParcoursTable";
 import { ReadonlyUserTable } from "@/components/dashboard/tables/ReadonlyUserTable";
 import { TableChargeHoraire } from "@/components/dashboard/tables/TableChargeHoraire";
 
@@ -9,6 +10,8 @@ export type RenderDashboardTabulationArgs = {
   tableData: DashboardTableData;
   tabulation: DashboardTabulationCapabilities;
   adminCapabilities: DashboardAdminCapabilities;
+  currentAnneeId?: string;
+  currentAnneeLabel?: string;
 };
 
 /**
@@ -18,6 +21,8 @@ export function renderDashboardTabulation({
   tableData,
   tabulation,
   adminCapabilities,
+  currentAnneeId,
+  currentAnneeLabel,
 }: RenderDashboardTabulationArgs): ReactNode {
   const chargesPayload = tableData.chargesHoraires;
 
@@ -39,6 +44,17 @@ export function renderDashboardTabulation({
         listes={tableData.listes}
         filters={tableData.filters}
         canManageAccounts={adminCapabilities.canManageUserAccounts}
+      />
+    );
+  }
+
+  if (tabulation.canGestionnaireRenderReadonlyTabulation && tableData.gestionnaireParcours) {
+    const effectiveAnneeId = currentAnneeId || tableData.gestionnaireParcours.currentAnneeId;
+    const effectiveAnneeLabel = currentAnneeLabel || tableData.gestionnaireParcours.currentAnneeLabel;
+    return (
+      <GestionnaireParcoursTable
+        currentAnneeId={effectiveAnneeId}
+        currentAnneeLabel={effectiveAnneeLabel}
       />
     );
   }

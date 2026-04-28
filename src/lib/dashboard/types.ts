@@ -64,6 +64,10 @@ export type DashboardTableData = {
   filters: string[];
   rows: DashboardTableRow[];
   chargesHoraires?: OrganisateurCeChargesHorairesPayload;
+  gestionnaireParcours?: {
+    currentAnneeId: string;
+    currentAnneeLabel: string;
+  };
 };
 
 export type DashboardRole =

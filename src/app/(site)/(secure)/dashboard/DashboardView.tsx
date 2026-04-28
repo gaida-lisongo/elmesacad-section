@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { DashboardViewProps } from "@/lib/dashboard/types";
 import { DEFAULT_ADMIN_CAPABILITIES } from "@/lib/dashboard/defaultDashboardCapabilities";
 import {
@@ -42,6 +43,35 @@ export default function DashboardView(props: DashboardViewProps) {
   );
   const tabulationTitle = dashboardTabulationTitle(role, tabulation);
 
+  const anneeOptions = useMemo(
+    () =>
+      whiteList
+        .filter((x) => Boolean(x.id))
+        .map((x) => ({
+          id: String(x.id),
+          label: x.designation || `${x.debut}-${x.fin}`,
+        })),
+    [whiteList]
+  );
+
+  const initialAnneeId = useMemo(() => {
+    if (tableData.gestionnaireParcours?.currentAnneeId) {
+      return tableData.gestionnaireParcours.currentAnneeId;
+    }
+    return anneeOptions[0]?.id ?? "";
+  }, [tableData.gestionnaireParcours?.currentAnneeId, anneeOptions]);
+
+  const [currentAnneeId, setCurrentAnneeId] = useState(initialAnneeId);
+
+  const currentAnneeLabel = useMemo(() => {
+    const found = anneeOptions.find((x) => x.id === currentAnneeId);
+    if (found) return found.label;
+    if (tableData.gestionnaireParcours?.currentAnneeLabel) {
+      return tableData.gestionnaireParcours.currentAnneeLabel;
+    }
+    return "";
+  }, [anneeOptions, currentAnneeId, tableData.gestionnaireParcours?.currentAnneeLabel]);
+
   return (
     <section className="w-full min-w-0 space-y-6">
       <DashboardViewHeader title={title} userName={userName} infoMessage={infoMessage} ui={ui} />
@@ -59,7 +89,13 @@ export default function DashboardView(props: DashboardViewProps) {
               chartData={chartData}
               chartYear={chartYear}
             />
-            <DashboardAnneesArticle anneesMode={ui.anneesMode} whiteList={whiteList} />
+            <DashboardAnneesArticle
+              anneesMode={ui.anneesMode}
+              role={role}
+              whiteList={whiteList}
+              currentAnneeId={currentAnneeId}
+              onCurrentAnneeChange={setCurrentAnneeId}
+            />
           </div>
 
           <DashboardTabulationArticle
@@ -67,6 +103,8 @@ export default function DashboardView(props: DashboardViewProps) {
             tableData={tableData}
             tabulation={tabulation}
             adminCapabilities={adminCapabilities}
+            currentAnneeId={currentAnneeId}
+            currentAnneeLabel={currentAnneeLabel}
           />
 
           {role === "admin" && <DashboardAdminModulesGrid adminCapabilities={adminCapabilities} />}

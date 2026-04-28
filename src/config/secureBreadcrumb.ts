@@ -8,6 +8,7 @@ export const secureBreadcrumbLabels: Record<string, { label: string; href?: stri
   "/agents": [{ label: "Agents" }],
   "/etudiants": [{ label: "Étudiants" }],
   "/sections": [{ label: "Sections" }],
+  "/section/autorisations": [{ label: "Autorisations de section" }],
   "/tickets": [{ label: "Tickets" }],
 };
 

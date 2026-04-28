@@ -18,6 +18,18 @@ type Bundle = {
   chartYear: number;
 };
 
+function resolveCurrentAnnee(whiteList: DashboardWhiteListItem[]): { id: string; label: string } | null {
+  if (whiteList.length === 0) return null;
+  // Contexte section: on prend la plus récente (triée par début décroissant),
+  // sans dépendre du flag global `status`.
+  const firstWithId = whiteList.find((x) => x.id);
+  if (!firstWithId?.id) return null;
+  return {
+    id: firstWithId.id,
+    label: firstWithId.designation || `${firstWithId.debut}-${firstWithId.fin}`,
+  };
+}
+
 async function mapAnneesToWhiteList(): Promise<DashboardWhiteListItem[]> {
   const annees = await AnneeModel.find().sort({ debut: -1 }).limit(24).lean().exec();
   return annees.map((a) => {
@@ -106,11 +118,23 @@ export async function loadDashboardDataByRole(role: DashboardRole): Promise<Bund
   if (role === "titulaire" || role === "organisateur" || role === "gestionnaire") {
     await connectDB();
     const whiteList = await mapAnneesToWhiteList();
+    const currentAnnee = resolveCurrentAnnee(whiteList);
     return {
       ...base,
       metrics: staffMetrics(role),
       whiteList,
-      tableData: { ...emptyTable, rows: [] },
+      tableData: {
+        ...emptyTable,
+        rows: [],
+        ...(role === "gestionnaire" && currentAnnee
+          ? {
+              gestionnaireParcours: {
+                currentAnneeId: currentAnnee.id,
+                currentAnneeLabel: currentAnnee.label,
+              },
+            }
+          : {}),
+      },
     };
   }
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/services/connectedDB";
 import { AnneeModel } from "@/lib/models/Annee";
-import { getSessionPayload, canEditSensitiveFields } from "@/lib/auth/sessionServer";
+import { getSessionPayload, canManageAnnees } from "@/lib/auth/sessionServer";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -11,7 +11,7 @@ export async function PATCH(request: Request, context: Ctx) {
   if (!session) {
     return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
   }
-  if (!canEditSensitiveFields(session)) {
+  if (!canManageAnnees(session)) {
     return NextResponse.json({ message: "Réservé aux administrateurs" }, { status: 403 });
   }
   const { id } = await context.params;
@@ -38,6 +38,12 @@ export async function PATCH(request: Request, context: Ctx) {
     if (!doc) {
       return NextResponse.json({ message: "Introuvable" }, { status: 404 });
     }
+    if (u.status === true) {
+      await AnneeModel.updateMany(
+        { _id: { $ne: doc._id }, status: true },
+        { $set: { status: false } }
+      );
+    }
     return NextResponse.json({ data: doc });
   } catch (e) {
     return NextResponse.json({ message: (e as Error).message }, { status: 500 });
@@ -49,7 +55,7 @@ export async function DELETE(_: Request, context: Ctx) {
   if (!session) {
     return NextResponse.json({ message: "Non authentifié" }, { status: 401 });
   }
-  if (!canEditSensitiveFields(session)) {
+  if (!canManageAnnees(session)) {
     return NextResponse.json({ message: "Réservé aux administrateurs" }, { status: 403 });
   }
   const { id } = await context.params;

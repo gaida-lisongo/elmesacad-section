@@ -91,7 +91,7 @@ export function dashboardInfoMessage(role: DashboardRole): string | undefined {
     return "Espace organisateur : le suivi bureau (enseignement, recherche) est sur « Tableau de bord section ». Le bloc tableau ci‑dessous s’adapte à votre habilitation (CE : charges horaires par programme ; autres : aperçu des comptes en lecture seule).";
   }
   if (role === "gestionnaire") {
-    return "Espace gestionnaire : indicateurs d’enrollement et de validation seront affichés ici bientôt.";
+    return "Espace gestionnaire : la table parcours est pilotée par votre habilitation locale (appariteur / secrétaire) et l’année académique active.";
   }
   return undefined;
 }
