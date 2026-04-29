@@ -8,6 +8,9 @@ import { SemestreModel } from "@/lib/models/Semestre";
 import { SectionModel } from "@/lib/models/Section";
 import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
 import { buildUniqueSlug } from "@/lib/utils/formationSlug";
+import "@/lib/models/Semestre";
+import "@/lib/models/Filiere";
+import "@/lib/models/Matiere";
 
 type RouteContext = { params: Promise<{ id: string; programmeId: string }> };
 

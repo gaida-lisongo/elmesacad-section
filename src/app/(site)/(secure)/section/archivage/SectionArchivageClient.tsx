@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
+import StudentConsolidatedResultModal from "@/components/notes/StudentConsolidatedResultModal";
+import { useParcoursByActiveProgramme } from "@/lib/notes/useParcoursByActiveProgramme";
 import {
   fetchStructuredNotesByMatricules,
-  listParcoursForArchivage,
   sendRattrapageNotesBatch,
   type NotePayloadLine,
 } from "@/actions/organisateurArchivage";
@@ -56,6 +57,15 @@ type NotesElement = {
 type NotesUnite = { _id: string; code: string; designation: string; credit: number; elements: NotesElement[] };
 type NotesSemestre = { _id: string; designation: string; credit: number; unites: NotesUnite[] };
 type NotesStudentPayload = { studentId: string; studentName: string; matricule: string; semestres: NotesSemestre[] };
+type ReconciledElement = NotesElement;
+type ReconciledUnite = NotesUnite;
+type ReconciledSemestre = NotesSemestre;
+type ReconciledPayload = {
+  studentId: string;
+  studentName: string;
+  matricule: string;
+  semestres: ReconciledSemestre[];
+};
 
 function normalizeHeader(input: string): string {
   return input
@@ -135,10 +145,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
   );
   const [searchProgramme, setSearchProgramme] = useState("");
   const [selectedProgrammeId, setSelectedProgrammeId] = useState("");
-  const [parcoursRows, setParcoursRows] = useState<ParcoursRow[]>([]);
   const [parcoursSearch, setParcoursSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [notesByMatricule, setNotesByMatricule] = useState<Record<string, NotesEntry>>({});
   const [activeNotesMatricule, setActiveNotesMatricule] = useState<string | null>(null);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
@@ -199,50 +206,16 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
     [bootstrap.annees]
   );
 
-  useEffect(() => {
-    async function run() {
-      if (!activeSection || !selectedProgramme || !activeAnneeSlug) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await listParcoursForArchivage({
+  const { rows: parcoursRows, loading, error } = useParcoursByActiveProgramme(
+    activeSection && selectedProgramme && activeAnneeSlug
+      ? {
           anneeSlug: activeAnneeSlug,
           sectionSlug: activeSection.slug,
           programmeSlug: selectedProgramme.slug,
-          search: parcoursSearch.trim() || undefined,
-          page: 1,
-          limit: 100,
-        });
-        const rows = (res.data ?? []).map((raw) => {
-          const x = raw as Record<string, unknown>;
-          const st = (x.student ?? {}) as Record<string, unknown>;
-          const programme = (x.programme ?? {}) as Record<string, unknown>;
-          const annee = (x.annee ?? {}) as Record<string, unknown>;
-          return {
-            id: String(x._id ?? x.id ?? ""),
-            matricule: String(st.matricule ?? ""),
-            email: String(st.mail ?? st.email ?? ""),
-            nomComplet: String(st.name ?? st.nomComplet ?? "—"),
-            studentId: String(x.reference ?? ""),
-            photo: String(st.photo ?? ""),
-            sexe: String(st.sexe ?? ""),
-            nationalite: String(st.nationalite ?? ""),
-            dateNaissance: String(st.date_naissance ?? ""),
-            lieuNaissance: String(st.lieu_naissance ?? ""),
-            programmeClasse: String(programme.classe ?? ""),
-            anneeSlug: String(annee.slug ?? ""),
-          };
-        });
-        setParcoursRows(rows);
-      } catch (e) {
-        setParcoursRows([]);
-        setError((e as Error).message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    void run();
-  }, [activeSection, selectedProgramme, activeAnneeSlug, parcoursSearch]);
+          search: parcoursSearch,
+        }
+      : null
+  );
 
   useEffect(() => {
     async function loadNotesMapping() {
@@ -394,6 +367,95 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
     if (u.credit <= 0) return 0;
     const sum = u.elements.reduce((acc, e) => acc + noteMatiere(e) * e.credit, 0);
     return sum / u.credit;
+  }
+
+  function resolveMentionFromPercentage(percent: number): "A" | "B" | "C" | "D" | "E" {
+    // Approximation locale (faute de distribution cohortée ECTS).
+    if (percent >= 90) return "A";
+    if (percent >= 80) return "B";
+    if (percent >= 70) return "C";
+    if (percent >= 60) return "D";
+    return "E";
+  }
+
+  function normalizeText(input: string): string {
+    return decodeText(String(input ?? ""))
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  function buildReconciledPayload(
+    student: ParcoursRow | null,
+    local: ProgrammeMatiereContext[],
+    remote: NotesStudentPayload | null
+  ): ReconciledPayload {
+    const remoteByMatiereId = new Map<string, NotesElement>();
+    const remoteByDesignation = new Map<string, NotesElement>();
+    for (const s of remote?.semestres ?? []) {
+      for (const u of s.unites ?? []) {
+        for (const e of u.elements ?? []) {
+          remoteByMatiereId.set(String(e._id), e);
+          remoteByDesignation.set(normalizeText(e.designation), e);
+        }
+      }
+    }
+
+    const semMap = new Map<string, ReconciledSemestre>();
+    for (const row of local) {
+      const semRef = String(row.semestre.reference ?? "");
+      const ueRef = String(row.unite.reference ?? "");
+      if (!semRef || !ueRef) continue;
+      if (!semMap.has(semRef)) {
+        semMap.set(semRef, {
+          _id: semRef,
+          designation: decodeText(row.semestre.designation),
+          credit: Number(row.semestre.credits ?? 0),
+          unites: [],
+        });
+      }
+      const sem = semMap.get(semRef)!;
+      let ue = sem.unites.find((x) => x._id === ueRef);
+      if (!ue) {
+        ue = {
+          _id: ueRef,
+          code: row.unite.code ?? "",
+          designation: decodeText(row.unite.designation),
+          credit: Number(row.unite.credits ?? 0),
+          elements: [],
+        };
+        sem.unites.push(ue);
+      }
+      const remoteMatch =
+        remoteByMatiereId.get(String(row.matiere.reference)) ??
+        remoteByDesignation.get(normalizeText(row.matiere.designation));
+      const element: ReconciledElement = {
+        _id: String(row.matiere.reference),
+        designation: decodeText(row.matiere.designation),
+        credit: Number(row.matiere.credits ?? 0),
+        cc: Number(remoteMatch?.cc ?? 0),
+        examen: Number(remoteMatch?.examen ?? 0),
+        rattrapage: Number(remoteMatch?.rattrapage ?? 0),
+        rachat: Number(remoteMatch?.rachat ?? 0),
+      };
+      ue.elements.push(element);
+    }
+
+    const semestres = [...semMap.values()].sort((a, b) => a.designation.localeCompare(b.designation, "fr"));
+    for (const s of semestres) {
+      s.unites.sort((a, b) => a.designation.localeCompare(b.designation, "fr"));
+      for (const u of s.unites) {
+        u.elements.sort((a, b) => a.designation.localeCompare(b.designation, "fr"));
+      }
+    }
+
+    return {
+      studentId: String(remote?.studentId ?? student?.studentId ?? ""),
+      studentName: String(remote?.studentName ?? student?.nomComplet ?? ""),
+      matricule: String(remote?.matricule ?? student?.matricule ?? ""),
+      semestres,
+    };
   }
 
   function buildPayloadLines(): NotePayloadLine[] {
@@ -644,148 +706,17 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
         </div>
       </section>
 
-      {notesModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-xl bg-white p-6 dark:bg-gray-900">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-midnight_text dark:text-white">Détails notes étudiant</h3>
-              <button type="button" className="text-sm underline" onClick={() => setNotesModalOpen(false)}>
-                Fermer
-              </button>
-            </div>
-            {(() => {
-              const student = parcoursRows.find((x) => x.matricule === activeNotesMatricule) ?? null;
-              const notes = activeNotesMatricule ? notesByMatricule[activeNotesMatricule] : undefined;
-              const parsed = parseNotesPayload(notes?.data);
-              const semestres = parsed?.semestres ?? [];
-              const tabsSem = semestres;
-              const currentSemId = activeSemestreId || tabsSem[0]?._id || "";
-              const currentSem = tabsSem.find((s) => s._id === currentSemId) ?? tabsSem[0] ?? null;
-              const allUnites = semestres.flatMap((s) => s.unites);
-              const ncv = allUnites.reduce((acc, u) => (moyUnite(u) >= 10 ? acc + u.credit : acc), 0);
-              const programmeCredits = Number(selectedProgramme?.credits ?? 0);
-              const ncnv = Math.max(0, programmeCredits - ncv);
-              const percent = programmeCredits > 0 ? (ncv / programmeCredits) * 100 : 0;
-              const decision = ncnv === 0 ? "Admis" : "Ajourné";
-              return (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-10">
-                  <aside className="space-y-3 lg:col-span-3">
-                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
-                      <h4 className="mb-2 font-semibold">Etudiant</h4>
-                      <p><strong>Nom:</strong> {student?.nomComplet ?? "—"}</p>
-                      <p><strong>Matricule:</strong> {student?.matricule ?? "—"}</p>
-                      <p><strong>Email:</strong> {student?.email ?? "—"}</p>
-                      <p><strong>Sexe:</strong> {student?.sexe || "—"}</p>
-                      <p><strong>Nationalité:</strong> {student?.nationalite || "—"}</p>
-                    </article>
-                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
-                      <h4 className="mb-2 font-semibold">Parcours</h4>
-                      <p><strong>Année:</strong> {student?.anneeSlug || activeAnneeSlug || "—"}</p>
-                      <p><strong>Programme:</strong> {selectedProgramme?.designation || "—"}</p>
-                      <p><strong>NCV:</strong> {ncv.toFixed(2)}</p>
-                      <p><strong>NCNV:</strong> {ncnv.toFixed(2)}</p>
-                    </article>
-                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
-                      <h4 className="mb-2 font-semibold">Résultat</h4>
-                      <p><strong>Pourcentage:</strong> {percent.toFixed(2)}%</p>
-                      <p><strong>Décision jury:</strong> {decision}</p>
-                      <p><strong>Semestres:</strong> {semestres.length}</p>
-                    </article>
-                  </aside>
-
-                  <main className="space-y-3 lg:col-span-7">
-                    {notesLoading ? <p className="text-sm text-blue-600">Chargement des notes...</p> : null}
-                    {!notesLoading && notes && !notes.ok ? (
-                      <p className="text-sm text-amber-700 dark:text-amber-300">
-                        Notes indisponibles ({notes.status}) {notes.message ? `- ${notes.message}` : ""}
-                      </p>
-                    ) : null}
-                    {!notesLoading && notes?.ok && currentSem ? (
-                      <>
-                        <div className="flex flex-wrap gap-2">
-                          {tabsSem.map((s) => (
-                            <button
-                              key={s._id}
-                              type="button"
-                              onClick={() => setActiveSemestreId(s._id)}
-                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                                s._id === currentSemId
-                                  ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
-                                  : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                              }`}
-                            >
-                              {s.designation}
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="space-y-2">
-                          {currentSem.unites.map((u) => {
-                            const isOpen = Boolean(expandedUnites[u._id]);
-                            const moy = moyUnite(u);
-                            return (
-                              <article key={u._id} className="rounded-lg border border-gray-200 dark:border-gray-700">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setExpandedUnites((prev) => ({
-                                      ...prev,
-                                      [u._id]: !prev[u._id],
-                                    }))
-                                  }
-                                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
-                                >
-                                  <div>
-                                    <p className="text-sm font-semibold">{u.code} - {u.designation}</p>
-                                    <p className="text-xs text-gray-500">
-                                      Crédits: {u.credit} · Moyenne: {moy.toFixed(2)}
-                                    </p>
-                                  </div>
-                                  <Icon icon={isOpen ? "ion:chevron-up-outline" : "ion:chevron-down-outline"} className="text-lg" />
-                                </button>
-                                {isOpen ? (
-                                  <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
-                                    <table className="min-w-full text-xs">
-                                      <thead>
-                                        <tr className="text-left text-gray-500">
-                                          <th className="py-1">Matière</th>
-                                          <th className="py-1">Cr</th>
-                                          <th className="py-1">CC</th>
-                                          <th className="py-1">Ex</th>
-                                          <th className="py-1">Rat</th>
-                                          <th className="py-1">Rach</th>
-                                          <th className="py-1">Note</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {u.elements.map((e) => (
-                                          <tr key={e._id} className="border-t border-gray-100 dark:border-gray-800">
-                                            <td className="py-1">{e.designation}</td>
-                                            <td className="py-1">{e.credit}</td>
-                                            <td className="py-1">{e.cc}</td>
-                                            <td className="py-1">{e.examen}</td>
-                                            <td className="py-1">{e.rattrapage}</td>
-                                            <td className="py-1">{e.rachat}</td>
-                                            <td className="py-1 font-semibold">{noteMatiere(e).toFixed(2)}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                ) : null}
-                              </article>
-                            );
-                          })}
-                        </div>
-                      </>
-                    ) : null}
-                  </main>
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-      ) : null}
+      <StudentConsolidatedResultModal
+        open={notesModalOpen}
+        onClose={() => setNotesModalOpen(false)}
+        student={parcoursRows.find((x) => x.matricule === activeNotesMatricule) ?? null}
+        notes={activeNotesMatricule ? notesByMatricule[activeNotesMatricule] : undefined}
+        notesLoading={notesLoading}
+        selectedProgrammeCredits={Number(selectedProgramme?.credits ?? 0)}
+        selectedProgrammeName={selectedProgramme?.designation ?? ""}
+        selectedMappingRows={selectedMappingRows}
+        activeAnneeSlug={activeAnneeSlug}
+      />
 
       {wizardOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

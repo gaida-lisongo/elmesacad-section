@@ -4,6 +4,10 @@ import { connectDB } from "@/lib/services/connectedDB";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { SectionModel } from "@/lib/models/Section";
 import { buildUniqueSlug } from "@/lib/utils/formationSlug";
+import "@/lib/models/Semestre";
+import "@/lib/models/Filiere";
+import "@/lib/models/UniteEnseignement";
+import "@/lib/models/Matiere";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
