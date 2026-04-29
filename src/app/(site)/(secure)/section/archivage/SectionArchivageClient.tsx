@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import PageManager from "@/components/secure/PageManager";
+import { Icon } from "@iconify/react";
 import {
+  fetchStructuredNotesByMatricules,
   listParcoursForArchivage,
   sendRattrapageNotesBatch,
   type NotePayloadLine,
@@ -26,10 +27,35 @@ export type ArchivageBootstrap = {
   programmesBySection: Record<string, ProgrammeLite[]>;
 };
 
-type ProgrammeCardItem = ProgrammeLite & { id: string };
-type ParcoursRow = { id: string; matricule: string; email: string; nomComplet: string; studentId: string };
+type ParcoursRow = {
+  id: string;
+  matricule: string;
+  email: string;
+  nomComplet: string;
+  studentId: string;
+  photo?: string;
+  sexe?: string;
+  nationalite?: string;
+  dateNaissance?: string;
+  lieuNaissance?: string;
+  programmeClasse?: string;
+  anneeSlug?: string;
+};
 type CsvRow = Record<string, string>;
 type MatchRow = CsvRow & { __matched: boolean; __parcoursId?: string };
+type NotesEntry = { ok: boolean; status: number; data: unknown | null; message?: string };
+type NotesElement = {
+  _id: string;
+  designation: string;
+  credit: number;
+  cc: number;
+  examen: number;
+  rattrapage: number;
+  rachat: number;
+};
+type NotesUnite = { _id: string; code: string; designation: string; credit: number; elements: NotesElement[] };
+type NotesSemestre = { _id: string; designation: string; credit: number; unites: NotesUnite[] };
+type NotesStudentPayload = { studentId: string; studentName: string; matricule: string; semestres: NotesSemestre[] };
 
 function normalizeHeader(input: string): string {
   return input
@@ -113,6 +139,12 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
   const [parcoursSearch, setParcoursSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notesByMatricule, setNotesByMatricule] = useState<Record<string, NotesEntry>>({});
+  const [activeNotesMatricule, setActiveNotesMatricule] = useState<string | null>(null);
+  const [notesModalOpen, setNotesModalOpen] = useState(false);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [activeSemestreId, setActiveSemestreId] = useState<string>("");
+  const [expandedUnites, setExpandedUnites] = useState<Record<string, boolean>>({});
 
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [csvMatches, setCsvMatches] = useState<MatchRow[]>([]);
@@ -184,12 +216,21 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
         const rows = (res.data ?? []).map((raw) => {
           const x = raw as Record<string, unknown>;
           const st = (x.student ?? {}) as Record<string, unknown>;
+          const programme = (x.programme ?? {}) as Record<string, unknown>;
+          const annee = (x.annee ?? {}) as Record<string, unknown>;
           return {
             id: String(x._id ?? x.id ?? ""),
             matricule: String(st.matricule ?? ""),
             email: String(st.mail ?? st.email ?? ""),
             nomComplet: String(st.name ?? st.nomComplet ?? "—"),
             studentId: String(x.reference ?? ""),
+            photo: String(st.photo ?? ""),
+            sexe: String(st.sexe ?? ""),
+            nationalite: String(st.nationalite ?? ""),
+            dateNaissance: String(st.date_naissance ?? ""),
+            lieuNaissance: String(st.lieu_naissance ?? ""),
+            programmeClasse: String(programme.classe ?? ""),
+            anneeSlug: String(annee.slug ?? ""),
           };
         });
         setParcoursRows(rows);
@@ -232,6 +273,21 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
     }
     void loadNotesMapping();
   }, [activeSectionId, selectedProgrammeId]);
+
+  async function openNotesModal(matricule: string) {
+    setActiveNotesMatricule(matricule);
+    setNotesModalOpen(true);
+    setActiveSemestreId("");
+    setExpandedUnites({});
+    if (notesByMatricule[matricule]) return;
+    setNotesLoading(true);
+    try {
+      const payload = await fetchStructuredNotesByMatricules([matricule]);
+      setNotesByMatricule((prev) => ({ ...prev, ...payload }));
+    } finally {
+      setNotesLoading(false);
+    }
+  }
 
   const matchedCount = useMemo(() => csvMatches.filter((r) => r.__matched).length, [csvMatches]);
   const unmatchedCount = Math.max(0, csvMatches.length - matchedCount);
@@ -279,6 +335,65 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
     if (!Number.isFinite(n)) return null;
     if (n < 0 || n > 20) return null;
     return n;
+  }
+
+  function countSemestresFromNotes(raw: unknown): number {
+    if (!raw || typeof raw !== "object") return 0;
+    const obj = raw as Record<string, unknown>;
+    if (Array.isArray(obj.semestres)) return obj.semestres.length;
+    if (Array.isArray(obj.data)) return obj.data.length;
+    return 0;
+  }
+
+  function decodeText(input: string): string {
+    return input
+      .replaceAll("Ã©", "é")
+      .replaceAll("Ã¨", "è")
+      .replaceAll("Ãª", "ê")
+      .replaceAll("Ã ", "à")
+      .replaceAll("Ã§", "ç");
+  }
+
+  function parseNotesPayload(raw: unknown): NotesStudentPayload | null {
+    if (!raw || typeof raw !== "object") return null;
+    const src = raw as Record<string, unknown>;
+    const semestres = Array.isArray(src.semestres) ? (src.semestres as Array<Record<string, unknown>>) : [];
+    return {
+      studentId: String(src.studentId ?? ""),
+      studentName: String(src.studentName ?? ""),
+      matricule: String(src.matricule ?? ""),
+      semestres: semestres.map((s) => ({
+        _id: String(s._id ?? ""),
+        designation: decodeText(String(s.designation ?? "")),
+        credit: Number(s.credit ?? 0),
+        unites: (Array.isArray(s.unites) ? (s.unites as Array<Record<string, unknown>>) : []).map((u) => ({
+          _id: String(u._id ?? ""),
+          code: String(u.code ?? ""),
+          designation: decodeText(String(u.designation ?? "")),
+          credit: Number(u.credit ?? 0),
+          elements: (Array.isArray(u.elements) ? (u.elements as Array<Record<string, unknown>>) : []).map((e) => ({
+            _id: String(e._id ?? ""),
+            designation: decodeText(String(e.designation ?? "")),
+            credit: Number(e.credit ?? 0),
+            cc: Number(e.cc ?? 0),
+            examen: Number(e.examen ?? 0),
+            rattrapage: Number(e.rattrapage ?? 0),
+            rachat: Number(e.rachat ?? 0),
+          })),
+        })),
+      })),
+    };
+  }
+
+  function noteMatiere(el: NotesElement): number {
+    if (el.rachat > 0) return el.rachat;
+    return el.cc + el.examen > el.rattrapage ? el.cc + el.examen : el.rattrapage;
+  }
+
+  function moyUnite(u: NotesUnite): number {
+    if (u.credit <= 0) return 0;
+    const sum = u.elements.reduce((acc, e) => acc + noteMatiere(e) * e.credit, 0);
+    return sum / u.credit;
   }
 
   function buildPayloadLines(): NotePayloadLine[] {
@@ -377,35 +492,51 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
 
   return (
     <div className="space-y-6">
-      <PageManager<ProgrammeCardItem>
-        title="Archivage des notes"
-        description="Choisissez l'année académique et le programme pour préparer l'import des cotes en bulk."
-        items={filteredProgrammes}
-        tabs={tabs}
-        activeTab={activeAnneeSlug}
-        onTabChange={(v) => setActiveAnneeSlug(v)}
-        searchText={searchProgramme}
-        onSearchChange={setSearchProgramme}
-        searchPlaceholder="Rechercher un programme..."
-        CardItem={({ item }) => (
-          <button
-            type="button"
-            onClick={() => setSelectedProgrammeId(item.id)}
-            className={`w-full rounded-xl border px-4 py-3 text-left ${
-              selectedProgrammeId === item.id
-                ? "border-[#082b1c] bg-[#082b1c]/5 dark:border-[#5ec998]"
-                : "border-gray-200 dark:border-gray-700"
-            }`}
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-midnight_text dark:text-white">Archivage des notes</h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Choisissez l'année et le programme de travail pour charger les parcours.
+          </p>
+        </div>
+        <div className="mb-4 flex flex-wrap gap-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveAnneeSlug(tab.value)}
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                activeAnneeSlug === tab.value
+                  ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <input
+            type="search"
+            value={searchProgramme}
+            onChange={(e) => setSearchProgramme(e.target.value)}
+            placeholder="Rechercher un programme..."
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+          <select
+            value={selectedProgrammeId}
+            onChange={(e) => setSelectedProgrammeId(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           >
-            <p className="text-sm font-semibold text-midnight_text dark:text-white">{item.designation}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {item.credits} crédits · {item.matieres.length} matière(s)
-            </p>
-          </button>
-        )}
-        showCreateButton={false}
-        CardCreate={() => null}
-      />
+            <option value="">Choisir le programme de travail...</option>
+            {filteredProgrammes.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.designation} ({p.credits} cr - {p.matieres.length} matières)
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
 
       <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -446,7 +577,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
           />
         </div>
 
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4">
           {loading ? (
             <p className="text-sm text-gray-500">Chargement des parcours...</p>
           ) : error ? (
@@ -454,27 +585,207 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
           ) : parcoursRows.length === 0 ? (
             <p className="text-sm text-gray-500">Aucun parcours trouvé pour ce programme/année.</p>
           ) : (
-            <table className="min-w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 dark:border-gray-700">
-                  <th className="px-2 py-2 text-left">Matricule</th>
-                  <th className="px-2 py-2 text-left">Email</th>
-                  <th className="px-2 py-2 text-left">Nom complet</th>
-                </tr>
-              </thead>
-              <tbody>
-                {parcoursRows.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-100 dark:border-gray-800">
-                    <td className="px-2 py-2">{row.matricule || "—"}</td>
-                    <td className="px-2 py-2">{row.email || "—"}</td>
-                    <td className="px-2 py-2">{row.nomComplet || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {parcoursRows.map((row) => {
+                  const initials = row.nomComplet
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((x) => x[0]?.toUpperCase() ?? "")
+                    .join("");
+                  return (
+                    <article
+                      key={row.id}
+                      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/60"
+                    >
+                      <div className="flex items-start gap-3">
+                        {row.photo ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={row.photo}
+                            alt={row.nomComplet}
+                            className="h-12 w-12 rounded-full border border-gray-200 object-cover dark:border-gray-700"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                            {initials || "ET"}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-midnight_text dark:text-white">{row.nomComplet || "—"}</p>
+                          <p className="text-xs text-gray-500">{row.matricule || "—"}</p>
+                          <p className="text-xs text-gray-500">{row.email || "—"}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                        <p>Sexe: <strong>{row.sexe || "—"}</strong></p>
+                        <p>Nationalité: <strong>{row.nationalite || "—"}</strong></p>
+                        <p>Date nais.: <strong>{row.dateNaissance || "—"}</strong></p>
+                        <p>Lieu nais.: <strong>{row.lieuNaissance || "—"}</strong></p>
+                      </div>
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => void openNotesModal(row.matricule)}
+                          className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                        >
+                          Voir les notes
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       </section>
+
+      {notesModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-auto rounded-xl bg-white p-6 dark:bg-gray-900">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-midnight_text dark:text-white">Détails notes étudiant</h3>
+              <button type="button" className="text-sm underline" onClick={() => setNotesModalOpen(false)}>
+                Fermer
+              </button>
+            </div>
+            {(() => {
+              const student = parcoursRows.find((x) => x.matricule === activeNotesMatricule) ?? null;
+              const notes = activeNotesMatricule ? notesByMatricule[activeNotesMatricule] : undefined;
+              const parsed = parseNotesPayload(notes?.data);
+              const semestres = parsed?.semestres ?? [];
+              const tabsSem = semestres;
+              const currentSemId = activeSemestreId || tabsSem[0]?._id || "";
+              const currentSem = tabsSem.find((s) => s._id === currentSemId) ?? tabsSem[0] ?? null;
+              const allUnites = semestres.flatMap((s) => s.unites);
+              const ncv = allUnites.reduce((acc, u) => (moyUnite(u) >= 10 ? acc + u.credit : acc), 0);
+              const programmeCredits = Number(selectedProgramme?.credits ?? 0);
+              const ncnv = Math.max(0, programmeCredits - ncv);
+              const percent = programmeCredits > 0 ? (ncv / programmeCredits) * 100 : 0;
+              const decision = ncnv === 0 ? "Admis" : "Ajourné";
+              return (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-10">
+                  <aside className="space-y-3 lg:col-span-3">
+                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
+                      <h4 className="mb-2 font-semibold">Etudiant</h4>
+                      <p><strong>Nom:</strong> {student?.nomComplet ?? "—"}</p>
+                      <p><strong>Matricule:</strong> {student?.matricule ?? "—"}</p>
+                      <p><strong>Email:</strong> {student?.email ?? "—"}</p>
+                      <p><strong>Sexe:</strong> {student?.sexe || "—"}</p>
+                      <p><strong>Nationalité:</strong> {student?.nationalite || "—"}</p>
+                    </article>
+                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
+                      <h4 className="mb-2 font-semibold">Parcours</h4>
+                      <p><strong>Année:</strong> {student?.anneeSlug || activeAnneeSlug || "—"}</p>
+                      <p><strong>Programme:</strong> {selectedProgramme?.designation || "—"}</p>
+                      <p><strong>NCV:</strong> {ncv.toFixed(2)}</p>
+                      <p><strong>NCNV:</strong> {ncnv.toFixed(2)}</p>
+                    </article>
+                    <article className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm dark:border-gray-700 dark:bg-gray-800/50">
+                      <h4 className="mb-2 font-semibold">Résultat</h4>
+                      <p><strong>Pourcentage:</strong> {percent.toFixed(2)}%</p>
+                      <p><strong>Décision jury:</strong> {decision}</p>
+                      <p><strong>Semestres:</strong> {semestres.length}</p>
+                    </article>
+                  </aside>
+
+                  <main className="space-y-3 lg:col-span-7">
+                    {notesLoading ? <p className="text-sm text-blue-600">Chargement des notes...</p> : null}
+                    {!notesLoading && notes && !notes.ok ? (
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        Notes indisponibles ({notes.status}) {notes.message ? `- ${notes.message}` : ""}
+                      </p>
+                    ) : null}
+                    {!notesLoading && notes?.ok && currentSem ? (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          {tabsSem.map((s) => (
+                            <button
+                              key={s._id}
+                              type="button"
+                              onClick={() => setActiveSemestreId(s._id)}
+                              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                s._id === currentSemId
+                                  ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                                  : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                              }`}
+                            >
+                              {s.designation}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-2">
+                          {currentSem.unites.map((u) => {
+                            const isOpen = Boolean(expandedUnites[u._id]);
+                            const moy = moyUnite(u);
+                            return (
+                              <article key={u._id} className="rounded-lg border border-gray-200 dark:border-gray-700">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedUnites((prev) => ({
+                                      ...prev,
+                                      [u._id]: !prev[u._id],
+                                    }))
+                                  }
+                                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
+                                >
+                                  <div>
+                                    <p className="text-sm font-semibold">{u.code} - {u.designation}</p>
+                                    <p className="text-xs text-gray-500">
+                                      Crédits: {u.credit} · Moyenne: {moy.toFixed(2)}
+                                    </p>
+                                  </div>
+                                  <Icon icon={isOpen ? "ion:chevron-up-outline" : "ion:chevron-down-outline"} className="text-lg" />
+                                </button>
+                                {isOpen ? (
+                                  <div className="border-t border-gray-200 px-3 py-2 dark:border-gray-700">
+                                    <table className="min-w-full text-xs">
+                                      <thead>
+                                        <tr className="text-left text-gray-500">
+                                          <th className="py-1">Matière</th>
+                                          <th className="py-1">Cr</th>
+                                          <th className="py-1">CC</th>
+                                          <th className="py-1">Ex</th>
+                                          <th className="py-1">Rat</th>
+                                          <th className="py-1">Rach</th>
+                                          <th className="py-1">Note</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {u.elements.map((e) => (
+                                          <tr key={e._id} className="border-t border-gray-100 dark:border-gray-800">
+                                            <td className="py-1">{e.designation}</td>
+                                            <td className="py-1">{e.credit}</td>
+                                            <td className="py-1">{e.cc}</td>
+                                            <td className="py-1">{e.examen}</td>
+                                            <td className="py-1">{e.rattrapage}</td>
+                                            <td className="py-1">{e.rachat}</td>
+                                            <td className="py-1 font-semibold">{noteMatiere(e).toFixed(2)}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : null}
+                              </article>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : null}
+                  </main>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      ) : null}
 
       {wizardOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
