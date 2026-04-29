@@ -10,6 +10,7 @@ export const secureBreadcrumbLabels: Record<string, { label: string; href?: stri
   "/sections": [{ label: "Sections" }],
   "/section/autorisations": [{ label: "Autorisations de section" }],
   "/section/archivage": [{ label: "Archivage des notes" }],
+  "/titulaire/notes": [{ label: "Fiche de cotation" }],
   "/tickets": [{ label: "Tickets" }],
 };
 
