@@ -9,6 +9,7 @@ import { AnneeModel } from "@/lib/models/Annee";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { SectionModel } from "@/lib/models/Section";
 import { fetchEtudiantApi } from "@/lib/etudiant-service/etudiantRemote";
+import { fetchTitulaireService } from "@/lib/service-auth/upstreamFetch";
 
 type MatiereTab = {
   id: string;
@@ -144,5 +145,111 @@ export async function listParcoursForTitulaireWorkflow(input: {
   const payload = (await upstream.json().catch(() => ({}))) as { data?: unknown[]; message?: string };
   if (!upstream.ok) throw new Error(payload.message ?? "Service parcours indisponible");
   return Array.isArray(payload.data) ? payload.data : [];
+}
+
+export type TitulaireNoteLinePayload = {
+  email: string;
+  matricule: string;
+  studentId: string;
+  studentName: string;
+  semestre: { designation: string; reference: string; credit: number };
+  unite: { designation: string; reference: string; code?: string; credit: number };
+  matiere: { designation: string; reference: string; credit: number };
+  cc?: number;
+  examen?: number;
+  rattrapage?: number;
+  rachat?: number;
+};
+
+async function assertTitulaireSession() {
+  const session = await getSessionPayload();
+  if (!session || session.type !== "Agent" || session.role !== "titulaire") {
+    throw new Error("Accès réservé aux titulaires.");
+  }
+}
+
+export async function fetchCourseNotesForTitulaire(courseRef: string) {
+  await assertTitulaireSession();
+  const ref = String(courseRef ?? "").trim();
+  if (!ref) return [];
+  const res = await fetchTitulaireService(`/notes/course/${encodeURIComponent(ref)}`, { method: "GET" });
+  const payload = (await res.json().catch(() => ({}))) as { data?: unknown; message?: string };
+  if (!res.ok) throw new Error(payload.message ?? "Lecture des notes impossible");
+  const rows = Array.isArray(payload.data) ? payload.data : Array.isArray(payload) ? payload : [];
+  return rows as unknown[];
+}
+
+export async function fetchRawNoteLinesForCourse(input: { courseRef: string; matricules?: string[] }) {
+  await assertTitulaireSession();
+  const ref = String(input.courseRef ?? "").trim();
+  if (!ref) return [];
+  const res = await fetchTitulaireService("/notes/all", { method: "GET" });
+  const payload = (await res.json().catch(() => ({}))) as { data?: unknown; message?: string };
+  if (!res.ok) throw new Error(payload.message ?? "Lecture des notes brutes impossible");
+  const rows = (Array.isArray(payload.data) ? payload.data : Array.isArray(payload) ? payload : []) as Array<
+    Record<string, unknown>
+  >;
+  const allowed = new Set((input.matricules ?? []).map((m) => String(m).trim().toLowerCase()).filter(Boolean));
+  return rows.filter((x) => {
+    const mref = String((x.matiere as Record<string, unknown> | undefined)?.reference ?? "").trim();
+    if (mref !== ref) return false;
+    if (allowed.size === 0) return true;
+    const mat = String(x.matricule ?? "").trim().toLowerCase();
+    return allowed.has(mat);
+  });
+}
+
+export async function createTitulaireNoteLine(input: TitulaireNoteLinePayload) {
+  await assertTitulaireSession();
+  const res = await fetchTitulaireService("/notes/add", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  const payload = (await res.json().catch(() => ({}))) as { message?: string; data?: unknown };
+  if (!res.ok) throw new Error(payload.message ?? "Création note échouée");
+  return payload.data ?? payload;
+}
+
+export async function bulkCreateTitulaireNotes(lines: TitulaireNoteLinePayload[]) {
+  await assertTitulaireSession();
+  const clean = (Array.isArray(lines) ? lines : []).filter(Boolean);
+  if (clean.length === 0) return { count: 0 };
+  const res = await fetchTitulaireService("/notes/bulk", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(clean),
+  });
+  const payload = (await res.json().catch(() => ({}))) as { message?: string; count?: number };
+  if (!res.ok) throw new Error(payload.message ?? "Import notes échoué");
+  return { count: Number(payload.count ?? clean.length) };
+}
+
+export async function updateTitulaireNoteLine(noteId: string, patch: Partial<TitulaireNoteLinePayload>) {
+  await assertTitulaireSession();
+  const id = String(noteId ?? "").trim();
+  if (!id) throw new Error("Identifiant de note manquant.");
+  const res = await fetchTitulaireService(`/notes/update/${encodeURIComponent(id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  const payload = (await res.json().catch(() => ({}))) as { message?: string; data?: unknown };
+  if (!res.ok) throw new Error(payload.message ?? "Mise à jour impossible");
+  return payload.data ?? payload;
+}
+
+export async function deleteTitulaireNoteLine(noteId: string) {
+  await assertTitulaireSession();
+  const id = String(noteId ?? "").trim();
+  if (!id) throw new Error("Identifiant de note manquant.");
+  const res = await fetchTitulaireService(`/notes/delete/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  if (!res.ok && res.status !== 204) {
+    const payload = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(payload.message ?? "Suppression impossible");
+  }
+  return { ok: true };
 }
 

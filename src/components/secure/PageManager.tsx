@@ -27,6 +27,7 @@ type PageManagerProps<T extends { id: string }> = {
   /** When true, list items are not wrapped in a bordered box (for cards that provide their own chrome). */
   bareListItems?: boolean;
   showCreateButton?: boolean;
+  listLayout?: "list" | "grid-4";
 };
 
 function PageHeader({ title, description }: { title: string; description: string }) {
@@ -88,6 +89,7 @@ export default function PageManager<T extends { id: string }>({
   onSearchChange,
   bareListItems = false,
   showCreateButton = true,
+  listLayout = "list",
 }: PageManagerProps<T>) {
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
@@ -224,7 +226,7 @@ export default function PageManager<T extends { id: string }>({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={listLayout === "grid-4" ? "grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4" : "space-y-3"}>
           {displayedItems.map((item) => {
             const isSelected = selectedId === item.id;
 
