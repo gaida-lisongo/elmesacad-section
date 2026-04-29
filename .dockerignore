@@ -5,6 +5,4 @@ npm-debug.log
 Dockerfile
 .dockerignore
 docs
-markdown
 CONTEXT.md
-*.md
