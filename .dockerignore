@@ -1,0 +1,10 @@
+.git
+.next
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+docs
+markdown
+CONTEXT.md
+*.md
