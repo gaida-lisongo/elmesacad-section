@@ -10,12 +10,6 @@ declare global {
     var mongooseCache: MongooseCache | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-    throw new Error("MONGODB_URI is not configured.");
-}
-
 const cached: MongooseCache = global.mongooseCache ?? {
     conn: null,
     promise: null,
@@ -24,12 +18,17 @@ const cached: MongooseCache = global.mongooseCache ?? {
 global.mongooseCache = cached;
 
 export const connectDB = async (): Promise<typeof mongoose> => {
+    const uri = process.env.MONGODB_URI;
+    if (!uri) {
+        throw new Error("MONGODB_URI is not configured.");
+    }
+
     if (cached.conn) {
         return cached.conn;
     }
 
     if (!cached.promise) {
-        cached.promise = mongoose.connect(MONGODB_URI, {
+        cached.promise = mongoose.connect(uri, {
             bufferCommands: false,
         });
     }
