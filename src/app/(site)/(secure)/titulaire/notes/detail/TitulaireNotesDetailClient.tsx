@@ -175,6 +175,10 @@ function computeTotal(values: Record<NoteType, number>): number {
   return ccExamen > rattrapage ? ccExamen : rattrapage;
 }
 
+function hasOwn(obj: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(obj, key);
+}
+
 export default function TitulaireNotesDetailClient(props: {
   anneeSlug: string;
   programmeRef: string;
@@ -290,10 +294,24 @@ export default function TitulaireNotesDetailClient(props: {
   }, [rows, search]);
   const noStudentAvailable = !loading && !error && rows.length === 0;
   const parcoursCount = rows.length;
-  const notesAvailableCount = useMemo(
-    () => rows.filter((r) => r.hasExistingNote).length,
-    [rows]
-  );
+  const totalCotesPossible = parcoursCount * 4;
+  const cotesDisponiblesCount = useMemo(() => {
+    const keys: NoteType[] = ["cc", "examen", "rattrapage", "rachat"];
+    let count = 0;
+    for (const row of rows) {
+      for (const key of keys) {
+        const draft = staged[row.id];
+        if (draft && hasOwn(draft, key)) {
+          count += 1;
+          continue;
+        }
+        if (row.hasExistingNote) {
+          count += 1;
+        }
+      }
+    }
+    return count;
+  }, [rows, staged]);
   const courseDesignation = useMemo(
     () => rows.find((r) => r.context?.matiere.designation?.trim())?.context?.matiere.designation || "—",
     [rows]
@@ -632,8 +650,10 @@ export default function TitulaireNotesDetailClient(props: {
         <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/60">
           <p className="text-xs text-gray-500">Nombre de parcours</p>
           <p className="text-sm font-semibold text-midnight_text dark:text-white">{parcoursCount}</p>
-          <p className="mt-2 text-xs text-gray-500">Nombre de notes disponibles</p>
-          <p className="text-sm font-semibold text-midnight_text dark:text-white">{notesAvailableCount}</p>
+          <p className="mt-2 text-xs text-gray-500">Nombre de cotes disponibles</p>
+          <p className="text-sm font-semibold text-midnight_text dark:text-white">
+            {cotesDisponiblesCount} / {totalCotesPossible}
+          </p>
         </article>
         <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/60">
           <p className="text-xs text-gray-500">Cours</p>

@@ -95,6 +95,28 @@ Tous les endpoints sont préfixés par `/api`.
 
 Une **charge horaire** décrit l’assignation d’un cours (matière, unité, promotion), le titulaire, le créneau (`horaire`), un **statut d’avancement** (`status`) pour le suivi des enseignements côté frontend, et éventuellement un **descripteur** (sections structurées : objectifs, méthodologie, etc.).
 
+export interface ISection {
+  title: string;
+  contenu: string[];
+}
+export type ChargeHoraireStatus = (typeof CHARGE_HORAIRE_STATUSES)[number];
+
+export interface IChargeHoraire extends Document {
+  matiere: { designation: string; reference: string };
+  unite: { designation: string; code_unite: string; semestre: string };
+  promotion: { designation: string; reference: string };
+  titulaire: { name: string; matricule: string; email: string; telephone: string; disponibilite: string };
+  horaire: { jour: string; heure_debut: string; heure_fin: string; date_debut: Date; date_fin: Date };
+  status: ChargeHoraireStatus;
+  descripteur: {
+    objectif: ISection[];
+    methodologie: ISection[];
+    mode_evaluation: ISection[];
+    penalties: ISection[];
+    ressources: ISection[];
+    plan_cours: ISection[];
+  };
+}
 #### Structure JSON (modèle)
 
 Les dates `date_debut` et `date_fin` dans `horaire` acceptent les chaînes ISO 8601 ; MongoDB les stocke comme `Date`.
