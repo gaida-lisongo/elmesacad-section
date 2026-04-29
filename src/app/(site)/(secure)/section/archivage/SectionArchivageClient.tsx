@@ -42,7 +42,7 @@ type ParcoursRow = {
   programmeClasse?: string;
   anneeSlug?: string;
 };
-type CsvRow = Record<string, string>;
+type CsvRow = Record<string, string | boolean | undefined>;
 type MatchRow = CsvRow & { __matched: boolean; __parcoursId?: string };
 type NotesEntry = { ok: boolean; status: number; data: unknown | null; message?: string };
 type NotesElement = {
@@ -234,7 +234,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
         };
         if (!res.ok) {
           setNotesMappingRows([]);
-          setError(json.message ?? "Impossible de charger le mapping des matières.");
+          setSendError(json.message ?? "Impossible de charger le mapping des matières.");
           return;
         }
         setNotesMappingRows(Array.isArray(json.data?.rows) ? json.data.rows : []);

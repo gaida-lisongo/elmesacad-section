@@ -15,6 +15,7 @@ type PublicPayload = {
   status: string;
   nomComplet: string;
   chats: ChatMsg[];
+  createdAt?: string;
   updatedAt: string;
 };
 
@@ -314,7 +315,7 @@ export function AgentTicketConversation({ ticketId }: { ticketId: string }) {
         </div>
         <p className="text-[10px] text-gray-500">
           Reçu le{" "}
-          {new Date(data.createdAt).toLocaleString("fr-FR", {
+          {new Date(data.createdAt ?? data.updatedAt).toLocaleString("fr-FR", {
             dateStyle: "medium",
             timeStyle: "short",
           })}{" "}

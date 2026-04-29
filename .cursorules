@@ -411,6 +411,33 @@ Pour un **fichier CSV** (matricule, code matière, cc, examen, …), le script d
 
 ### Séances et Présences (`/api/seances`, `/api/presences`)
 
+
+export interface ISeance extends Document {
+  charge_horaire: Types.ObjectId;
+  jour: string;
+  heure_debut: string;
+  heure_fin: string;
+  date: Date;
+  salle: string;
+  lecon: string;
+  description: ISection[];
+  status: boolean;
+}
+
+export interface IPresence extends Document {
+  email: string;
+  matricule: string;
+  matiere: string;
+  localisation: { 
+    type: string;
+    coordinates: number[]; // [longitude, latitude]
+  };
+  seance: Types.ObjectId;
+  date: Date;
+  status: 'present' | 'absent' | 'late' | 'early' | 'excused';
+}
+
+
 | Méthode | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/seances/add` | Créer une nouvelle séance de cours |

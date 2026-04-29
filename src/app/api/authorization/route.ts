@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { Types } from "mongoose";
+import type { PipelineStage } from "mongoose";
 import { connectDB } from "@/lib/services/connectedDB";
 import { AuthorizationModel } from "@/lib/models/User";
 import { getSessionPayload, isAgentSession } from "@/lib/auth/sessionServer";
@@ -61,7 +62,7 @@ export async function GET(request: Request) {
       match.code = { $in: [...new Set(codeFilters)] };
     }
 
-    const pipeline: Record<string, unknown>[] = [
+    const pipeline: PipelineStage[] = [
       { $match: match },
       {
         $lookup: {

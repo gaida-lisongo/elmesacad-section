@@ -169,7 +169,10 @@ export async function POST(request: Request) {
   if (!Types.ObjectId.isValid(agentId)) {
     return NextResponse.json({ message: "agentId invalide" }, { status: 400 });
   }
-  const juryKind = juryKindRaw ? (isValidJuryKind(juryKindRaw) ? juryKindRaw : null) : undefined;
+  if (juryKindRaw && !isValidJuryKind(juryKindRaw)) {
+    return NextResponse.json({ message: "juryKind invalide" }, { status: 400 });
+  }
+  const juryKind: JuryKind | undefined = juryKindRaw && isValidJuryKind(juryKindRaw) ? juryKindRaw : undefined;
   const targetPath = pathFor(tab, juryKind);
   if (!targetPath) {
     return NextResponse.json({ message: "Type de jury requis" }, { status: 400 });
@@ -215,7 +218,10 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ message: "tab invalide" }, { status: 400 });
   }
 
-  const juryKind = juryKindRaw ? (isValidJuryKind(juryKindRaw) ? juryKindRaw : null) : undefined;
+  if (juryKindRaw && !isValidJuryKind(juryKindRaw)) {
+    return NextResponse.json({ message: "juryKind invalide" }, { status: 400 });
+  }
+  const juryKind: JuryKind | undefined = juryKindRaw && isValidJuryKind(juryKindRaw) ? juryKindRaw : undefined;
   const targetPath = pathFor(tab, juryKind);
   if (!targetPath) {
     return NextResponse.json({ message: "Type de jury requis" }, { status: 400 });

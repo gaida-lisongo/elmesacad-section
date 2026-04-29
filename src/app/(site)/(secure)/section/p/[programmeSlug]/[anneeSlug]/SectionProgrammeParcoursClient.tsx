@@ -374,7 +374,7 @@ export default function SectionProgrammeParcoursClient({
       const payload = (await res.json().catch(() => ({}))) as { photo?: string; message?: string };
       if (!res.ok) throw new Error(payload.message || "Upload photo impossible");
       if (payload.photo) {
-        setEditForm((prev) => (prev ? { ...prev, photo: payload.photo } : prev));
+        setEditForm((prev): ParcoursRow | null => (prev ? { ...prev, photo: payload.photo ?? prev.photo } : prev));
       }
     } catch (error) {
       setErr((error as Error).message);

@@ -223,8 +223,8 @@ export default function TitulaireNotesDetailClient(props: {
           .filter(
             (x) =>
               x.matricule &&
-              (x.status.startsWith("inscrit") ||
-                x.status.includes("dipl"))
+              ((x.status ?? "").startsWith("inscrit") ||
+                (x.status ?? "").includes("dipl"))
           );
         const courseRaw = await fetchCourseNotesForTitulaire(props.matiereRef);
         const rawLines = await fetchRawNoteLinesForCourse({
