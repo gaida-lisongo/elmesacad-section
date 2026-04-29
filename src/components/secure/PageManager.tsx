@@ -15,7 +15,7 @@ type PageManagerProps<T extends { id: string }> = {
   tabs: PageTab[];
   activeTab: string;
   CardItem: React.ComponentType<{ item: T }>;
-  CardCreate: React.ComponentType;
+  CardCreate?: React.ComponentType;
   onCreate?: (formData: FormData) => Promise<void> | void;
   onDelete?: (id: string) => Promise<void> | void;
   onBulkCreate?: (rawText: string, onProgress?: (progress: number) => void) => Promise<void> | void;
@@ -26,6 +26,7 @@ type PageManagerProps<T extends { id: string }> = {
   onSearchChange?: (value: string) => void;
   /** When true, list items are not wrapped in a bordered box (for cards that provide their own chrome). */
   bareListItems?: boolean;
+  showCreateButton?: boolean;
 };
 
 function PageHeader({ title, description }: { title: string; description: string }) {
@@ -86,6 +87,7 @@ export default function PageManager<T extends { id: string }>({
   searchText,
   onSearchChange,
   bareListItems = false,
+  showCreateButton = true,
 }: PageManagerProps<T>) {
   const [showCreate, setShowCreate] = useState(false);
   const [showBulkCreate, setShowBulkCreate] = useState(false);
@@ -147,13 +149,15 @@ export default function PageManager<T extends { id: string }>({
           placeholder={searchPlaceholder}
           className="min-w-72 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         />
-        <button
-          type="button"
-          onClick={() => setShowCreate((prev) => !prev)}
-          className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white"
-        >
-          {showCreate ? "Retour a la table" : "Creer"}
-        </button>
+        {showCreateButton ? (
+          <button
+            type="button"
+            onClick={() => setShowCreate((prev) => !prev)}
+            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white"
+          >
+            {showCreate ? "Retour a la table" : "Creer"}
+          </button>
+        ) : null}
         {onBulkCreate && (
           <button
             type="button"
@@ -203,7 +207,7 @@ export default function PageManager<T extends { id: string }>({
         </div>
       )}
 
-      {showCreate ? (
+      {showCreate && CardCreate ? (
         <div className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-700">
           {onCreate ? (
             <form

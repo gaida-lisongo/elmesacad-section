@@ -56,7 +56,7 @@ export const userFloatingMenu: {
         { item: "QCM", path: "/section/qcm" }
       ]},
       { item: "Autorisations", path: "/section/autorisations" },
-      { item: "Archivage", path: "/section/archivages" },
+      { item: "Archivage", path: "/section/archivage" },
     ],
     gestionnaire: [
       { item: "Tableau de bord", path: "/dashboard" },
