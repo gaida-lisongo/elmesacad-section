@@ -4,9 +4,7 @@
 Application de gestion académique et opérationnelle avec rôles (`admin`, `organisateur`, `gestionnaire`, `titulaire`, `student`) et workflows section/étudiants/finances.
 
 Ce document sert de contexte de continuité pour les prochains chats IA.
-
 ---
-
 ## Règles d'architecture à respecter
 
 ### 1) API interne vs services externes
