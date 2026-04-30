@@ -40,7 +40,7 @@ export default function UserFloatingMenu({ config, onLogout }: UserFloatingMenuP
   return (
     <div ref={containerRef} className="relative flex items-end">
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-3 flex max-h-[26rem] w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-gray-200 bg-white p-0 shadow-xl dark:border-gray-700 dark:bg-gray-900 sm:w-80">
+        <div className="absolute bottom-full right-0 mb-3 flex max-h-[26rem] w-72 max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-xl border border-primary/20 bg-white p-0 shadow-xl dark:border-primary/30 dark:bg-gray-900 sm:w-80">
           <div className="max-h-80 overflow-y-auto px-2 pt-2">
             <MenuSection
               adminMenu={config.menu}
@@ -49,7 +49,7 @@ export default function UserFloatingMenu({ config, onLogout }: UserFloatingMenuP
               onNavigate={() => setIsOpen(false)}
             />
           </div>
-          <div className="border-t border-gray-100 p-2 dark:border-gray-800">
+          <div className="border-t border-primary/20 p-2 dark:border-primary/30">
             <LogoutSection
               onLogout={() => {
                 onLogout();
@@ -63,7 +63,7 @@ export default function UserFloatingMenu({ config, onLogout }: UserFloatingMenuP
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="max-w-[min(12rem,70vw)] rounded-full border border-white/20 bg-[#082b1c] px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-white shadow-md transition hover:opacity-95"
+        className="max-w-[min(12rem,70vw)] rounded-full border border-primary/30 bg-primary px-4 py-2.5 text-center text-xs font-bold uppercase tracking-wide text-white shadow-md transition hover:bg-darkprimary"
         aria-label="Menu compte"
       >
         <span className="block truncate leading-tight">{config.account}</span>

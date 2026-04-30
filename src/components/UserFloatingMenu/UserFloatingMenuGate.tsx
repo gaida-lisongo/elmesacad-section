@@ -4,6 +4,7 @@ import { getFloatingMenuForUser } from "@/config/userFloatingMenu";
 import { useRouter } from "next/navigation";
 import UserFloatingMenu from "./index";
 import { useAuthStore } from "@/stores/authStore";
+import GuestFloatingAccess from "./GuestFloatingAccess";
 
 export function UserFloatingMenuGate() {
   const user = useAuthStore((s) => s.user);
@@ -11,8 +12,12 @@ export function UserFloatingMenuGate() {
   const logout = useAuthStore((s) => s.logout);
   const router = useRouter();
 
-  if (!isHydrated || !user) {
+  if (!isHydrated) {
     return null;
+  }
+
+  if (!user) {
+    return <GuestFloatingAccess />;
   }
 
   return (

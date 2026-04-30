@@ -5,6 +5,8 @@ import type { PublicHeroActivity } from "@/actions/titulaireActivites";
 import type { PublicMetrics } from "@/actions/publicMetrics";
 import type { PublicSectionCard } from "@/actions/publicSections";
 import type { PublicSeanceCard } from "@/actions/publicSeances";
+import type { PublicUniteCard } from "@/actions/publicUnites";
+import MarketplaceCoursesFinder from "@/components/Home/MarketplaceCoursesFinder";
 import MarketplaceFacultySection from "@/components/Home/MarketplaceFacultySection";
 import MarketplaceHeroSection from "@/components/Home/MarketplaceHeroSection";
 import MarketplaceMetricsPanel from "@/components/Home/MarketplaceMetricsPanel";
@@ -16,11 +18,13 @@ export default function MarketplaceHome({
   metrics,
   sections,
   seances,
+  unites,
 }: {
   heroActivities?: PublicHeroActivity[];
   metrics: PublicMetrics;
   sections: PublicSectionCard[];
   seances: PublicSeanceCard[];
+  unites: PublicUniteCard[];
 }) {
   const activitySlides =
     heroActivities && heroActivities.length > 0 ? heroActivities : mockActivitySlides;
@@ -59,7 +63,7 @@ export default function MarketplaceHome({
   };
 
   return (
-    <main className="bg-[#eef1f7] pb-16 dark:bg-darkmode">
+    <main className="bg-[#eef1f7] dark:bg-darkmode">
       <div className="w-full bg-white">
         <section className="relative">
           <MarketplaceHeroSection
@@ -75,6 +79,7 @@ export default function MarketplaceHome({
           sections={sections}
         />
         <MarketplaceSeances seances={seances} />
+        <MarketplaceCoursesFinder unites={unites} />
 
       </div>
     </main>

@@ -2,17 +2,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { headerData } from "../Header/Navigation/menuData";
+import { buildHeaderData, headerData, type HeaderSectionItem } from "../Header/Navigation/menuData";
 import Logo from "./Logo";
-import { useTheme } from "next-themes";
-import { HeaderUserArea } from "./HeaderUserArea";
 
 const Header: React.FC = () => {
   const pathUrl = usePathname();
-  const { theme, setTheme } = useTheme();
 
   const [navbarOpen, setNavbarOpen] = useState(false);
   const [sticky, setSticky] = useState(false);
+  const [headerItems, setHeaderItems] = useState(headerData);
+  const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Record<string, boolean>>({});
 
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const headerRootRef = useRef<HTMLElement | null>(null);
@@ -62,26 +61,81 @@ const Header: React.FC = () => {
     }
   }, [navbarOpen]);
 
+  useEffect(() => {
+    let mounted = true;
+    const loadHeaderSections = async () => {
+      try {
+        const res = await fetch("/api/public/header-sections", { cache: "no-store" });
+        const payload = (await res.json().catch(() => ({ data: [] }))) as { data?: HeaderSectionItem[] };
+        if (!mounted) return;
+        const sections = Array.isArray(payload.data) ? payload.data : [];
+        setHeaderItems(buildHeaderData(sections));
+      } catch {
+        if (!mounted) return;
+        setHeaderItems(buildHeaderData([]));
+      }
+    };
+    void loadHeaderSections();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const toggleMobileSubmenu = (key: string) => {
+    setOpenMobileSubmenus((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
   return (
     <header
       ref={headerRootRef}
-      className={`fixed top-0 z-50 w-full transition-all ${
-        sticky
-          ? "bg-white/95 shadow-md backdrop-blur dark:bg-dark/95"
-          : pathUrl === "/"
-            ? "bg-transparent"
-            : "bg-white dark:bg-dark"
-      }`}
+      className="fixed top-0 z-50 w-full bg-transparent transition-all"
     >
       <div className="px-4 py-3">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between rounded-full border border-white/40 bg-white/90 px-4 py-2 shadow-sm backdrop-blur dark:border-white/10 dark:bg-dark/90">
-          <div className="shrink-0">
+        <div
+          className={`mx-auto flex w-full max-w-6xl items-center justify-between rounded-full border border-white/40 bg-white/90 px-4 py-2 backdrop-blur dark:border-white/10 dark:bg-dark/90 ${
+            sticky ? "shadow-md" : "shadow-sm"
+          }`}
+        >
+          <div className="shrink-0 pr-3">
             <Logo />
           </div>
 
-          <nav className="hidden items-center gap-1 lg:flex">
-            {headerData.map((item) => {
+          <nav className="hidden items-center gap-1 lg:ml-auto lg:flex">
+            {headerItems.map((item) => {
               const active = pathUrl === item.href || (item.href !== "/" && pathUrl.startsWith(item.href));
+              const hasSubmenu = Array.isArray(item.submenu) && item.submenu.length > 0;
+
+              if (hasSubmenu) {
+                return (
+                  <div key={item.label} className="group relative">
+                    <Link
+                      href={item.href}
+                      className={`inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-medium transition ${
+                        active
+                          ? "bg-primary text-white"
+                          : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {item.label}
+                      <span className="text-xs">▾</span>
+                    </Link>
+                    <div className="invisible absolute left-0 top-full z-50 w-64 rounded-xl border border-slate-200 bg-white p-2 opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 dark:border-slate-700 dark:bg-darklight">
+                      <div className="max-h-72 overflow-y-auto">
+                        {item.submenu?.map((subItem) => (
+                          <Link
+                            key={`${item.label}-${subItem.href}`}
+                            href={subItem.href}
+                            className="block rounded-lg px-3 py-2 text-sm text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                          >
+                            {subItem.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.label}
@@ -99,27 +153,6 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="flex items-center gap-2">
-            <button
-              aria-label="Toggle theme"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-body-color duration-300 hover:bg-slate-100 dark:text-white dark:hover:bg-slate-800"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                className="hidden h-6 w-6 dark:block"
-              >
-                <path d="M4.50663 3.2267L3.30663 2.03337L2.36663 2.97337L3.55996 4.1667L4.50663 3.2267ZM2.66663 7.00003H0.666626V8.33337H2.66663V7.00003ZM8.66663 0.366699H7.33329V2.33337H8.66663V0.366699V0.366699ZM13.6333 2.97337L12.6933 2.03337L11.5 3.2267L12.44 4.1667L13.6333 2.97337ZM11.4933 12.1067L12.6866 13.3067L13.6266 12.3667L12.4266 11.1734L11.4933 12.1067ZM13.3333 7.00003V8.33337H15.3333V7.00003H13.3333ZM7.99996 3.6667C5.79329 3.6667 3.99996 5.46003 3.99996 7.6667C3.99996 9.87337 5.79329 11.6667 7.99996 11.6667C10.2066 11.6667 12 9.87337 12 7.6667C12 5.46003 10.2066 3.6667 7.99996 3.6667ZM7.33329 14.9667H8.66663V13H7.33329V14.9667ZM2.36663 12.36L3.30663 13.3L4.49996 12.1L3.55996 11.16L2.36663 12.36Z" fill="#FFFFFF" />
-              </svg>
-              <svg
-                viewBox="0 0 23 23"
-                className="h-8 w-8 text-dark dark:hidden"
-              >
-                <path d="M16.6111 15.855C17.591 15.1394 18.3151 14.1979 18.7723 13.1623C16.4824 13.4065 14.1342 12.4631 12.6795 10.4711C11.2248 8.47905 11.0409 5.95516 11.9705 3.84818C10.8449 3.9685 9.72768 4.37162 8.74781 5.08719C5.7759 7.25747 5.12529 11.4308 7.29558 14.4028C9.46586 17.3747 13.6392 18.0253 16.6111 15.855Z" />
-              </svg>
-            </button>
-            <div className="hidden max-w-[min(20rem,46vw)] lg:block">
-              <HeaderUserArea />
-            </div>
             <button
               onClick={() => setNavbarOpen(!navbarOpen)}
               className="block rounded-lg p-2 lg:hidden"
@@ -154,23 +187,51 @@ const Header: React.FC = () => {
             </button>
           </div>
           <nav className="flex flex-col items-start p-4">
-            {headerData.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setNavbarOpen(false)}
-                className="w-full rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              >
-                {item.label}
-              </Link>
-            ))}
-            <div className="mt-4 w-full">
-              <HeaderUserArea
-                compact
-                onNavigate={() => setNavbarOpen(false)}
-                classNameLink="inline-flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-white py-1.5 pl-1.5 pr-3 shadow-sm dark:border-gray-600 dark:bg-gray-800"
-              />
-            </div>
+            {headerItems.map((item) => {
+              const hasSubmenu = Array.isArray(item.submenu) && item.submenu.length > 0;
+              if (!hasSubmenu) {
+                return (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setNavbarOpen(false)}
+                    className="w-full rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+
+              const key = `${item.label}-${item.href}`;
+              const isOpen = Boolean(openMobileSubmenus[key]);
+
+              return (
+                <div key={key} className="w-full">
+                  <button
+                    type="button"
+                    onClick={() => toggleMobileSubmenu(key)}
+                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    <span>{item.label}</span>
+                    <span className={`text-xs transition-transform ${isOpen ? "rotate-180" : ""}`}>▾</span>
+                  </button>
+                  {isOpen ? (
+                    <div className="ml-2 mt-1 space-y-1 border-l border-slate-200 pl-2 dark:border-slate-700">
+                      {item.submenu?.map((subItem) => (
+                        <Link
+                          key={`${key}-${subItem.href}`}
+                          href={subItem.href}
+                          onClick={() => setNavbarOpen(false)}
+                          className="block rounded-md px-3 py-2 text-xs text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                        >
+                          {subItem.label}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
           </nav>
         </div>
       </div>

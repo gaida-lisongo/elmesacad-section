@@ -1,10 +1,30 @@
 import { HeaderItem } from "@/types/menu";
 
-export const headerData: HeaderItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Produits", href: "/produit" },
-  { label: "Sections", href: "/sections" },
-  { label: "Blog", href: "/blog" },
+export type HeaderSectionItem = {
+  label: string;
+  slug: string;
+};
+
+const baseHeaderData: HeaderItem[] = [
+  { label: "Accueil", href: "/" },
+  { label: "Formations", href: "/formations" },
+  { label: "Etudes", href: "/etudes", submenu: [] },
+  { label: "Laboratoires", href: "/laboratoires" },
+  { label: "Publications", href: "/publications" },
   { label: "Contact", href: "/contact" },
-  { label: "Documentation", href: "/documentation#version" },
 ];
+
+export function buildHeaderData(sections: HeaderSectionItem[]): HeaderItem[] {
+  return baseHeaderData.map((item) => {
+    if (item.label !== "Etudes") return item;
+    return {
+      ...item,
+      submenu: sections.map((section) => ({
+        label: section.label,
+        href: `/etudes/${section.slug}`,
+      })),
+    };
+  });
+}
+
+export const headerData: HeaderItem[] = buildHeaderData([]);

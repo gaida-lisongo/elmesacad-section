@@ -1,11 +1,13 @@
-import React, { FC } from "react";
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import Logo from "../Header/Logo";
-import { footerLinks } from "@/app/api/data";
 import { Icon } from "@iconify/react/dist/iconify.js";
+import { loadPublicFooterLinks } from "@/actions/publicFooterLinks";
 
-const Footer: FC = () => {
+const Footer = async () => {
+  const { filieres, sections } = await loadPublicFooterLinks();
+
   return (
     <footer className="pt-16 dark:bg-dark">
       <div className="container mx-auto lg:max-w-(--breakpoint-xl) md:max-w-(--breakpoint-md) px-4">
@@ -14,12 +16,8 @@ const Footer: FC = () => {
             <Logo />
             <div className="mt-6">
               <p className="text-sm font-light text-muted dark:text-white/60 mb-6">
-                You can relay on our amazing features list and also our customer
-                services will be great experience.
-              </p>
-              <p className="text-sm font-light text-muted dark:text-white/60 mb-0">
-                our amazing features list and also our customer services is
-                great.
+                L&apos;INBTP forme des ingenieurs et techniciens capables de concevoir, construire et innover pour le
+                developpement durable des infrastructures en RDC et en Afrique.
               </p>
             </div>
           </div>
@@ -34,11 +32,10 @@ const Footer: FC = () => {
                 />
                 <div className="">
                   <h5 className="text-sm text-midnight_text dark:text-white mb-4">
-                    Endeavor Head Office
+                    Adresse INBTP
                   </h5>
                   <p className="text-sm text-muted dark:text-white/60">
-                    134, Cornish Building, Some Near by area, New York, USA -
-                    34556
+                    21 Avenue de la Montagne, Jolie Parc/Ngaliema, Kinshasa, RDC
                   </p>
                 </div>
               </div>
@@ -51,10 +48,10 @@ const Footer: FC = () => {
                 />
                 <div className="">
                   <Link
-                    href="#"
+                    href="tel:+243812345678"
                     className="text-sm text-midnight_text dark:text-white mb-0 hover:text-primary!"
                   >
-                    1 (888) 123 4567
+                    +243 81 234 5678
                   </Link>
                 </div>
               </div>
@@ -67,10 +64,10 @@ const Footer: FC = () => {
                 />
                 <div className="">
                   <Link
-                    href="#"
+                    href="mailto:contact@inbtp.ac.cd"
                     className="text-sm text-midnight_text dark:text-white mb-0 hover:text-primary!"
                   >
-                    info@endeavor.com
+                    contact@inbtp.ac.cd
                   </Link>
                 </div>
               </div>
@@ -78,36 +75,42 @@ const Footer: FC = () => {
           </div>
           <div className="lg:col-span-3 md:col-span-4 col-span-6">
             <h4 className="text-base text-midnight_text dark:text-white mb-4">
-              Causes
+              Filieres
             </h4>
-            <ul className="pl-5">
-              {footerLinks.slice(0, 5).map((item, index) => (
-                <li key={index} className="mb-5">
+            <ul className="pl-5 max-h-64 overflow-y-auto pr-2">
+              {filieres.map((item) => (
+                <li key={item.slug} className="mb-4">
                   <Link
-                    href="#"
+                    href={`/filieres/${item.slug}`}
                     className="text-sm relative text-muted dark:text-white/60 hover:text-primary dark:hover:text-primary hover:before:border-primary before:content-[''] before:absolute before:w-2 before:h-2 before:border-t-2 before:border-r-2 before:top-1 before:-left-5 before:rotate-45"
                   >
-                    {item.link}
+                    {item.name}
                   </Link>
                 </li>
               ))}
+              {filieres.length === 0 ? (
+                <li className="text-sm text-muted dark:text-white/60">Aucune filiere disponible.</li>
+              ) : null}
             </ul>
           </div>
           <div className="lg:col-span-3 md:col-span-4 col-span-6">
             <h4 className="text-base text-midnight_text dark:text-white mb-4">
-              Support
+              Sections
             </h4>
-            <ul className="pl-5">
-              {footerLinks.slice(5, 10).map((item, index) => (
-                <li key={index} className="mb-5">
+            <ul className="pl-5 max-h-64 overflow-y-auto pr-2">
+              {sections.map((item) => (
+                <li key={item.slug} className="mb-4">
                   <Link
-                    href="#"
+                    href={`/sections/${item.slug}`}
                     className="text-sm relative text-muted dark:text-white/60 hover:text-primary dark:hover:text-primary hover:before:border-primary before:content-[''] before:absolute before:w-2 before:h-2 before:border-t-2 before:border-r-2 before:top-1 before:-left-5 before:rotate-45"
                   >
-                    {item.link}
+                    {item.name}
                   </Link>
                 </li>
               ))}
+              {sections.length === 0 ? (
+                <li className="text-sm text-muted dark:text-white/60">Aucune section disponible.</li>
+              ) : null}
             </ul>
           </div>
         </div>
@@ -115,12 +118,12 @@ const Footer: FC = () => {
       <div className="border-t border-border dark:border-dark_border">
         <div className="container mx-auto lg:max-w-(--breakpoint-xl) md:max-w-(--breakpoint-md) px-4 flex items-center justify-between py-6 lg:flex-nowrap flex-wrap lg:gap-0 gap-4">
           <p className="text-sm text-midnight_text dark:text-white">
-            © All Rights Reserved by{" "}
+            © Tous droits reserves -{" "}
             <Link
-              href="https://nextjs-templates.com/"
+              href="https://www.inbtp.ac.cd/"
               className="hover:text-primary!"
             >
-              Next.js Templates
+              INBTP
             </Link>
             .
           </p>

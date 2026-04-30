@@ -151,7 +151,7 @@ export default function MarketplaceFacultySection({ sections }: Props) {
 
                     <div>
                       <Link
-                        href={activeSection.slug ? `/sections/${activeSection.slug}` : "/sections"}
+                        href={activeSection.slug ? `/etudes/${activeSection.slug}` : "/sections"}
                         className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-darkprimary"
                       >
                         Voir le detail
