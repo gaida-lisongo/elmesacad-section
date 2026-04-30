@@ -6,12 +6,20 @@ export const metadata: Metadata = {
   title: "Déclaration de présence | INBTP",
 };
 
-export default function PresencePublicPage() {
+type Props = {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function PresencePublicPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const raw = sp.seanceRef;
+  const seanceRefRaw =
+    typeof raw === "string" ? raw.trim() : Array.isArray(raw) ? String(raw[0] ?? "").trim() : "";
+
   return (
     <>
       <HeroSub title="Déclaration de présence" />
-      <PresenceDeclarationClient />
+      <PresenceDeclarationClient seanceRefRaw={seanceRefRaw} />
     </>
   );
 }
-

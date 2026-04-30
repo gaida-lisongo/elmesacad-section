@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
 
 type ApiResult = {
@@ -10,9 +9,11 @@ type ApiResult = {
   data?: unknown;
 };
 
-export default function PresenceDeclarationClient() {
-  const searchParams = useSearchParams();
-  const seanceRefRaw = useMemo(() => String(searchParams.get("seanceRef") ?? "").trim(), [searchParams]);
+type Props = {
+  seanceRefRaw: string;
+};
+
+export default function PresenceDeclarationClient({ seanceRefRaw }: Props) {
   const seanceRef = useMemo(() => normalizeMongoObjectIdString(seanceRefRaw), [seanceRefRaw]);
 
   const [matricule, setMatricule] = useState("");
