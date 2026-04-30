@@ -1,6 +1,7 @@
 "use server";
 
 import { getSessionPayload } from "@/lib/auth/sessionServer";
+import { connectDB } from "@/lib/services/connectedDB";
 import userManager from "@/lib/services/UserManager";
 import { fetchTitulaireService } from "@/lib/service-auth/upstreamFetch";
 import { titulaireFetchChargesAll } from "@/lib/titulaire-service/chargesRemote";
@@ -99,6 +100,7 @@ async function assertTitulaire() {
   if (!session || session.type !== "Agent" || session.role !== "titulaire") {
     throw new Error("Accès réservé aux titulaires.");
   }
+  await connectDB();
   const agent = await userManager.getUserByEmail("Agent", session.email);
   return {
     matricule: String((agent as { matricule?: string } | null)?.matricule ?? "").trim(),
