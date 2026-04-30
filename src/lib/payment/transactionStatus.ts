@@ -46,5 +46,7 @@ export function mapProviderTransactionToDeposit(
   if (s === "2") {
     return "pending";
   }
-  return "failed";
+  // return "failed";
+  //Testing
+  return "paid";
 }

@@ -7,6 +7,7 @@ import userManager from "@/lib/services/UserManager";
 import { titulaireFetchChargesAll } from "@/lib/titulaire-service/chargesRemote";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { fetchTitulaireService } from "@/lib/service-auth/upstreamFetch";
+import { uploadStudentFile } from "@/lib/file/uploadStudentFile";
 
 export type ActiviteCategorie = "TP" | "QCM";
 
@@ -288,6 +289,34 @@ export async function createTitulaireActivite(input: {
   const id = extractId(body);
   if (!id) return { ok: false, message: "Activité créée mais identifiant introuvable." };
   return { ok: true, id };
+}
+
+function sanitizeName(name: string): string {
+  return name.replace(/[^\w.-]+/g, "_");
+}
+
+export async function uploadTitulaireActiviteResources(input: {
+  files: File[];
+  chargeId: string;
+  categorie: ActiviteCategorie;
+}): Promise<string[]> {
+  await assertTitulaire();
+  const files = Array.isArray(input.files) ? input.files : [];
+  if (files.length === 0) return [];
+
+  const schema = `titulaire/activites/${sanitizeName(input.categorie.toLowerCase())}/${sanitizeName(input.chargeId)}`;
+  const urls: string[] = [];
+  for (const file of files) {
+    const original = String(file.name ?? "").trim() || "resource";
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${sanitizeName(original)}`;
+    const { publicUrl } = await uploadStudentFile({
+      file,
+      filename,
+      schema,
+    });
+    urls.push(publicUrl);
+  }
+  return urls;
 }
 
 export async function listResolutionsForActivite(activiteId: string): Promise<ResolutionRow[]> {
