@@ -7,6 +7,12 @@ export async function register() {
     return;
   }
 
+  if (process.env.NODE_ENV === "production" && !process.env.MONGODB_URI?.trim()) {
+    console.error(
+      "[instrumentation] MONGODB_URI est absent : les routes MongoDB échoueront. En Docker, passez l’URI (ex. mongodb://mongo:27017/…), pas localhost vu depuis le conteneur."
+    );
+  }
+
   try {
     const { prefetchServiceJwt } = await import("@/lib/service-auth/getServiceJwt");
     await prefetchServiceJwt();
