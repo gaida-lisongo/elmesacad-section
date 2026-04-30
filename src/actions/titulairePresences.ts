@@ -10,6 +10,7 @@ import { ProgrammeModel } from "@/lib/models/Programme";
 import { SectionModel } from "@/lib/models/Section";
 import { fetchTitulaireService, getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
 import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
+import { TITULAIRE_PRESENCE_STATUS_SET } from "@/lib/titulaire-presence/presenceStatus";
 
 export type ChargePresenceTab = {
   id: string;
@@ -52,6 +53,8 @@ export type PresenceRowView = {
   matiere: string;
   date: string;
   status: "present" | "absent" | "late" | "early" | "excused";
+  /** GeoJSON Point [longitude, latitude] si fourni par le service */
+  coordinates: [number, number] | null;
 };
 
 function pickObject(value: unknown): Record<string, unknown> | null {
@@ -76,6 +79,18 @@ function extractSeancesArrayFromPayload(payload: unknown): unknown[] {
     }
   }
   return [];
+}
+
+function extractPresenceLngLat(raw: Record<string, unknown>): [number, number] | null {
+  const loc = raw.localisation ?? raw.location;
+  if (!loc || typeof loc !== "object" || Array.isArray(loc)) return null;
+  const o = loc as Record<string, unknown>;
+  const c = o.coordinates;
+  if (!Array.isArray(c) || c.length < 2) return null;
+  const lng = Number(c[0]);
+  const lat = Number(c[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return [lng, lat];
 }
 
 function extractPresenceArrayFromPayload(payload: unknown): unknown[] {
@@ -404,7 +419,7 @@ export async function listPresencesForSeance(seanceId: string): Promise<Presence
     throw new Error(String(err?.message ?? err?.error ?? "Impossible de charger les présences."));
   }
   const rowsRaw = extractPresenceArrayFromPayload(presenceBody);
-  return rowsRaw.map((raw) => {
+  const mapped = rowsRaw.map((raw) => {
     const x = (raw ?? {}) as Record<string, unknown>;
     const d = x.date != null ? new Date(String(x.date)) : null;
     return {
@@ -415,35 +430,88 @@ export async function listPresencesForSeance(seanceId: string): Promise<Presence
       matiere: String(x.matiere ?? "").trim(),
       date: d && !Number.isNaN(d.getTime()) ? d.toISOString() : "",
       status: String(x.status ?? "absent") as PresenceRowView["status"],
+      coordinates: extractPresenceLngLat(x),
     };
   });
+
+  console.log("[titulaire-presences] listPresencesForSeance ← réponse service titulaire", {
+    seanceId: id,
+    httpStatus: presenceRes.status,
+    corpsBrut: presenceBody,
+    nombreLignesExtraites: rowsRaw.length,
+    lignesBrutes: rowsRaw,
+    lignesPourUI: mapped,
+  });
+
+  return mapped;
+}
+
+/**
+ * Appel HTTP vers `PATCH|PUT /presences/update/:id` (sans vérif. session — usage interne après `assertTitulaire`).
+ * Aligné sur le routeur titulaire (`Presences.Update: '/update/:id'`) et `findByIdAndUpdate(id, req.body, { new: true })`.
+ */
+async function requestTitulairePresenceUpdate(
+  presenceId: string,
+  body: Record<string, unknown>
+): Promise<void> {
+  const id = String(presenceId ?? "").trim();
+  if (!id || !Types.ObjectId.isValid(id)) {
+    throw new Error("Identifiant de présence invalide.");
+  }
+
+  const path = `/presences/update/${encodeURIComponent(id)}`;
+  const base = getTitulaireServiceBase() ?? "";
+  const fullUrl = `${base.replace(/\/+$/, "")}${path}`;
+
+  const init: RequestInit = {
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+
+  console.log("[titulaire-presences] URL:", fullUrl);
+  console.log("[titulaire-presences] Payload:", init.body);
+
+  let res = await fetchTitulaireService(path, { ...init, method: "PATCH" });
+  if (res.ok) return;
+
+  if (res.status === 405) {
+    console.log("[titulaire-presences] URL (PUT):", fullUrl);
+    console.log("[titulaire-presences] Payload (PUT):", init.body);
+    res = await fetchTitulaireService(path, { ...init, method: "PUT" });
+    if (res.ok) return;
+  }
+
+  const payload = await res.json().catch(() => ({}));
+  const err = pickObject(payload);
+  throw new Error(String(err?.message ?? err?.error ?? `Échec modification présence (${res.status}).`));
+}
+
+/**
+ * Mise à jour d’une présence (enseignant) : même contrat que le service Express (`req.body` → update document).
+ * Exemple : `updateTitulairePresenceById(id, { status: "present" })`.
+ */
+export async function updateTitulairePresenceById(
+  presenceId: string,
+  body: Record<string, unknown>
+): Promise<void> {
+  await assertTitulaire();
+  await requestTitulairePresenceUpdate(presenceId, body);
 }
 
 export async function updatePresencesForSeance(
   entries: Array<{ id: string; status: PresenceRowView["status"] }>
 ): Promise<{ ok: true; updated: number }> {
   await assertTitulaire();
-  const allowed = new Set(["present", "absent", "late", "early", "excused"]);
   const normalized = entries
     .map((e) => ({ id: String(e.id ?? "").trim(), status: String(e.status ?? "").trim() }))
-    .filter((e) => e.id && allowed.has(e.status));
+    .filter((e) => e.id && TITULAIRE_PRESENCE_STATUS_SET.has(e.status));
 
   if (normalized.length === 0) return { ok: true, updated: 0 };
 
   let updated = 0;
   for (const row of normalized) {
-    const res = await fetchTitulaireService(`/presences/${encodeURIComponent(row.id)}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: row.status }),
-    });
-    if (res.ok) {
-      updated += 1;
-      continue;
-    }
-    const payload = await res.json().catch(() => ({}));
-    const err = pickObject(payload);
-    throw new Error(String(err?.message ?? "Échec modification présence."));
+    await requestTitulairePresenceUpdate(row.id, { status: row.status });
+    updated += 1;
   }
 
   return { ok: true, updated };

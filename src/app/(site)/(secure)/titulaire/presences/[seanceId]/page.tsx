@@ -40,7 +40,7 @@ export default async function TitulairePresenceSeancePage({ params, searchParams
   return (
     <PageDetail
       title={`Présences — ${data.seance.label}`}
-      description="Présences remontées par le service titulaire via /presences/seance/:seanceId."
+      description="Présences via titulaire : GET /presences/seance/:id ; mise à jour PATCH /presences/update/:presenceId."
       breadcrumbs={[
         { href: "/", text: "Accueil" },
         { href: "/titulaire/presences", text: "Présences" },

@@ -444,6 +444,7 @@ export interface IPresence extends Document {
 | `GET` | `/seances/charge/:chargeId` | Lister les séances d'une charge horaire |
 | `POST` | `/presences/check` | **Scan QR Code** (Étudiant) - Validation géo + retard |
 | `GET` | `/presences/seance/:seanceId` | Liste des présences pour une séance (Enseignant) |
+| `PATCH` / `PUT` | `/presences/update/:id` | Mise à jour manuelle d’une présence (corps = champs à modifier, ex. `status`) |
 
 **Validation de présence (`POST /api/presences/check`) :**
 - **Payload** : `{ matricule, email, seanceRef, latitude, longitude }`

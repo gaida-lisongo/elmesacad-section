@@ -1,7 +1,18 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import { updatePresencesForSeance, type PresenceRowView } from "@/actions/titulairePresences";
+import { buildPresencesSeanceXlsxBuffer } from "@/lib/presences/buildPresencesSeanceExportWorkbook";
+
+const PresenceLocationsMap = dynamic(() => import("./PresenceLocationsMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[240px] items-center justify-center rounded-lg border border-dashed border-gray-200 text-sm text-gray-500 dark:border-gray-600 dark:text-gray-400">
+      Chargement de la carte…
+    </div>
+  ),
+});
 
 type Initial = {
   seance: {
@@ -43,13 +54,62 @@ export default function TitulairePresenceDetailClient({
 }) {
   const [rows, setRows] = useState<PresenceRowView[]>(() => initialData.rows);
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const emptyRoster = useMemo(() => rows.length === 0, [rows.length]);
 
+  const mapMarkers = useMemo(
+    () =>
+      rows
+        .filter((r): r is PresenceRowView & { coordinates: [number, number] } => r.coordinates != null)
+        .map((r) => ({
+          id: r.id,
+          lat: r.coordinates[1],
+          lng: r.coordinates[0],
+          matricule: r.matricule,
+          status: r.status,
+          statusLabel: STATUS_OPTIONS.find((s) => s.value === r.status)?.label ?? r.status,
+        })),
+    [rows]
+  );
+
   function setStatus(id: string, status: PresenceRowView["status"]) {
     setRows((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+  }
+
+  async function onExportExcel() {
+    setExporting(true);
+    setError(null);
+    try {
+      const buf = await buildPresencesSeanceXlsxBuffer({
+        seance: {
+          id: initialData.seance.id,
+          label: initialData.seance.label,
+          dateSeance: initialData.seance.dateSeance,
+          jour: initialData.seance.jour,
+          heureDebut: initialData.seance.heureDebut,
+          heureFin: initialData.seance.heureFin,
+          salle: initialData.seance.salle,
+        },
+        rows,
+      });
+      const blob = new Blob([buf], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const safeId = initialData.seance.id.replace(/[^\w.-]+/g, "_").slice(0, 24);
+      a.href = url;
+      a.download = `presences-seance-${safeId || "export"}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setError((e as Error).message ?? "Échec de l’export Excel.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   async function onSave() {
@@ -100,12 +160,25 @@ export default function TitulairePresenceDetailClient({
           Aucune présence enregistrée pour cette séance.
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <>
+          {mapMarkers.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">
+                Carte : chaque pastille affiche le matricule et le statut ; clic sur un point pour changer le
+                statut, puis « Enregistrer les statuts » en bas (identique au tableau).
+              </p>
+              <PresenceLocationsMap
+                markers={mapMarkers}
+                statusOptions={STATUS_OPTIONS}
+                onStatusChange={setStatus}
+              />
+            </div>
+          ) : null}
+          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
           <table className="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800/80">
               <tr>
                 <th className="px-3 py-2 text-left text-xs font-semibold">Matricule</th>
-                <th className="px-3 py-2 text-left text-xs font-semibold">Nom</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold">Email</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold">Matière</th>
                 <th className="px-3 py-2 text-left text-xs font-semibold">Date scan</th>
@@ -114,9 +187,8 @@ export default function TitulairePresenceDetailClient({
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-900/40">
               {rows.map((r) => (
-                <tr key={r.matricule}>
+                <tr key={r.id || r.matricule}>
                   <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{r.matricule}</td>
-                  <td className="px-3 py-2">{r.studentName}</td>
                   <td className="px-3 py-2">{r.email || "—"}</td>
                   <td className="px-3 py-2">{r.matiere || "—"}</td>
                   <td className="px-3 py-2">{formatSeanceDate(r.date)}</td>
@@ -124,6 +196,7 @@ export default function TitulairePresenceDetailClient({
                     <select
                       value={r.status}
                       onChange={(e) => setStatus(r.id, e.target.value as PresenceRowView["status"])}
+                      aria-label={`Statut pour ${r.matricule}`}
                       className="w-full max-w-[12rem] rounded-md border border-gray-300 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                     >
                       {STATUS_OPTIONS.map((s) => (
@@ -138,16 +211,25 @@ export default function TitulairePresenceDetailClient({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          onClick={() => void onExportExcel()}
+          disabled={exporting || emptyRoster}
+          className="rounded-md border border-[#082b1c] px-4 py-2 text-sm font-semibold text-[#082b1c] disabled:opacity-50 dark:border-[#5ec998] dark:text-[#5ec998]"
+        >
+          {exporting ? "Export…" : "Exporter Excel (.xlsx)"}
+        </button>
         <button
           type="button"
           onClick={() => void onSave()}
           disabled={saving || emptyRoster}
           className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
         >
-          {saving ? "Enregistrement..." : "Mettre à jour les présences"}
+          {saving ? "Enregistrement..." : "Enregistrer les statuts"}
         </button>
       </div>
     </div>
