@@ -7,7 +7,6 @@ export type HeaderSectionItem = {
 
 const baseHeaderData: HeaderItem[] = [
   { label: "Accueil", href: "/" },
-  { label: "Formations", href: "/formations" },
   { label: "Etudes", href: "/etudes", submenu: [] },
   { label: "Laboratoires", href: "/laboratoires" },
   { label: "Publications", href: "/publications" },
