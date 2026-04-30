@@ -35,10 +35,10 @@ export async function titulaireFetchChargesAll(
   const path = `/charges/all${qs ? `?${qs}` : ""}`;
   const base = getTitulaireServiceBase() ?? "";
   const url = `${base}${path}`;
-  console.log("[TITULAIRE_SERVICE] GET", url);
+  // console.log("[TITULAIRE_SERVICE] GET", url);
   const res = await fetchTitulaireService(path, { method: "GET" });
   const raw = await parseJsonBody(res);
-  console.log("[TITULAIRE_SERVICE] RESPONSE", raw);
+  // console.log("[TITULAIRE_SERVICE] RESPONSE", raw);
   const items = normalizeList(raw);
   return { ok: res.ok, status: res.status, items, raw };
 }

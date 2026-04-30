@@ -83,6 +83,39 @@
   }
 }
 
+@keyframes hero-slide-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes metrics-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes metrics-item-fade {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @layer utilities {
   .animate-dashboard-in {
     animation: dashboard-in 0.5s ease-out both;
@@ -95,6 +128,24 @@
   /** Contenu sous le menu fixe : --app-header-h vient du Header (client). */
   .pt-below-site-header {
     padding-top: calc(var(--app-header-h, 8rem) + 1.5rem);
+  }
+
+  .layout-full-bleed {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
+  }
+
+  .hero-slide-enter {
+    animation: hero-slide-enter 420ms ease-out both;
+  }
+
+  .metrics-fade-in {
+    animation: metrics-fade-in 450ms ease-out both;
+  }
+
+  .metrics-item-fade {
+    animation: metrics-item-fade 520ms ease-out both;
   }
 }
 

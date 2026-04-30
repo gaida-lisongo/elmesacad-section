@@ -6,7 +6,7 @@ import { connectDB } from "@/lib/services/connectedDB";
 import userManager from "@/lib/services/UserManager";
 import { titulaireFetchChargesAll } from "@/lib/titulaire-service/chargesRemote";
 import { ProgrammeModel } from "@/lib/models/Programme";
-import { fetchTitulaireService } from "@/lib/service-auth/upstreamFetch";
+import { fetchTitulaireService, getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
 import { uploadStudentFile } from "@/lib/file/uploadStudentFile";
 
 export type ActiviteCategorie = "TP" | "QCM";
@@ -33,6 +33,21 @@ export type ActiviteListItem = {
   createdAt: string;
 };
 
+export type PublicHeroActivity = {
+  id: string;
+  title: string;
+  summary: string;
+  teacher: string;
+  badge: string;
+  categorie: "tp" | "qcm";
+  matiere: string;
+  unite: string;
+  promotion: string;
+  chargeHoraireId: string;
+  noteMaximale: number;
+  publishedAt: string;
+};
+
 export type ResolutionRow = {
   id: string;
   email: string;
@@ -41,6 +56,14 @@ export type ResolutionRow = {
   note: number;
   status: boolean;
   submittedAt: string;
+};
+
+export type ActiviteDetailView = {
+  id: string;
+  categorie: ActiviteCategorie;
+  noteMaximale: number;
+  dateRemise: string;
+  status: string;
 };
 
 function pickObject(value: unknown): Record<string, unknown> | null {
@@ -85,6 +108,82 @@ function parseDateIso(raw: unknown): string {
   if (!raw) return "";
   const d = new Date(String(raw));
   return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+function mapPublicActivity(raw: unknown): { item: PublicHeroActivity; createdAt: string } | null {
+  const x = pickObject(raw);
+  if (!x) return null;
+  const id = String(x._id ?? x.id ?? "").trim();
+  if (!id) return null;
+
+  const categorieUpper = String(x.categorie ?? "").trim().toUpperCase();
+  const categorie: "tp" | "qcm" = categorieUpper === "QCM" ? "qcm" : "tp";
+  const tp = Array.isArray(x.tp) ? x.tp : [];
+  const qcm = Array.isArray(x.qcm) ? x.qcm : [];
+  const firstTp = pickObject(tp[0]);
+  const firstQcm = pickObject(qcm[0]);
+  const charge = pickObject(x.charge_horaire);
+  const matiereObj = pickObject(charge?.matiere);
+  const uniteObj = pickObject(charge?.unite);
+  const promotionObj = pickObject(charge?.promotion);
+  const titulaireObj = pickObject(charge?.titulaire);
+  const chargeHoraireId = String(charge?._id ?? charge?.id ?? "").trim();
+
+  const title =
+    String(firstTp?.enonce ?? firstQcm?.enonce ?? "").trim() || `${categorieUpper || "ACTIVITE"} ${id.slice(-6)}`;
+  const createdAt = parseDateIso(x.createdAt);
+  const matiere = String(matiereObj?.designation ?? "Matiere non precisee").trim();
+  const unite = String(uniteObj?.designation ?? "Unite non precisee").trim();
+  const promotion = String(promotionObj?.designation ?? "Promotion non precisee").trim();
+  const teacher = String(titulaireObj?.name ?? "Publication enseignant").trim();
+
+  return {
+    item: {
+      id,
+      title,
+      summary: `Categorie ${categorieUpper || "N/A"} · Note max ${Number(x.note_maximale ?? 0)} · ${String(
+        x.status ?? "active"
+      ).trim()}`,
+      teacher,
+      badge: categorieUpper || "ACTIVITE",
+      categorie,
+      matiere,
+      unite,
+      promotion,
+      chargeHoraireId,
+      noteMaximale: Number(x.note_maximale ?? 0),
+      publishedAt: createdAt,
+    },
+    createdAt,
+  };
+}
+
+export async function listRecentActivitesPublic(limit = 6): Promise<PublicHeroActivity[]> {
+  const base = getTitulaireServiceBase();
+
+  if (!base) return [];
+
+  try {
+    const safeLimit = Math.min(Math.max(1, limit), 100);
+    const res = await fetch(`${base}/activites/all?page=1&limit=${safeLimit}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+    const payload = await res.json().catch(() => []);
+    const rows = extractArray(payload, ["data", "items", "rows", "list", "activites"]);
+    console.log("[Liste des activites]", rows);
+    return rows
+      .filter((raw) => String(pickObject(raw)?.status ?? "").trim().toLowerCase() === "active")
+      .map((raw) => mapPublicActivity(raw))
+      .filter((x): x is { item: PublicHeroActivity; createdAt: string } => Boolean(x?.item))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, safeLimit)
+      .map((x) => x.item);
+  } catch {
+    return [];
+  }
 }
 
 function normalizeCategorie(raw: unknown): ActiviteCategorie | null {
@@ -350,4 +449,79 @@ export async function listResolutionsForActivite(activiteId: string): Promise<Re
       } satisfies ResolutionRow;
     })
     .filter((x): x is ResolutionRow => Boolean(x?.id));
+}
+
+export async function getActiviteDetail(activiteId: string): Promise<ActiviteDetailView | null> {
+  await assertTitulaire();
+  const id = String(activiteId ?? "").trim();
+  if (!id) return null;
+  const paths = [
+    `/activites/${encodeURIComponent(id)}`,
+    `/activites/get/${encodeURIComponent(id)}`,
+    `/activites/by-id/${encodeURIComponent(id)}`,
+    "/activites/all",
+  ];
+  for (const path of paths) {
+    const res = await fetchTitulaireService(path, { method: "GET" });
+    if (!res.ok) continue;
+    const payload = await res.json().catch(() => ({}));
+    if (path !== "/activites/all") {
+      const root = pickObject(payload);
+      const data = (pickObject(root?.data) ?? root) as Record<string, unknown> | null;
+      if (!data) continue;
+      const rawId = String(data._id ?? data.id ?? "").trim();
+      if (rawId !== id) continue;
+      const categorie = normalizeCategorie(data.categorie);
+      if (!categorie) continue;
+      return {
+        id: rawId,
+        categorie,
+        noteMaximale: Number(data.note_maximale ?? 0),
+        dateRemise: parseDateIso(data.date_remise),
+        status: String(data.status ?? "").trim(),
+      };
+    }
+    const rows = extractArray(payload, ["data", "items", "rows", "list", "activites"]);
+    const found = rows.find((r) => {
+      const o = pickObject(r);
+      return String(o?._id ?? o?.id ?? "").trim() === id;
+    });
+    const x = pickObject(found);
+    if (!x) continue;
+    const categorie = normalizeCategorie(x.categorie);
+    if (!categorie) continue;
+    return {
+      id,
+      categorie,
+      noteMaximale: Number(x.note_maximale ?? 0),
+      dateRemise: parseDateIso(x.date_remise),
+      status: String(x.status ?? "").trim(),
+    };
+  }
+  return null;
+}
+
+export async function updateResolutionNote(input: {
+  resolutionId: string;
+  note: number;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  await assertTitulaire();
+  const id = String(input.resolutionId ?? "").trim();
+  if (!id) return { ok: false, message: "Résolution invalide." };
+  const note = Number(input.note ?? NaN);
+  if (!Number.isFinite(note)) return { ok: false, message: "Note invalide." };
+
+  const payload = JSON.stringify({ note });
+  const paths = [`/resolutions/update/${encodeURIComponent(id)}`, `resolutions/${encodeURIComponent(id)}`];
+  for (const path of paths) {
+    for (const method of ["PATCH", "PUT"] as const) {
+      const res = await fetchTitulaireService(path.startsWith("/") ? path : `/${path}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+      });
+      if (res.ok) return { ok: true };
+    }
+  }
+  return { ok: false, message: "Mise à jour note impossible." };
 }

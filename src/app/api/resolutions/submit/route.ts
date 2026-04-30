@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
 import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
+import { gradeQcmResolution } from "@/lib/qcm/gradeResolution";
 
 type ResolutionPayload = {
   email: string;
@@ -38,6 +39,27 @@ export async function POST(request: Request) {
   const base = getTitulaireServiceBase();
   if (!base) {
     return NextResponse.json({ success: false, message: "TITULAIRE_SERVICE non configuré." }, { status: 500 });
+  }
+
+  // QCM only: auto-correction before submission.
+  if (payload.reponses_qcm.length > 0) {
+    const activiteRes = await fetch(`${base}/activites/${encodeURIComponent(payload.activite_id)}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    const activiteBody = await activiteRes.json().catch(() => ({} as Record<string, unknown>));
+    if (activiteRes.ok) {
+      const root = isObject(activiteBody) ? activiteBody : {};
+      const data = (isObject(root.data) ? root.data : root) as Record<string, unknown>;
+      const noteMax = Number(data.note_maximale ?? 0);
+      const questions = Array.isArray(data.qcm) ? data.qcm : [];
+      const grading = gradeQcmResolution({
+        noteMaximale: noteMax,
+        questions: questions as Array<{ reponse?: string }>,
+        answers: payload.reponses_qcm,
+      });
+      payload.note = grading.note;
+    }
   }
 
   const upstream = await fetch(`${base}/resolutions/submit`, {

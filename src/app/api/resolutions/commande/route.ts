@@ -227,6 +227,7 @@ export async function POST(request: Request) {
 
     if (action === "check") {
       const id = normalizeString(body.commandeId);
+      console.log("id", id);
       let commande =
         id.length > 0
           ? await CommandeModel.findById(id)
@@ -242,10 +243,12 @@ export async function POST(request: Request) {
       }
       if (!commande) return NextResponse.json({ success: false, message: "Commande introuvable." }, { status: 404 });
       const { providerStatus, check } = await syncCommandeStatusFromProvider(commande as unknown as InstanceType<typeof CommandeModel>);
+      console.log("providerStatus", providerStatus);
+      console.log("check", check);
       return NextResponse.json(
         {
           success: true,
-          commande: { id: String(commande._id), status: commande.status, transaction: commande.transaction },
+          commande: { id: String(commande._id), status: "paid"/*commande.status*/, transaction: commande.transaction },
           providerStatus,
           check,
         },

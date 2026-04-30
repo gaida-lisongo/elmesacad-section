@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import PageDetail from "@/components/secure/PageDetail";
-import { listResolutionsForActivite } from "@/actions/titulaireActivites";
+import { getActiviteDetail, listResolutionsForActivite } from "@/actions/titulaireActivites";
 import TitulaireResolutionsDetailClient from "./TitulaireResolutionsDetailClient";
 
 type Props = {
@@ -13,8 +13,9 @@ export const metadata: Metadata = {
 
 export default async function TitulaireActiviteResolutionsPage({ params }: Props) {
   const { activiteId } = await params;
+  const activite = await getActiviteDetail(activiteId);
   const rows = await listResolutionsForActivite(activiteId);
-  const Card = () => <TitulaireResolutionsDetailClient activiteId={activiteId} rows={rows} />;
+  const Card = () => <TitulaireResolutionsDetailClient activiteId={activiteId} activite={activite} rows={rows} />;
 
   return (
     <PageDetail

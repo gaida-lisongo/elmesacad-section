@@ -1,28 +1,22 @@
-import React from 'react'
+import React from "react";
 import { Metadata } from "next";
-import Hero from '@/components/Home/Hero';
-import Help from '@/components/Home/Help';
-import Causes from '@/components/Home/Causes';
-import FutureEvents from '@/components/Home/FutureEvents';
-import UrgentDonation from '@/components/Home/UrgentDonation';
-import Newsletter from '@/components/Home/NewsLetter';
-import Testimonial from '@/components/Home/Testimonial';
-import Volunteer from '@/components/SharedComponent/Volunteer';
+import MarketplaceHome from "@/components/Home/MarketplaceHome";
+import { listRecentActivitesPublic } from "@/actions/titulaireActivites";
+import { loadPublicMetrics } from "@/actions/publicMetrics";
+
 export const metadata: Metadata = {
-  title: "Endeavor",
+  title: "INBTP Section | Marketplace Academique",
 };
 
-export default function Home() {
+export default async function Home() {
+  const [heroActivities, metrics] = await Promise.all([
+    listRecentActivitesPublic(6),
+    loadPublicMetrics(),
+  ]);
+
   return (
-    <main>
-      <Hero />
-      <Help />
-      <Causes />
-      <FutureEvents />
-      <UrgentDonation />
-      <Newsletter />
-      <Testimonial />
-      <Volunteer />
+    <main className="layout-full-bleed bg-white dark:bg-darkmode">
+      <MarketplaceHome heroActivities={heroActivities} metrics={metrics} />
     </main>
-  )
+  );
 }
