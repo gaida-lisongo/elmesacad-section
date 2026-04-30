@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
 
 type ApiResult = {
   success?: boolean;
@@ -11,7 +12,8 @@ type ApiResult = {
 
 export default function PresenceDeclarationClient() {
   const searchParams = useSearchParams();
-  const seanceRef = useMemo(() => String(searchParams.get("seanceRef") ?? "").trim(), [searchParams]);
+  const seanceRefRaw = useMemo(() => String(searchParams.get("seanceRef") ?? "").trim(), [searchParams]);
+  const seanceRef = useMemo(() => normalizeMongoObjectIdString(seanceRefRaw), [seanceRefRaw]);
 
   const [matricule, setMatricule] = useState("");
   const [email, setEmail] = useState("");
@@ -46,7 +48,11 @@ export default function PresenceDeclarationClient() {
     setError(null);
     try {
       if (!seanceRef) {
-        throw new Error("QR code invalide : seanceRef manquant.");
+        throw new Error(
+          seanceRefRaw
+            ? "QR code ou lien invalide : identifiant de séance incorrect (24 caractères hex attendus)."
+            : "QR code invalide : seanceRef manquant."
+        );
       }
       if (lat == null || lng == null) {
         throw new Error("Activez la localisation avant de valider.");
@@ -81,7 +87,10 @@ export default function PresenceDeclarationClient() {
         Renseignez vos informations puis activez votre localisation pour valider le scan.
       </p>
       <p className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-        Séance : <strong>{seanceRef || "Introuvable"}</strong>
+        Séance :{" "}
+        <strong>
+          {seanceRef ?? (seanceRefRaw ? `(référence invalide : ${seanceRefRaw.slice(0, 40)})` : "Introuvable")}
+        </strong>
       </p>
 
       {message ? <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}

@@ -9,6 +9,7 @@ import { AnneeModel } from "@/lib/models/Annee";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { SectionModel } from "@/lib/models/Section";
 import { fetchTitulaireService, getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
+import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
 
 export type ChargePresenceTab = {
   id: string;
@@ -263,9 +264,10 @@ export async function listSeancesForCharge(chargeId: string): Promise<SeanceList
     .map((raw) => {
       const x = (raw ?? {}) as Record<string, unknown>;
       const nested = pickObject(x.seance);
-      const idVal = String(
+      const idRaw = String(
         x._id ?? x.id ?? x.seanceId ?? x.seance_id ?? nested?._id ?? nested?.id ?? ""
       ).trim();
+      const idVal = normalizeMongoObjectIdString(idRaw) ?? idRaw;
       const dateRaw = x.date ?? x.dateSeance ?? nested?.date;
       const d = dateRaw != null ? new Date(String(dateRaw)) : null;
       return {

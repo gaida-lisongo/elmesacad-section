@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
+import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
 
 type CheckPayload = {
   matricule: string;
@@ -11,16 +12,26 @@ type CheckPayload = {
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => ({}))) as Partial<CheckPayload>;
+  const seanceRefRaw = String(body.seanceRef ?? "").trim();
+  const seanceRefNorm = normalizeMongoObjectIdString(seanceRefRaw);
   const payload: CheckPayload = {
     matricule: String(body.matricule ?? "").trim(),
     email: String(body.email ?? "").trim(),
-    seanceRef: String(body.seanceRef ?? "").trim(),
+    seanceRef: seanceRefNorm ?? "",
     latitude: Number(body.latitude ?? NaN),
     longitude: Number(body.longitude ?? NaN),
   };
 
   if (!payload.matricule || !payload.email || !payload.seanceRef) {
-    return NextResponse.json({ success: false, message: "matricule, email et seanceRef sont requis." }, { status: 400 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: seanceRefRaw
+          ? `seanceRef invalide (attendu : 24 caractères hex). Reçu : ${seanceRefRaw.slice(0, 40)}`
+          : "matricule, email et seanceRef sont requis.",
+      },
+      { status: 400 }
+    );
   }
   if (!Number.isFinite(payload.latitude) || !Number.isFinite(payload.longitude)) {
     return NextResponse.json({ success: false, message: "Coordonnées GPS invalides." }, { status: 400 });
