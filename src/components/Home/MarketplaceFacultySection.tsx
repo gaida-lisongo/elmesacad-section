@@ -73,16 +73,16 @@ export default function MarketplaceFacultySection({ sections }: Props) {
           className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-darklight"
         >
           <div className="grid lg:grid-cols-12">
-            <div className="relative min-h-[420px] lg:col-span-8 lg:min-h-[500px]">
+            <div className="relative overflow-hidden lg:col-span-8 lg:min-h-[500px]">
               <img
                 src="/images/inbtp/jpg/img-13.jpg"
                 alt="Institution INBTP"
-                className="h-full w-full object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-slate-900/75 to-primary/55" />
 
-              <div className="absolute inset-0 p-6 sm:p-8">
-                <div className="flex h-full flex-col justify-between">
+              <div className="relative z-10 p-6 sm:p-8">
+                <div className="flex flex-col gap-6 lg:h-full lg:justify-between">
                   <div className="space-y-5">
                     <div className="h-20 w-20 overflow-hidden rounded-3xl border border-white/40 bg-white/15 p-1.5 shadow-xl backdrop-blur-sm">
                       <img
@@ -122,7 +122,7 @@ export default function MarketplaceFacultySection({ sections }: Props) {
                     </ul>
                   </div>
 
-                  <div className="mt-6 grid gap-3">
+                  <div className="grid gap-3">
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div className="rounded-xl border border-white/20 bg-white/10 p-3 backdrop-blur-sm">
                         <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-blue-200">

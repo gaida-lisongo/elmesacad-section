@@ -4,20 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import type { PublicHeroActivity } from "@/actions/titulaireActivites";
 import type { PublicMetrics } from "@/actions/publicMetrics";
 import type { PublicSectionCard } from "@/actions/publicSections";
+import type { PublicSeanceCard } from "@/actions/publicSeances";
 import MarketplaceFacultySection from "@/components/Home/MarketplaceFacultySection";
 import MarketplaceHeroSection from "@/components/Home/MarketplaceHeroSection";
-import MarketplaceHowItWorksSection from "@/components/Home/MarketplaceHowItWorksSection";
 import MarketplaceMetricsPanel from "@/components/Home/MarketplaceMetricsPanel";
-import { howItWorks, mockActivitySlides } from "@/components/Home/marketplaceHome.data";
+import MarketplaceSeances from "@/components/Home/MarketplaceSeances";
+import { mockActivitySlides } from "@/components/Home/marketplaceHome.data";
 
 export default function MarketplaceHome({
   heroActivities,
   metrics,
   sections,
+  seances,
 }: {
   heroActivities?: PublicHeroActivity[];
   metrics: PublicMetrics;
   sections: PublicSectionCard[];
+  seances: PublicSeanceCard[];
 }) {
   const activitySlides =
     heroActivities && heroActivities.length > 0 ? heroActivities : mockActivitySlides;
@@ -71,7 +74,7 @@ export default function MarketplaceHome({
         <MarketplaceFacultySection
           sections={sections}
         />
-        <MarketplaceHowItWorksSection howItWorks={howItWorks} />
+        <MarketplaceSeances seances={seances} />
 
       </div>
     </main>
