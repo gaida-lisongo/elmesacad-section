@@ -56,5 +56,7 @@ export const config = {
     "/section/:path*",
     "/charge-matiere",
     "/charge-matiere/:path*",
+    "/titulaire",
+    "/titulaire/:path*",
   ],
 };
