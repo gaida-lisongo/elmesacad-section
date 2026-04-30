@@ -19,12 +19,14 @@ export default function MarketplaceMetricsPanel({ metrics }: { metrics: PublicMe
             { key: "unites", label: "Unites", value: metrics.unites, icon: "mdi:school-outline" },
             { key: "matieres", label: "Matieres", value: metrics.matieres, icon: "mdi:book-open-page-variant-outline" },
             { key: "sections", label: "Sections", value: metrics.sections, icon: "mdi:view-grid-outline" },
-          ].map((item) => (
+          ].map((item, index) => (
             <motion.article
               key={item.key}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 18, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 0.1 + index * 0.08, duration: 0.35 }}
+              whileHover={{ y: -6, scale: 1.025, boxShadow: "0 18px 35px rgba(15, 23, 42, 0.18)" }}
+              whileTap={{ scale: 0.99 }}
               className="metrics-item-fade rounded-2xl border border-slate-100 bg-gradient-to-br from-white to-slate-50 px-4 py-5 text-slate-900 shadow-lg dark:border-slate-700 dark:from-darkmode dark:to-darklight"
             >
               <div className="flex items-center gap-2.5">

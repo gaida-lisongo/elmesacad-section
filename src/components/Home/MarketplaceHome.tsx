@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PublicHeroActivity } from "@/actions/titulaireActivites";
 import type { PublicMetrics } from "@/actions/publicMetrics";
+import type { PublicSectionCard } from "@/actions/publicSections";
 import MarketplaceFacultySection from "@/components/Home/MarketplaceFacultySection";
 import MarketplaceHeroSection from "@/components/Home/MarketplaceHeroSection";
 import MarketplaceHowItWorksSection from "@/components/Home/MarketplaceHowItWorksSection";
 import MarketplaceMetricsPanel from "@/components/Home/MarketplaceMetricsPanel";
-import { faculties, howItWorks, mockActivitySlides } from "@/components/Home/marketplaceHome.data";
+import { howItWorks, mockActivitySlides } from "@/components/Home/marketplaceHome.data";
 
 export default function MarketplaceHome({
   heroActivities,
   metrics,
+  sections,
 }: {
   heroActivities?: PublicHeroActivity[];
   metrics: PublicMetrics;
+  sections: PublicSectionCard[];
 }) {
   const activitySlides =
     heroActivities && heroActivities.length > 0 ? heroActivities : mockActivitySlides;
 
   const [slideIndex, setSlideIndex] = useState(0);
-  const [facultyTab, setFacultyTab] = useState(faculties[0]?.id ?? "");
   const touchStartXRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -29,11 +31,6 @@ export default function MarketplaceHome({
     }, 5000);
     return () => window.clearInterval(timer);
   }, []);
-
-  const activeFaculty = useMemo(
-    () => faculties.find((item) => item.id === facultyTab) ?? faculties[0],
-    [facultyTab]
-  );
 
   const goToNextSlide = () => {
     setSlideIndex((current) => (current + 1) % activitySlides.length);
@@ -72,9 +69,7 @@ export default function MarketplaceHome({
           <MarketplaceMetricsPanel metrics={metrics} />
         </section>
         <MarketplaceFacultySection
-          faculties={faculties}
-          activeFaculty={activeFaculty}
-          onSelectFaculty={setFacultyTab}
+          sections={sections}
         />
         <MarketplaceHowItWorksSection howItWorks={howItWorks} />
 
