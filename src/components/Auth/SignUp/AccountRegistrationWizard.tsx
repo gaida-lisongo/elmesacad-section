@@ -24,7 +24,7 @@ type Props = {
 };
 
 const fieldClass =
-  "w-full rounded-lg border border-border dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 px-4 py-2.5 text-sm text-midnight_text outline-none transition focus:border-[#082b1c] focus:ring-2 focus:ring-[#082b1c]/20 dark:text-white";
+  "w-full rounded-lg border border-border dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 px-4 py-2.5 text-sm text-midnight_text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:text-white";
 
 const labelClass = "mb-1.5 block text-left text-xs font-medium text-gray-600 dark:text-gray-300";
 
@@ -166,7 +166,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
 
   return (
     <div className="flex w-full max-w-4xl flex-col gap-6 text-left md:flex-row md:items-stretch">
-      <div className="relative hidden w-full min-h-[200px] shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#082b1c] to-[#0d3d28] md:block md:max-w-[280px]">
+      <div className="relative hidden w-full min-h-[200px] shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-blue-700 md:block md:max-w-[280px]">
         <Image
           src={photoSrc}
           alt=""
@@ -188,7 +188,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
               <div
                 className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold ${
                   step >= s.n
-                    ? "bg-[#082b1c] text-white"
+                    ? "bg-primary text-white"
                     : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
                 }`}
               >
@@ -196,7 +196,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
               </div>
               {i < steps.length - 1 && (
                 <div
-                  className={`mx-0.5 h-0.5 w-4 md:w-6 ${step > s.n ? "bg-[#082b1c]" : "bg-gray-200 dark:bg-gray-600"}`}
+                  className={`mx-0.5 h-0.5 w-4 md:w-6 ${step > s.n ? "bg-primary" : "bg-gray-200 dark:bg-gray-600"}`}
                 />
               )}
             </div>
@@ -214,7 +214,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
               onClick={() => setAccountKind(k)}
               className={`flex-1 rounded-lg py-2 text-sm font-semibold transition ${
                 accountKind === k
-                  ? "bg-white text-[#082b1c] shadow dark:bg-gray-700 dark:text-white"
+                  ? "bg-white text-primary shadow dark:bg-gray-700 dark:text-white"
                   : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
               }`}
             >
@@ -256,7 +256,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                   <span
                     className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
                       selected.status === "active"
-                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-200"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200"
                         : "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200"
                     }`}
                   >
@@ -282,7 +282,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                 type="button"
                 onClick={goStep2}
                 disabled={!selected || selected.status === "active"}
-                className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Continuer
               </button>
@@ -332,7 +332,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
                 type="button"
                 onClick={goStep3From2}
                 disabled={step2Loading}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {step2Loading && (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -430,7 +430,7 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
               <button
                 type="submit"
                 disabled={step3Loading}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {step3Loading && (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

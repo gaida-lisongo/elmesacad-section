@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 const SigninPage = () => {
   return (
     <>
-      <Breadcrumb pageName="Connexion" />
+      <Breadcrumb
+        pageName="Connexion"
+        pageDescription="Accedez a votre espace personnel en toute securite."
+      />
       <SigninView />
     </>
   );

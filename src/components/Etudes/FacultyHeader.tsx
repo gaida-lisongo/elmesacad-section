@@ -8,13 +8,26 @@ type Props = {
   facultyName: string;
   facultyTagline: string;
   sectionSlug: string;
+  onSearch?: (query: string) => void;
+  onOpenCourses?: () => void;
 };
 
-export default function FacultyHeader({ facultyName, facultyTagline, sectionSlug }: Props) {
+export default function FacultyHeader({
+  facultyName,
+  facultyTagline,
+  sectionSlug,
+  onSearch,
+  onOpenCourses,
+}: Props) {
   const [query, setQuery] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedQuery = query.trim();
+    if (!normalizedQuery) return;
+    if (onSearch) {
+      onSearch(normalizedQuery);
+    }
   };
 
   return (
@@ -87,13 +100,24 @@ export default function FacultyHeader({ facultyName, facultyTagline, sectionSlug
           className="mt-4 flex flex-wrap items-center gap-3 text-sm"
         >
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-            <Link
-              href={`/etudes/${sectionSlug}/cours`}
-              className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/10 px-3 py-1.5 font-semibold text-white underline decoration-white/80 decoration-2 underline-offset-4 transition hover:bg-white/20"
-            >
-              Tous les cours
-              <span aria-hidden="true">-&gt;</span>
-            </Link>
+            {onOpenCourses ? (
+              <button
+                type="button"
+                onClick={onOpenCourses}
+                className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/10 px-3 py-1.5 font-semibold text-white underline decoration-white/80 decoration-2 underline-offset-4 transition hover:bg-white/20"
+              >
+                Tous les cours
+                <span aria-hidden="true">-&gt;</span>
+              </button>
+            ) : (
+              <Link
+                href={`/etudes/${sectionSlug}/cours`}
+                className="inline-flex items-center gap-1 rounded-full border border-white/60 bg-white/10 px-3 py-1.5 font-semibold text-white underline decoration-white/80 decoration-2 underline-offset-4 transition hover:bg-white/20"
+              >
+                Tous les cours
+                <span aria-hidden="true">-&gt;</span>
+              </Link>
+            )}
           </motion.div>
           <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
             <Link

@@ -50,7 +50,7 @@ export function DashboardAnneesArticle({
                     disabled={!w.id || !onCurrentAnneeChange}
                     className={`font-medium text-midnight_text dark:text-white ${
                       currentAnneeId && w.id === currentAnneeId
-                        ? "underline decoration-emerald-500 decoration-2 underline-offset-4"
+                        ? "underline decoration-primary decoration-2 underline-offset-4"
                         : ""
                     }`}
                   >

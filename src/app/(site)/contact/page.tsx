@@ -1,6 +1,6 @@
 import React from "react";
-import HeroSub from "@/components/SharedComponent/HeroSub";
 import { Metadata } from "next";
+import Breadcrumb from "@/components/Common/Breadcrumb";
 import TicketContactForm from "@/components/Ticket/TicketContactForm";
 
 export const metadata: Metadata = {
@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 const page = () => {
   return (
     <>
-      <HeroSub title="Contact" />
+      <Breadcrumb
+        pageName="Contact"
+        pageDescription="Soumettez votre demande au support et recevez une reference pour suivre votre ticket."
+      />
       <TicketContactForm />
     </>
   );

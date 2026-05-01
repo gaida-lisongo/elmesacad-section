@@ -17,6 +17,8 @@ type SectionRaw = {
   designation?: string;
   cycle?: string;
   email?: string;
+  website?: string;
+  telephone?: string;
   slug?: string;
   logo?: string;
   description?: { title?: string; contenu?: string }[];
@@ -30,6 +32,10 @@ type SectionRaw = {
     chefSection?: AgentLite | null;
     chargeEnseignement?: AgentLite | null;
     chargeRecherche?: AgentLite | null;
+  };
+  gestionnaires?: {
+    secretaire?: AgentLite | null;
+    appariteur?: AgentLite | null;
   };
   jury?: {
     cours?: {
@@ -52,7 +58,13 @@ export type PublicSectionCard = {
   slug: string;
   logo: string;
   email: string;
+  telephone: string;
+  website: string;
   descriptionTitles: string[];
+  descriptionItems: {
+    title: string;
+    content: string;
+  }[];
   programmesCount: number;
   programmes: {
     id: string;
@@ -77,12 +89,27 @@ export type PublicSectionCard = {
     matricule: string;
     photo: string;
   }[];
+  contactMembers: {
+    id: string;
+    group: "Organisateur" | "Gestionnaire";
+    role: string;
+    name: string;
+    email: string;
+    telephone: string;
+    photo: string;
+  }[];
 };
 
 function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
   const descriptionTitles = (row.description ?? [])
     .map((item) => item?.title?.trim() ?? "")
     .filter((title) => title.length > 0);
+  const descriptionItems = (row.description ?? [])
+    .map((item) => ({
+      title: item?.title?.trim() ?? "",
+      content: item?.contenu?.trim() ?? "",
+    }))
+    .filter((item) => item.title.length > 0 || item.content.length > 0);
 
   const bureauMembers = [
     {
@@ -111,6 +138,37 @@ function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
       telephone: row.bureau?.chargeRecherche?.telephone?.trim() ?? "",
       matricule: row.bureau?.chargeRecherche?.matricule?.trim() ?? "",
       photo: row.bureau?.chargeRecherche?.photo?.trim() ?? "",
+    },
+  ].filter((member) => member.name.length > 0);
+  const contactMembers = [
+    ...bureauMembers
+      .filter((member) => member.role !== "Chef de section")
+      .map((member) => ({
+        id: member.id,
+        group: "Organisateur" as const,
+        role: member.role,
+        name: member.name,
+        email: member.email,
+        telephone: member.telephone,
+        photo: member.photo,
+      })),
+    {
+      id: String(row.gestionnaires?.secretaire?._id ?? ""),
+      group: "Gestionnaire" as const,
+      role: "Secretaire",
+      name: row.gestionnaires?.secretaire?.name?.trim() ?? "",
+      email: row.gestionnaires?.secretaire?.email?.trim() ?? "",
+      telephone: row.gestionnaires?.secretaire?.telephone?.trim() ?? "",
+      photo: row.gestionnaires?.secretaire?.photo?.trim() ?? "",
+    },
+    {
+      id: String(row.gestionnaires?.appariteur?._id ?? ""),
+      group: "Gestionnaire" as const,
+      role: "Appariteur",
+      name: row.gestionnaires?.appariteur?.name?.trim() ?? "",
+      email: row.gestionnaires?.appariteur?.email?.trim() ?? "",
+      telephone: row.gestionnaires?.appariteur?.telephone?.trim() ?? "",
+      photo: row.gestionnaires?.appariteur?.photo?.trim() ?? "",
     },
   ].filter((member) => member.name.length > 0);
 
@@ -172,7 +230,10 @@ function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
     slug: row.slug?.trim() || "",
     logo: row.logo?.trim() || "/images/logo.png",
     email: row.email?.trim() || "Email indisponible",
+    telephone: row.telephone?.trim() || "",
+    website: row.website?.trim() || "",
     descriptionTitles,
+    descriptionItems,
     programmesCount: row.programmes?.length ?? 0,
     programmes: (row.programmes ?? []).map((programme) => ({
       id: String(programme?._id ?? ""),
@@ -182,6 +243,7 @@ function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
     })),
     juryMembers,
     bureauMembers,
+    contactMembers,
   };
 }
 
@@ -197,10 +259,12 @@ export async function listPublicSections(): Promise<PublicSectionCard[]> {
       .populate("jury.recherche.president", "name email photo")
       .populate("jury.recherche.secretaire", "name email photo")
       .populate("jury.recherche.membres", "name email photo")
+      .populate("gestionnaires.secretaire", "name email telephone matricule photo")
+      .populate("gestionnaires.appariteur", "name email telephone matricule photo")
       .populate("bureau.chefSection", "name email telephone matricule photo")
       .populate("bureau.chargeEnseignement", "name email telephone matricule photo")
       .populate("bureau.chargeRecherche", "name email telephone matricule photo")
-      .select("designation cycle email slug logo description programmes bureau jury")
+      .select("designation cycle email website telephone slug logo description programmes bureau jury gestionnaires")
       .lean()
       .exec()) as SectionRaw[];
 
@@ -224,10 +288,12 @@ export async function getPublicSectionBySlug(slug: string): Promise<PublicSectio
       .populate("jury.recherche.president", "name email photo")
       .populate("jury.recherche.secretaire", "name email photo")
       .populate("jury.recherche.membres", "name email photo")
+      .populate("gestionnaires.secretaire", "name email telephone matricule photo")
+      .populate("gestionnaires.appariteur", "name email telephone matricule photo")
       .populate("bureau.chefSection", "name email telephone matricule photo")
       .populate("bureau.chargeEnseignement", "name email telephone matricule photo")
       .populate("bureau.chargeRecherche", "name email telephone matricule photo")
-      .select("designation cycle email slug logo description programmes bureau jury")
+      .select("designation cycle email website telephone slug logo description programmes bureau jury gestionnaires")
       .lean()
       .exec()) as SectionRaw | null;
 

@@ -140,7 +140,7 @@ export function TableChargeHoraire({ payload }: Props) {
               onClick={() => setActiveSemestreId("all")}
               className={`rounded-full border px-3 py-1 text-xs transition ${
                 activeSemestreId === "all"
-                  ? "border-[#082b1c] bg-[#082b1c] text-white dark:border-[#5ec998] dark:bg-[#5ec998] dark:text-gray-900"
+                  ? "border-primary bg-primary text-white dark:border-primary dark:bg-primary dark:text-white"
                   : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
               }`}
             >
@@ -156,7 +156,7 @@ export function TableChargeHoraire({ payload }: Props) {
                   onClick={() => setActiveSemestreId(sid)}
                   className={`rounded-full border px-3 py-1 text-xs transition ${
                     isActive
-                      ? "border-[#082b1c] bg-[#082b1c] text-white dark:border-[#5ec998] dark:bg-[#5ec998] dark:text-gray-900"
+                      ? "border-primary bg-primary text-white dark:border-primary dark:bg-primary dark:text-white"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                   }`}
                 >
@@ -209,7 +209,7 @@ export function TableChargeHoraire({ payload }: Props) {
                   <td className="px-3 py-2">
                     <Link
                       href={`/charge-matiere/${activeProgrammeId}_${u.uniteId}`}
-                      className="font-medium text-[#082b1c] underline dark:text-[#5ec998]"
+                      className="font-medium text-primary underline dark:text-primary"
                     >
                       Gérer
                     </Link>

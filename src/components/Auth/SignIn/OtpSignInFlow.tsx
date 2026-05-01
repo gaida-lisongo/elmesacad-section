@@ -23,7 +23,7 @@ const steps = [
 ];
 
 const fieldClass =
-  "w-full rounded-lg border border-gray-200 bg-white/90 px-4 py-2.5 text-sm dark:border-gray-600 dark:bg-gray-800/80 dark:text-white focus:border-[#082b1c] focus:ring-2 focus:ring-[#082b1c]/20";
+  "w-full rounded-lg border border-gray-200 bg-white/90 px-4 py-2.5 text-sm dark:border-gray-600 dark:bg-gray-800/80 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20";
 
 type AgentWithAuth = Agent & { authorizations: Authorization[] };
 
@@ -134,7 +134,7 @@ export function OtpSignInFlow() {
             <div
               className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold ${
                 step >= s.n
-                  ? "bg-[#082b1c] text-white"
+                  ? "bg-primary text-white"
                   : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
               }`}
             >
@@ -142,7 +142,7 @@ export function OtpSignInFlow() {
             </div>
             {i < steps.length - 1 && (
               <div
-                className={`mx-0.5 h-0.5 w-4 sm:w-8 ${step > s.n ? "bg-[#082b1c]" : "bg-gray-200 dark:bg-gray-600"}`}
+                className={`mx-0.5 h-0.5 w-4 sm:w-8 ${step > s.n ? "bg-primary" : "bg-gray-200 dark:bg-gray-600"}`}
               />
             )}
           </div>
@@ -169,7 +169,7 @@ export function OtpSignInFlow() {
                 }}
                 className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
                   accountKind === k
-                    ? "bg-white text-[#082b1c] shadow dark:bg-gray-700 dark:text-white"
+                    ? "bg-white text-primary shadow dark:bg-gray-700 dark:text-white"
                     : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
                 }`}
               >
@@ -202,7 +202,7 @@ export function OtpSignInFlow() {
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Link
               href="/signup"
-              className="text-center text-sm text-[#082b1c] underline dark:text-emerald-400"
+              className="text-center text-sm text-primary underline dark:text-blue-300"
             >
               Créer un compte
             </Link>
@@ -210,7 +210,7 @@ export function OtpSignInFlow() {
               type="button"
               onClick={requestOtp}
               disabled={!selected || requestLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#082b1c] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
             >
               {requestLoading && (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -251,7 +251,7 @@ export function OtpSignInFlow() {
             <button
               type="submit"
               disabled={verifyLoading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#082b1c] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
             >
               {verifyLoading && (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
@@ -264,7 +264,7 @@ export function OtpSignInFlow() {
 
       {step === 3 && profile && (
         <div className="space-y-6">
-          <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 to-white p-5 dark:border-emerald-900/40 dark:from-emerald-950/30 dark:to-gray-900/80">
+          <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50/90 to-white p-5 dark:border-blue-900/40 dark:from-blue-950/30 dark:to-gray-900/80">
             <div className="flex items-start gap-4">
               <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl ring-2 ring-white dark:ring-gray-700">
                 <Image
@@ -276,7 +276,7 @@ export function OtpSignInFlow() {
                 />
               </div>
               <div>
-                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Bienvenue !</p>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Bienvenue !</p>
                 <h2 className="text-xl font-bold text-midnight_text dark:text-white">{displayName}</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
                   {typeof profile.email === "string" ? profile.email : ""}
@@ -301,7 +301,7 @@ export function OtpSignInFlow() {
             <button
               type="button"
               onClick={() => router.push("/")}
-              className="inline-flex items-center justify-center rounded-lg bg-[#082b1c] px-5 py-2.5 text-sm font-semibold text-white"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white"
             >
               Continuer
             </button>
@@ -319,7 +319,7 @@ function StudentPanel({ user }: { user: Student }) {
     <div className="grid gap-4 md:grid-cols-2">
       <div className="rounded-xl border border-gray-200/90 bg-white/90 p-4 dark:border-gray-600 dark:bg-gray-800/60">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-midnight_text dark:text-white">
-          <Icon icon="solar:wallet-money-bold-duotone" className="h-5 w-5 text-[#082b1c]" />
+          <Icon icon="solar:wallet-money-bold-duotone" className="h-5 w-5 text-primary" />
           Dépôts
         </h3>
         {deposits.length === 0 ? (
@@ -342,7 +342,7 @@ function StudentPanel({ user }: { user: Student }) {
       </div>
       <div className="rounded-xl border border-gray-200/90 bg-white/90 p-4 dark:border-gray-600 dark:bg-gray-800/60">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-midnight_text dark:text-white">
-          <Icon icon="solar:document-text-bold-duotone" className="h-5 w-5 text-[#082b1c]" />
+          <Icon icon="solar:document-text-bold-duotone" className="h-5 w-5 text-primary" />
           Transactions
         </h3>
         {transactions.length === 0 ? (
@@ -376,7 +376,7 @@ function AgentPanel({ user }: { user: AgentWithAuth }) {
     <div className="grid gap-4 md:grid-cols-2">
       <div className="rounded-xl border border-gray-200/90 bg-white/90 p-4 dark:border-gray-600 dark:bg-gray-800/60">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-midnight_text dark:text-white">
-          <Icon icon="solar:shield-check-bold-duotone" className="h-5 w-5 text-[#082b1c]" />
+          <Icon icon="solar:shield-check-bold-duotone" className="h-5 w-5 text-primary" />
           Autorisations
         </h3>
         {auths.length === 0 ? (
@@ -397,7 +397,7 @@ function AgentPanel({ user }: { user: AgentWithAuth }) {
       </div>
       <div className="rounded-xl border border-gray-200/90 bg-white/90 p-4 dark:border-gray-600 dark:bg-gray-800/60">
         <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-midnight_text dark:text-white">
-          <Icon icon="solar:card-send-bold-duotone" className="h-5 w-5 text-[#082b1c]" />
+          <Icon icon="solar:card-send-bold-duotone" className="h-5 w-5 text-primary" />
           Retraits
         </h3>
         {w.length === 0 ? (

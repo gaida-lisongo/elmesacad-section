@@ -90,7 +90,7 @@ export function GestionnaireParcoursTable({
             >
               <p className="text-sm font-semibold text-midnight_text dark:text-white">{programme.designation}</p>
               <p className="mt-1 text-xs text-gray-500">{programme.code || programme.slug}</p>
-              <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">Ouvrir la gestion des parcours</p>
+              <p className="mt-2 text-xs text-blue-700 dark:text-blue-300">Ouvrir la gestion des parcours</p>
             </Link>
           ))}
         </div>

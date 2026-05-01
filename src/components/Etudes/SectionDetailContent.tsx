@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useMemo, useState } from "react";
 import type { PublicSectionCard } from "@/actions/publicSections";
+import SectionContactPanel from "@/components/Etudes/SectionContactPanel";
 
 type Props = {
   section: PublicSectionCard;
@@ -66,6 +67,17 @@ export default function SectionDetailContent({ section }: Props) {
       icon: "mdi:briefcase-search-outline",
     },
   ];
+  const chefSection =
+    section.bureauMembers.find((member) => member.role === "Chef de section") ?? section.bureauMembers[0];
+  const missionItems =
+    section.descriptionItems.length > 0
+      ? section.descriptionItems
+      : [
+          {
+            title: "Mission de la faculte",
+            content: "Le contenu detaille de la mission sera publie prochainement.",
+          },
+        ];
 
   return (
     <main className="relative z-10 mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
@@ -86,11 +98,11 @@ export default function SectionDetailContent({ section }: Props) {
               >
                 <Link
                   href={programme.slug ? `/programme/${programme.slug}` : "#"}
-                  className="group relative block min-h-[220px] rounded-sm border border-blue-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md dark:border-slate-700 dark:bg-darklight"
+                  className="group relative block min-h-[220px] rounded-sm border border-slate-300 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md dark:border-slate-700 dark:bg-darklight"
                 >
                   <div className="absolute left-0 top-0 h-1 w-full bg-gradient-to-r from-primary via-primary/90 to-blue-700" />
                   <div className="mb-4 flex items-center justify-between">
-                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/50 dark:text-blue-200">
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                       <Icon icon="mdi:school-outline" className="text-2xl" />
                     </span>
                   </div>
@@ -227,46 +239,59 @@ export default function SectionDetailContent({ section }: Props) {
         </div>
       </motion.section>
 
-      <motion.article
+      <motion.section
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5, ease: "easeOut" }}
-        className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-darklight"
+        className="mb-8"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">{section.cycle}</p>
-        <h1 className="mt-2 text-3xl font-bold text-blue-950 dark:text-white">{section.name}</h1>
-        <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-          {section.programmesCount} programme(s) rattache(s)
-        </p>
-        <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">Contact: {section.email}</p>
+        <div className="grid gap-4 lg:grid-cols-12">
+          <article className="overflow-hidden border border-slate-300 bg-white shadow-sm dark:border-slate-700 dark:bg-darklight lg:col-span-4">
+            <div className="h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+              <img
+                src={chefSection?.photo || "/images/logo.png"}
+                alt={chefSection?.name || "Chef de section"}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Chef de section</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">
+                {chefSection?.name || "Non renseigne"}
+              </h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                {chefSection?.email || "Email indisponible"}
+              </p>
+              {chefSection?.telephone ? (
+                <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{chefSection.telephone}</p>
+              ) : null}
+            </div>
+          </article>
 
-        <div className="mt-6">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300">
-            Points forts
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {(section.descriptionTitles.length > 0
-              ? section.descriptionTitles
-              : ["Presentation de la section en cours de publication."]).map((item) => (
-              <li
-                key={`${section.id}-${item}`}
-                className="rounded-lg border border-blue-100 bg-blue-50/40 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-200"
+          <div className="space-y-3 lg:col-span-8">
+            <div className="border border-slate-300 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-darklight">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">Mission</p>
+              <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                Comprendre la mission et les engagements de la faculte
+              </p>
+            </div>
+            {missionItems.map((item, index) => (
+              <article
+                key={`${section.id}-${item.title}-${index}`}
+                className="rounded-sm border border-slate-300 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-darklight"
               >
-                {item}
-              </li>
+                <h3 className="text-xl font-bold text-blue-950 dark:text-white">{item.title || "Description"}</h3>
+                <p className="mt-2 text-sm leading-7 text-slate-700 dark:text-slate-200">
+                  {item.content || "Contenu en cours de publication."}
+                </p>
+              </article>
             ))}
-          </ul>
+          </div>
         </div>
 
-        <div className="mt-6">
-          <Link
-            href="/etudes"
-            className="inline-flex items-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-darkprimary"
-          >
-            Retour aux etudes
-          </Link>
-        </div>
-      </motion.article>
+      </motion.section>
+
+      <SectionContactPanel section={section} />
     </main>
   );
 }

@@ -11,9 +11,9 @@ type ActiveAnneeIndicatorProps = {
 export function ActiveAnneeIndicator({ label, className = "" }: ActiveAnneeIndicatorProps) {
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/30 dark:text-emerald-200 ${className}`.trim()}
+      className={`inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs text-blue-800 dark:border-blue-800/60 dark:bg-blue-950/30 dark:text-blue-200 ${className}`.trim()}
     >
-      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+      <span className="inline-block h-2 w-2 rounded-full bg-primary" />
       <span>
         Année de section : <strong>{label || "—"}</strong>
       </span>

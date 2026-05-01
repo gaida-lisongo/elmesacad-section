@@ -9,7 +9,10 @@ export const metadata: Metadata = {
 const SignupPage = () => {
   return (
     <>
-      <Breadcrumb pageName="Inscription" />
+      <Breadcrumb
+        pageName="Inscription"
+        pageDescription="Creez votre compte pour acceder aux services de la plateforme."
+      />
       <SignupView />
     </>
   );

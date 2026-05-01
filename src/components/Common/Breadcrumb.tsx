@@ -17,7 +17,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
       />
       <div className="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-900/75 to-slate-900/55" />
 
-      <div className="relative container mx-auto mt-14 md:mt-16 lg:mt-24">
+      <div className="relative container mx-auto mt-14 px-4 md:mt-16 md:px-6 lg:mt-24">
         <div className="grid gap-6 rounded-2xl border border-white/15 bg-white/10 p-6 backdrop-blur-sm md:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="min-w-0 text-center lg:text-left">
             <h1 className="text-3xl font-extrabold leading-tight text-white sm:text-4xl md:text-5xl">

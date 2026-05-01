@@ -22,6 +22,12 @@ import {
 
 export type ChargesActionResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
+type ProgrammePromotionRef = {
+  id: string;
+  slug: string;
+  designation?: string;
+};
+
 async function messageFromGateResponse(res: Response): Promise<string> {
   try {
     const j = (await res.json()) as { message?: string };
@@ -186,6 +192,57 @@ export async function listChargesHorairesAction(
       };
     }
     return { ok: true, data: r.items };
+  } catch (e) {
+    return { ok: false, message: (e as Error).message };
+  }
+}
+
+/**
+ * Récupère les charges horaires du microservice pour chaque programme
+ * en filtrant avec `promotion_reference` (ici: id local du programme).
+ */
+export async function fetchChargesHorairesByPromotionReferencesAction(
+  programmes: ProgrammePromotionRef[]
+): Promise<
+  ChargesActionResult<
+    Array<{
+      programmeId: string;
+      programmeSlug: string;
+      programmeDesignation: string;
+      ok: boolean;
+      status: number;
+      count: number;
+      items: unknown[];
+    }>
+  >
+> {
+  try {
+    const uniqueProgrammes = programmes.filter(
+      (programme, index, array) =>
+        programme?.id?.trim() &&
+        array.findIndex((item) => item.id.trim() === programme.id.trim()) === index
+    );
+
+    const results = await Promise.all(
+      uniqueProgrammes.map(async (programme) => {
+        const programmeId = programme.id.trim();
+        const remote = await titulaireFetchChargesAll({
+          promotion_reference: programmeId,
+        });
+
+        return {
+          programmeId,
+          programmeSlug: String(programme.slug ?? ""),
+          programmeDesignation: String(programme.designation ?? ""),
+          ok: remote.ok,
+          status: remote.status,
+          count: remote.items.length,
+          items: remote.items,
+        };
+      })
+    );
+
+    return { ok: true, data: results };
   } catch (e) {
     return { ok: false, message: (e as Error).message };
   }

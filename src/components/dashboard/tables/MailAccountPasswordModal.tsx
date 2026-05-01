@@ -131,7 +131,7 @@ export function MailAccountPasswordModal({
           <button
             type="submit"
             disabled={busy}
-            className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-white"
           >
             {busy ? "…" : state.kind === "create" ? "Créer le compte" : "Appliquer"}
           </button>

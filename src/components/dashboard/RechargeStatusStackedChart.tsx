@@ -5,7 +5,7 @@ import type { DashboardChartSeries } from "@/lib/dashboard/types";
 
 const SERIES_STACK_COLORS = [
   "bg-gradient-to-t from-amber-600 to-amber-400 dark:from-amber-500 dark:to-amber-300",
-  "bg-gradient-to-t from-emerald-600 to-emerald-400 dark:from-emerald-500 dark:to-emerald-300",
+  "bg-gradient-to-t from-blue-600 to-blue-400 dark:from-blue-500 dark:to-blue-300",
   "bg-gradient-to-t from-red-600 to-red-400 dark:from-red-500 dark:to-red-300",
 ];
 

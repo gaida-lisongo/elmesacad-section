@@ -123,7 +123,7 @@ export function TransactionsPanel() {
             type="button"
             disabled={exportLoading}
             onClick={() => void downloadExport()}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white dark:bg-primary dark:text-white"
           >
             {exportLoading ? (
               <Icon icon="svg-spinners:ring-resize" className="size-4" />
