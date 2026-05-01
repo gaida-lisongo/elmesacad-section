@@ -3,15 +3,15 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
-import type { StageResourceRow } from "@/actions/organisateurStageResources";
+import type { LaboResourceRow } from "@/actions/gestionnaireLaboResources";
 import {
-  deleteOrganisateurStageResourceAction,
-  listOrganisateurStageResourcesAction,
-  patchOrganisateurStageResourceStatusAction,
-} from "@/actions/organisateurStageResources";
+  deleteGestionnaireLaboResourceAction,
+  listGestionnaireLaboResourcesAction,
+  patchGestionnaireLaboResourceStatusAction,
+} from "@/actions/gestionnaireLaboResources";
 import ResourceWorkspaceShell from "@/components/secure/etudiant-resources/ResourceWorkspaceShell";
 import type { ResourceWorkspaceMode } from "@/components/secure/etudiant-resources/types";
-import OrganisateurStageResourceForm, { type ChefSectionDefaults } from "./OrganisateurStageResourceForm";
+import GestionnaireLaboResourceForm, { type ChefSectionDefaults } from "./GestionnaireLaboResourceForm";
 
 type ProgrammeOption = { slug: string; designation: string; credits: number };
 
@@ -29,11 +29,11 @@ type Props = {
   programmes: ProgrammeOption[];
   juryCoursMembers: JuryCoursMemberOption[];
   chefSection: ChefSectionDefaults;
-  initialData: { rows: StageResourceRow[]; total: number; page: number; limit: number };
+  initialData: { rows: LaboResourceRow[]; total: number; page: number; limit: number };
   initialError?: string;
 };
 
-function creditsLabel(row: StageResourceRow, programmes: ProgrammeOption[]): string {
+function creditsLabel(row: LaboResourceRow, programmes: ProgrammeOption[]): string {
   if (row.matiereCredit > 0) return `${row.matiereCredit} crédit${row.matiereCredit !== 1 ? "s" : ""}`;
   const p = programmes.find((x) => x.slug === row.matiereReference);
   if (p && p.credits > 0) return `${p.credits} crédit${p.credits !== 1 ? "s" : ""} (prog.)`;
@@ -46,7 +46,7 @@ function isPublicationActive(status: string): boolean {
   return st === "active" || st === "published" || st === "disponible";
 }
 
-export default function OrganisateurStageResourcesClient({
+export default function GestionnaireLaboResourcesClient({
   sectionSlug,
   sectionDesignation,
   programmes,
@@ -55,7 +55,7 @@ export default function OrganisateurStageResourcesClient({
   initialData,
   initialError,
 }: Props) {
-  const [rows, setRows] = useState<StageResourceRow[]>(initialData.rows);
+  const [rows, setRows] = useState<LaboResourceRow[]>(initialData.rows);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [limit] = useState(initialData.limit);
@@ -80,7 +80,7 @@ export default function OrganisateurStageResourcesClient({
       setBannerError(undefined);
       startTransition(async () => {
         try {
-          const res = await listOrganisateurStageResourcesAction({
+          const res = await listGestionnaireLaboResourcesAction({
             sectionSlug,
             page: nextPage,
             limit,
@@ -102,18 +102,18 @@ export default function OrganisateurStageResourcesClient({
     setUiMode("create");
   }, []);
 
-  const openEdit = (row: StageResourceRow) => {
+  const openEdit = (row: LaboResourceRow) => {
     setEditingId(row.id);
     setUiMode("edit");
   };
 
-  const onDelete = (row: StageResourceRow) => {
+  const onDelete = (row: LaboResourceRow) => {
     if (!window.confirm(`Supprimer la ressource « ${row.designation} » ?`)) return;
     setBannerError(undefined);
     setDeletingId(row.id);
     startTransition(async () => {
       try {
-        await deleteOrganisateurStageResourceAction({ sectionSlug, id: row.id });
+        await deleteGestionnaireLaboResourceAction({ sectionSlug, id: row.id });
         loadList(page, searchApplied);
       } catch (e) {
         setBannerError((e as Error).message);
@@ -123,14 +123,14 @@ export default function OrganisateurStageResourcesClient({
     });
   };
 
-  const togglePublicationStatus = (row: StageResourceRow) => {
+  const togglePublicationStatus = (row: LaboResourceRow) => {
     const nextActive = !isPublicationActive(row.status);
     const nextStatus = nextActive ? "active" : "inactive";
     setBannerError(undefined);
     setStatusToggleId(row.id);
     void (async () => {
       try {
-        const updated = await patchOrganisateurStageResourceStatusAction({
+        const updated = await patchGestionnaireLaboResourceStatusAction({
           sectionSlug,
           id: row.id,
           status: nextStatus,
@@ -153,11 +153,12 @@ export default function OrganisateurStageResourcesClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-bold tracking-tight text-midnight_text dark:text-white">
-            Stages proposés aux étudiants
+            Bons de laboratoire proposés aux étudiants
           </h2>
           <p className="mt-0.5 max-w-xl text-sm text-gray-600 dark:text-gray-400">
-            Volet <strong>recherche</strong> du service étudiant. Les nouvelles ressources sont créées en{" "}
-            <strong>inactive</strong> ; activez-les ici lorsque le stage doit apparaître sur le service étudiant.
+            Ressources <strong>labo</strong> du service étudiant. Les nouvelles ressources sont créées en{" "}
+            <strong>inactive</strong> ; activez-les ici lorsque le bon de laboratoire doit apparaître sur le service
+            étudiant.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -190,7 +191,7 @@ export default function OrganisateurStageResourcesClient({
                 className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-darkprimary hover:shadow-lg active:scale-[0.98] dark:text-white sm:flex-initial"
               >
                 <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
-                Nouvelle ressource
+                Nouveau bon
               </button>
             ) : null}
           </div>
@@ -216,7 +217,7 @@ export default function OrganisateurStageResourcesClient({
           <Icon icon="solar:danger-triangle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
           <p>
             Aucun programme n&apos;est rattaché à cette section en base locale. Créez d&apos;abord des programmes pour
-            pouvoir associer une ressource stage.
+            pouvoir associer un bon de laboratoire.
           </p>
         </div>
       ) : null}
@@ -225,8 +226,8 @@ export default function OrganisateurStageResourcesClient({
         <div className="flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
           <Icon icon="solar:users-group-rounded-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
           <p>
-            Le <strong>jury de cours</strong> de la section n&apos;a pas encore été configuré. Les encadrants stage doivent
-            en faire partie : complétez le jury avant de créer des ressources.
+            Le <strong>jury de cours</strong> de la section n&apos;a pas encore été configuré. Le titulaire doit être
+            choisi parmi ses membres : complétez le jury avant de créer des ressources.
           </p>
         </div>
       ) : null}
@@ -252,9 +253,9 @@ export default function OrganisateurStageResourcesClient({
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center dark:border-gray-600 dark:bg-gray-900/40">
           <Icon icon="solar:documents-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
-          <p className="font-semibold text-midnight_text dark:text-white">Aucune ressource stage pour cette section</p>
+          <p className="font-semibold text-midnight_text dark:text-white">Aucun bon de laboratoire pour cette section</p>
           <p className="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            Lancez une recherche ou créez une première ressource lorsque le jury de cours est configuré.
+            Créez une première ressource lorsque le jury de cours et les programmes sont configurés.
           </p>
         </div>
       ) : (
@@ -363,7 +364,7 @@ export default function OrganisateurStageResourcesClient({
 
                   <div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
                     <Link
-                      href={`/section/recherche/ressources-stages/stages/${r.id}`}
+                      href={`/section/laboratoires/labos/${r.id}`}
                       className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-800/80 dark:hover:bg-gray-800"
                     >
                       <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
@@ -423,7 +424,7 @@ export default function OrganisateurStageResourcesClient({
   );
 
   const formSlot = (
-    <OrganisateurStageResourceForm
+    <GestionnaireLaboResourceForm
       mode={uiMode === "create" ? "create" : "edit"}
       editingId={editingId}
       sectionSlug={sectionSlug}
@@ -445,7 +446,7 @@ export default function OrganisateurStageResourcesClient({
 
   return (
     <ResourceWorkspaceShell
-      title="Ressources stages — recherche"
+      title="Bons de laboratoire"
       titleIcon="solar:library-bold-duotone"
       description={listDescription}
       mode={uiMode}

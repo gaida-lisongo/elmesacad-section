@@ -65,6 +65,7 @@ export default function OrganisateurSujetResourcesClient({
   const [uiMode, setUiMode] = useState<ResourceWorkspaceMode>("list");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [statusToggleId, setStatusToggleId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const sectionRefDisplay = sectionSlug;
@@ -109,12 +110,15 @@ export default function OrganisateurSujetResourcesClient({
   const onDelete = (row: SujetResourceRow) => {
     if (!window.confirm(`Supprimer la ressource « ${row.designation} » ?`)) return;
     setBannerError(undefined);
+    setDeletingId(row.id);
     startTransition(async () => {
       try {
         await deleteOrganisateurSujetResourceAction({ sectionSlug, id: row.id });
         loadList(page, searchApplied);
       } catch (e) {
         setBannerError((e as Error).message);
+      } finally {
+        setDeletingId(null);
       }
     });
   };
@@ -255,17 +259,28 @@ export default function OrganisateurSujetResourcesClient({
         </div>
       ) : (
         <div
-          className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${pending ? "pointer-events-none opacity-70" : ""}`}
-          aria-busy={pending}
+          className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${pending || deletingId ? "pointer-events-none opacity-70" : ""}`}
+          aria-busy={pending || !!deletingId}
         >
           {rows.map((r) => {
             const active = isPublicationActive(r.status);
             const switching = statusToggleId === r.id;
+            const removing = deletingId === r.id;
             return (
               <article
                 key={r.id}
                 className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900"
               >
+                {removing ? (
+                  <div
+                    className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-white/80 px-4 text-center dark:bg-gray-900/85"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <Icon icon="svg-spinners:ring-resize" className="h-8 w-8 text-primary" aria-hidden />
+                    <p className="text-sm font-semibold text-midnight_text dark:text-white">Suppression en cours…</p>
+                  </div>
+                ) : null}
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-primary via-primary to-sky-400 transition-transform duration-300 group-hover:scale-x-100" />
                 <div className="flex flex-1 flex-col p-5 pt-6">
                   <div className="flex items-start justify-between gap-2">
@@ -304,7 +319,7 @@ export default function OrganisateurSujetResourcesClient({
                       role="switch"
                       aria-checked={active}
                       aria-label={active ? "Désactiver la ressource" : "Activer la ressource"}
-                      disabled={switching || !!statusToggleId}
+                      disabled={switching || !!statusToggleId || !!deletingId}
                       onClick={() => togglePublicationStatus(r)}
                       className={`relative h-8 w-[3.25rem] shrink-0 rounded-full border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-gray-900 ${
                         active
@@ -365,7 +380,8 @@ export default function OrganisateurSujetResourcesClient({
                     <button
                       type="button"
                       onClick={() => onDelete(r)}
-                      className="inline-flex items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
+                      disabled={deletingId !== null}
+                      className="inline-flex items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
                       aria-label="Supprimer"
                     >
                       <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
@@ -386,7 +402,7 @@ export default function OrganisateurSujetResourcesClient({
           <div className="flex gap-2">
             <button
               type="button"
-              disabled={tablePageIndex <= 0 || pending}
+              disabled={tablePageIndex <= 0 || pending || !!deletingId}
               onClick={() => loadList(page - 1, searchApplied)}
               className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800"
             >
@@ -394,7 +410,7 @@ export default function OrganisateurSujetResourcesClient({
             </button>
             <button
               type="button"
-              disabled={pending || tablePageIndex + 1 >= pageCount || total === 0}
+              disabled={pending || tablePageIndex + 1 >= pageCount || total === 0 || !!deletingId}
               onClick={() => loadList(page + 1, searchApplied)}
               className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800"
             >

@@ -1,61 +1,48 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
-import type { StageResourceRow } from "@/actions/organisateurStageResources";
+import type { ReleveResourceRow } from "@/actions/gestionnaireReleveResources";
 import {
-  deleteOrganisateurStageResourceAction,
-  listOrganisateurStageResourcesAction,
-  patchOrganisateurStageResourceStatusAction,
-} from "@/actions/organisateurStageResources";
+  deleteGestionnaireReleveResourceAction,
+  listGestionnaireReleveResourcesAction,
+  patchGestionnaireReleveResourceStatusAction,
+} from "@/actions/gestionnaireReleveResources";
 import ResourceWorkspaceShell from "@/components/secure/etudiant-resources/ResourceWorkspaceShell";
 import type { ResourceWorkspaceMode } from "@/components/secure/etudiant-resources/types";
-import OrganisateurStageResourceForm, { type ChefSectionDefaults } from "./OrganisateurStageResourceForm";
+import GestionnaireReleveResourceForm, { type ChefSectionDefaults } from "./GestionnaireReleveResourceForm";
 
 type ProgrammeOption = { slug: string; designation: string; credits: number };
-
-type JuryCoursMemberOption = {
-  id: string;
-  nom: string;
-  email: string;
-  matricule: string;
-  role: "president" | "secretaire" | "membre";
-};
+type AnneeOption = { slug: string; designation: string; debut: number; fin: number };
 
 type Props = {
   sectionSlug: string;
   sectionDesignation: string;
+  sectionCycle: string;
   programmes: ProgrammeOption[];
-  juryCoursMembers: JuryCoursMemberOption[];
+  annees: AnneeOption[];
   chefSection: ChefSectionDefaults;
-  initialData: { rows: StageResourceRow[]; total: number; page: number; limit: number };
+  initialData: { rows: ReleveResourceRow[]; total: number; page: number; limit: number };
   initialError?: string;
 };
 
-function creditsLabel(row: StageResourceRow, programmes: ProgrammeOption[]): string {
-  if (row.matiereCredit > 0) return `${row.matiereCredit} crédit${row.matiereCredit !== 1 ? "s" : ""}`;
-  const p = programmes.find((x) => x.slug === row.matiereReference);
-  if (p && p.credits > 0) return `${p.credits} crédit${p.credits !== 1 ? "s" : ""} (prog.)`;
-  return "—";
-}
-
-/** Ressource considérée comme publiée / visible pour l’interrupteur (aligné sur les libellés API). */
 function isPublicationActive(status: string): boolean {
   const st = (status || "").toLowerCase();
   return st === "active" || st === "published" || st === "disponible";
 }
 
-export default function OrganisateurStageResourcesClient({
+export default function GestionnaireReleveResourcesClient({
   sectionSlug,
   sectionDesignation,
+  sectionCycle,
   programmes,
-  juryCoursMembers,
+  annees,
   chefSection,
   initialData,
   initialError,
 }: Props) {
-  const [rows, setRows] = useState<StageResourceRow[]>(initialData.rows);
+  const [rows, setRows] = useState<ReleveResourceRow[]>(initialData.rows);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [limit] = useState(initialData.limit);
@@ -68,19 +55,12 @@ export default function OrganisateurStageResourcesClient({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const sectionRefDisplay = sectionSlug;
-
-  const programmeLabel = useCallback(
-    (slug: string) => programmes.find((p) => p.slug === slug)?.designation ?? slug,
-    [programmes]
-  );
-
   const loadList = useCallback(
     (nextPage: number, search: string) => {
       setBannerError(undefined);
       startTransition(async () => {
         try {
-          const res = await listOrganisateurStageResourcesAction({
+          const res = await listGestionnaireReleveResourcesAction({
             sectionSlug,
             page: nextPage,
             limit,
@@ -102,18 +82,18 @@ export default function OrganisateurStageResourcesClient({
     setUiMode("create");
   }, []);
 
-  const openEdit = (row: StageResourceRow) => {
+  const openEdit = (row: ReleveResourceRow) => {
     setEditingId(row.id);
     setUiMode("edit");
   };
 
-  const onDelete = (row: StageResourceRow) => {
+  const onDelete = (row: ReleveResourceRow) => {
     if (!window.confirm(`Supprimer la ressource « ${row.designation} » ?`)) return;
     setBannerError(undefined);
     setDeletingId(row.id);
     startTransition(async () => {
       try {
-        await deleteOrganisateurStageResourceAction({ sectionSlug, id: row.id });
+        await deleteGestionnaireReleveResourceAction({ sectionSlug, id: row.id });
         loadList(page, searchApplied);
       } catch (e) {
         setBannerError((e as Error).message);
@@ -123,17 +103,16 @@ export default function OrganisateurStageResourcesClient({
     });
   };
 
-  const togglePublicationStatus = (row: StageResourceRow) => {
+  const togglePublicationStatus = (row: ReleveResourceRow) => {
     const nextActive = !isPublicationActive(row.status);
-    const nextStatus = nextActive ? "active" : "inactive";
     setBannerError(undefined);
     setStatusToggleId(row.id);
     void (async () => {
       try {
-        const updated = await patchOrganisateurStageResourceStatusAction({
+        const updated = await patchGestionnaireReleveResourceStatusAction({
           sectionSlug,
           id: row.id,
-          status: nextStatus,
+          status: nextActive ? "active" : "inactive",
         });
         setRows((prev) => prev.map((x) => (x.id === row.id ? updated : x)));
       } catch (e) {
@@ -146,87 +125,25 @@ export default function OrganisateurStageResourcesClient({
 
   const tablePageIndex = Math.max(0, page - 1);
   const pageCount = Math.max(1, Math.ceil(total / limit) || 1);
-  const canCreate = programmes.length > 0 && juryCoursMembers.length > 0;
-
-  const toolbar = useMemo(
-    () => (
-      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-midnight_text dark:text-white">
-            Stages proposés aux étudiants
-          </h2>
-          <p className="mt-0.5 max-w-xl text-sm text-gray-600 dark:text-gray-400">
-            Volet <strong>recherche</strong> du service étudiant. Les nouvelles ressources sont créées en{" "}
-            <strong>inactive</strong> ; activez-les ici lorsque le stage doit apparaître sur le service étudiant.
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Filtrer par désignation…"
-            disabled={pending}
-            className="w-full min-w-[14rem] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm outline-none transition-shadow placeholder:text-gray-400 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:w-64"
-          />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                setSearchApplied(searchInput.trim());
-                loadList(1, searchInput.trim());
-              }}
-              disabled={pending}
-              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-midnight_text shadow-sm transition hover:border-gray-300 hover:bg-gray-50 active:scale-[0.98] dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800 sm:flex-initial"
-            >
-              <Icon icon="solar:magnifer-bold-duotone" className="h-4 w-4 text-primary" />
-              Rechercher
-            </button>
-            {canCreate ? (
-              <button
-                type="button"
-                onClick={openCreate}
-                disabled={pending}
-                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-darkprimary hover:shadow-lg active:scale-[0.98] dark:text-white sm:flex-initial"
-              >
-                <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
-                Nouvelle ressource
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    ),
-    [canCreate, loadList, openCreate, pending, searchInput]
-  );
+  const canCreate = programmes.length > 0 && annees.length > 0;
 
   const listDescription = (
     <p className="flex flex-wrap items-center gap-2">
       <Icon icon="solar:buildings-3-bold-duotone" className="h-4 w-4 shrink-0 text-gray-400" />
-      Section locale : <strong>{sectionDesignation}</strong>
+      Section : <strong>{sectionDesignation}</strong>
       <span className="hidden sm:inline">—</span>
-      <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">sectionRef = {sectionRefDisplay}</code>
+      <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">sectionRef = {sectionSlug}</code>
     </p>
   );
 
   const listSlot = (
     <>
-      {programmes.length === 0 ? (
+      {!canCreate ? (
         <div className="flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
           <Icon icon="solar:danger-triangle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
           <p>
-            Aucun programme n&apos;est rattaché à cette section en base locale. Créez d&apos;abord des programmes pour
-            pouvoir associer une ressource stage.
-          </p>
-        </div>
-      ) : null}
-
-      {juryCoursMembers.length === 0 ? (
-        <div className="flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-          <Icon icon="solar:users-group-rounded-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>
-            Le <strong>jury de cours</strong> de la section n&apos;a pas encore été configuré. Les encadrants stage doivent
-            en faire partie : complétez le jury avant de créer des ressources.
+            Ajoutez au moins <strong>un programme</strong> et <strong>une année académique</strong> en base locale pour
+            créer un relevé de cotes.
           </p>
         </div>
       ) : null}
@@ -238,7 +155,52 @@ export default function OrganisateurStageResourcesClient({
         </div>
       ) : null}
 
-      {toolbar}
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-midnight_text dark:text-white">
+            Relevés de cotes (service étudiant)
+          </h2>
+          <p className="mt-0.5 max-w-xl text-sm text-gray-600 dark:text-gray-400">
+            Ressources <strong>releve</strong> rattachées à votre section. Création en <strong>inactive</strong> ;
+            activez la publication lorsque le relevé doit être proposé aux étudiants.
+          </p>
+        </div>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Filtrer par désignation…"
+            disabled={pending}
+            className="w-full min-w-[14rem] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm outline-none dark:border-gray-600 dark:bg-gray-800 dark:text-white sm:w-64"
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setSearchApplied(searchInput.trim());
+                loadList(1, searchInput.trim());
+              }}
+              disabled={pending}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm sm:flex-initial dark:border-gray-600 dark:bg-gray-900"
+            >
+              <Icon icon="solar:magnifer-bold-duotone" className="h-4 w-4 text-primary" />
+              Rechercher
+            </button>
+            {canCreate ? (
+              <button
+                type="button"
+                onClick={openCreate}
+                disabled={pending}
+                className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md sm:flex-initial"
+              >
+                <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
+                Nouvelle fiche
+              </button>
+            ) : null}
+          </div>
+        </div>
+      </div>
 
       {pending && rows.length === 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -251,10 +213,10 @@ export default function OrganisateurStageResourcesClient({
         </div>
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center dark:border-gray-600 dark:bg-gray-900/40">
-          <Icon icon="solar:documents-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
-          <p className="font-semibold text-midnight_text dark:text-white">Aucune ressource stage pour cette section</p>
+          <Icon icon="solar:document-text-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
+          <p className="font-semibold text-midnight_text dark:text-white">Aucun relevé de cotes</p>
           <p className="mt-1 max-w-sm text-sm text-gray-500 dark:text-gray-400">
-            Lancez une recherche ou créez une première ressource lorsque le jury de cours est configuré.
+            Créez une ressource lorsque les programmes et années sont disponibles.
           </p>
         </div>
       ) : (
@@ -269,7 +231,7 @@ export default function OrganisateurStageResourcesClient({
             return (
               <article
                 key={r.id}
-                className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900"
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900"
               >
                 {removing ? (
                   <div
@@ -281,89 +243,65 @@ export default function OrganisateurStageResourcesClient({
                     <p className="text-sm font-semibold text-midnight_text dark:text-white">Suppression en cours…</p>
                   </div>
                 ) : null}
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-primary via-primary to-sky-400 transition-transform duration-300 group-hover:scale-x-100" />
                 <div className="flex flex-1 flex-col p-5 pt-6">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="line-clamp-2 text-base font-bold leading-snug text-midnight_text dark:text-white">
-                      {r.designation}
-                    </h3>
-                  </div>
-                  <p className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-gray-400">
-                    <Icon icon="solar:hashtag-bold-duotone" className="h-3 w-3" />
+                  <h3 className="line-clamp-2 text-base font-bold leading-snug text-midnight_text dark:text-white">
+                    {r.designation}
+                  </h3>
+                  <p className="mt-1.5 font-mono text-[11px] text-gray-400">
+                    <Icon icon="solar:hashtag-bold-duotone" className="mr-0.5 inline h-3 w-3" />
                     {r.id.slice(-10)}
                   </p>
 
                   <div
-                    className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 transition-colors duration-300 ${
+                    className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 ${
                       active
                         ? "border-primary/35 bg-primary/[0.07] dark:border-primary/40 dark:bg-primary/10"
                         : "border-gray-200/90 bg-gray-50/90 dark:border-gray-700 dark:bg-gray-800/60"
                     }`}
                   >
                     <div className="min-w-0">
-                      <p className="flex items-center gap-1.5 text-xs font-bold text-midnight_text dark:text-white">
-                        <Icon
-                          icon={active ? "solar:eye-bold-duotone" : "solar:eye-closed-bold-duotone"}
-                          className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-gray-400"}`}
-                        />
-                        Publication
-                      </p>
+                      <p className="text-xs font-bold text-midnight_text dark:text-white">Publication</p>
                       <p className="mt-0.5 text-[11px] text-gray-600 dark:text-gray-400">
-                        {active
-                          ? "Visible sur le service étudiant"
-                          : "Inactive — masquée jusqu’à activation"}
+                        {active ? "Visible sur le service étudiant" : "Inactive"}
                       </p>
                     </div>
                     <button
                       type="button"
                       role="switch"
                       aria-checked={active}
-                      aria-label={active ? "Désactiver la ressource" : "Activer la ressource"}
                       disabled={switching || !!statusToggleId || !!deletingId}
                       onClick={() => togglePublicationStatus(r)}
-                      className={`relative h-8 w-[3.25rem] shrink-0 rounded-full border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-gray-900 ${
+                      className={`relative h-8 w-[3.25rem] shrink-0 rounded-full border-2 transition-all ${
                         active
-                          ? "border-primary/50 bg-primary shadow-inner shadow-primary/20"
+                          ? "border-primary/50 bg-primary"
                           : "border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-700"
-                      }`}
+                      } disabled:opacity-50`}
                     >
                       <span
-                        className={`absolute top-0.5 left-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-out ${
+                        className={`absolute top-0.5 left-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform ${
                           active ? "translate-x-[1.25rem]" : "translate-x-0"
                         }`}
                       >
-                        {switching ? (
-                          <Icon icon="svg-spinners:ring-resize" className="size-3.5 text-primary" aria-hidden />
-                        ) : null}
+                        {switching ? <Icon icon="svg-spinners:ring-resize" className="size-3.5 text-primary" /> : null}
                       </span>
                     </button>
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-midnight_text dark:bg-gray-800 dark:text-white">
-                      <Icon icon="solar:wad-of-money-bold-duotone" className="h-3.5 w-3.5 text-primary" />
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold dark:bg-gray-800">
                       {r.amount} {r.currency}
                     </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                      <Icon icon="solar:book-bold-duotone" className="h-3.5 w-3.5 text-primary" />
-                      {creditsLabel(r, programmes)}
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium dark:bg-gray-800 dark:text-gray-200">
+                      {r.anneeSlug || "—"}
                     </span>
                   </div>
-
-                  <p className="mt-3 flex items-start gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <Icon icon="solar:diploma-bold-duotone" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span className="line-clamp-2">{programmeLabel(r.matiereReference) || "—"}</span>
+                  <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    {r.programmeClasse} · {r.programmeFiliere} · {r.programmeCredits} cr.
                   </p>
-                  {r.lecteursLabel ? (
-                    <p className="mt-2 line-clamp-2 text-xs text-gray-500 dark:text-gray-500">
-                      <span className="font-medium text-gray-600 dark:text-gray-400">Lecteurs : </span>
-                      {r.lecteursLabel}
-                    </p>
-                  ) : null}
 
                   <div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
                     <Link
-                      href={`/section/recherche/ressources-stages/stages/${r.id}`}
+                      href={`/section/releves/releves/${r.id}`}
                       className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-800/80 dark:hover:bg-gray-800"
                     >
                       <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
@@ -372,7 +310,7 @@ export default function OrganisateurStageResourcesClient({
                     <button
                       type="button"
                       onClick={() => openEdit(r)}
-                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15 dark:bg-primary/20"
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary dark:bg-primary/20"
                     >
                       <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
                       Modifier
@@ -381,7 +319,7 @@ export default function OrganisateurStageResourcesClient({
                       type="button"
                       onClick={() => onDelete(r)}
                       disabled={deletingId !== null}
-                      className="inline-flex items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200 dark:hover:bg-rose-950/60"
+                      className="inline-flex items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-700 disabled:opacity-50 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-200"
                       aria-label="Supprimer"
                     >
                       <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
@@ -404,7 +342,7 @@ export default function OrganisateurStageResourcesClient({
               type="button"
               disabled={tablePageIndex <= 0 || pending || !!deletingId}
               onClick={() => loadList(page - 1, searchApplied)}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
             >
               Précédent
             </button>
@@ -412,7 +350,7 @@ export default function OrganisateurStageResourcesClient({
               type="button"
               disabled={pending || tablePageIndex + 1 >= pageCount || total === 0 || !!deletingId}
               onClick={() => loadList(page + 1, searchApplied)}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm transition hover:bg-gray-50 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900 dark:hover:bg-gray-800"
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
             >
               Suivant
             </button>
@@ -423,13 +361,14 @@ export default function OrganisateurStageResourcesClient({
   );
 
   const formSlot = (
-    <OrganisateurStageResourceForm
+    <GestionnaireReleveResourceForm
       mode={uiMode === "create" ? "create" : "edit"}
       editingId={editingId}
       sectionSlug={sectionSlug}
       sectionDesignation={sectionDesignation}
+      sectionCycle={sectionCycle}
       programmes={programmes}
-      juryCoursMembers={juryCoursMembers}
+      annees={annees}
       chefSection={chefSection}
       onCancel={() => {
         setUiMode("list");
@@ -445,8 +384,8 @@ export default function OrganisateurStageResourcesClient({
 
   return (
     <ResourceWorkspaceShell
-      title="Ressources stages — recherche"
-      titleIcon="solar:library-bold-duotone"
+      title="Relevés de cotes"
+      titleIcon="solar:document-text-bold-duotone"
       description={listDescription}
       mode={uiMode}
       listSlot={listSlot}
