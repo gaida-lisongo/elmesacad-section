@@ -97,7 +97,7 @@ export function SujetResourceDescriptionEditor({ value, onChange, disabled }: Pr
                 onChange={(e) =>
                   patch(idx, {
                     ...block,
-                    contenu: e.target.value.split("\n").map((l) => l.trimEnd()),
+                    contenu: e.target.value.split("\n"),
                   })
                 }
                 placeholder="Rédigez le texte. Chaque ligne est conservée ; les lignes vides sont ignorées à l’enregistrement."

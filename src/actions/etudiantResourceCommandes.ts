@@ -1,13 +1,14 @@
 "use server";
 
 import { listSujetCommandesForResourceAction } from "@/actions/organisateurSujetResources";
+import { listStageCommandesForResourceAction } from "@/actions/organisateurStageResources";
 import type { SujetCommandeListRow } from "@/actions/organisateurSujetResources";
 
 /**
  * Contextes métier pour lister les commandes liées à une ressource du service étudiant.
- * Étendre ici (ex. `stage`, `fiche-validation`) puis brancher vers l’action serveur appropriée.
+ * Étendre ici (ex. `fiche-validation`) puis brancher vers l’action serveur appropriée.
  */
-export type EtudiantResourceCommandeContext = "sujet-recherche";
+export type EtudiantResourceCommandeContext = "sujet-recherche" | "stage-enseignement";
 
 export type ListEtudiantResourceCommandesResult = {
   rows: SujetCommandeListRow[];
@@ -27,6 +28,15 @@ export async function listEtudiantResourceCommandesAction(input: {
 
   if (context === "sujet-recherche") {
     return listSujetCommandesForResourceAction({
+      sectionSlug,
+      resourceId,
+      page,
+      limit,
+    });
+  }
+
+  if (context === "stage-enseignement") {
+    return listStageCommandesForResourceAction({
       sectionSlug,
       resourceId,
       page,

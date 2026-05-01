@@ -99,6 +99,44 @@ Ce document sert de contexte de continuité pour les prochains chats IA.
 
 ---
 
+## Ressources service étudiant : volet recherche (sujets & stages)
+
+**Sujets** et **stages** font partie du **volet recherche** du service étudiant (offre liée au parcours recherche / fin d’études). Les **sujets** ne sont gérables que par le **chargé de recherche**. Les **stages** le sont par le **chargé de recherche** (priorité d’affectation si les deux rôles coexistent) ou par le **chargé d’enseignement** ; les encadrants stage restent contraints au **jury de cours** (`jury.cours`).
+
+### Rôles et routes
+
+| Type de ressource | Catégorie API (`categorie`) | Habilitation bureau | Route de gestion | Commandes (liste) |
+|-------------------|----------------------------|---------------------|------------------|---------------------|
+| **Sujet** | `sujet` | **Chargé de recherche** (`bureau.chargeRecherche`) | `/section/recherche/ressources-sujets` | `/section/recherche/ressources-sujets/sujets/[resourceId]` |
+| **Stage** | `stage` | **Chargé de recherche** ou **chargé d’enseignement** (`bureau.chargeRecherche` prioritaire, sinon `bureau.chargeEnseignement`) | `/section/recherche/ressources-stages` | `/section/recherche/ressources-stages/stages/[resourceId]` |
+
+Les **sujets** ne sont gérables que par le **chargé de recherche**. Les **stages** sont ouverts au **chargé de recherche** comme au **chargé d’enseignement** (voir `getOrganisateurStageBureauSection`) ; les deux relèvent du domaine **recherche** côté service étudiant.
+
+Les deux parcours utilisent le rôle applicatif **`organisateur`** ; le **garde-fou** est l’affectation sur le bureau (champ Mongo `Section.bureau`). Les URL historiques `/section/enseignement/ressources-stages` redirigent vers `/section/recherche/ressources-stages`.
+
+### Pour les développeurs
+
+- **Server Actions**
+  - **Ressources sujets** : `src/actions/organisateurSujetResources.ts` — réservé au **chargé de recherche** (`getOrganisateurChargeRechercheSection` → `bureau.chargeRecherche`).
+  - Stages : `src/actions/organisateurStageResources.ts` — `getOrganisateurStageBureauSection` (chargé de **recherche** en priorité, sinon chargé d’**enseignement**).
+- **Service étudiant** : appels via `fetchEtudiantApi` avec chemins relatifs (pas de double `/api`). Liste : `GET /resources?categorie=…&branding.sectionRef=…` ; mutations : `POST/PATCH/DELETE /resources` et `…/resources/:id`.
+- **Création** : le corps `POST` suit le schéma validé par le microservice : `matiere` limité à `reference` + `designation` (pas de `status` ni `matiere.credit` sur le POST — évite les erreurs de validation). Après création réussie, le statut est forcé à **`inactive`** par un **`PATCH`** dédié (`patchOrganisateur…ResourceStatusAction`).
+- **Publication** : interrupteur sur la carte (liste) → `PATCH` partiel `{ status: "active" | "inactive" }`.
+- **Jury / encadrants**
+  - Sujets : membres issus de `Section.jury.recherche` ; les « lecteurs » envoyés dans `lecteurs` doivent être dans ce jury.
+  - Stages : idem avec `Section.jury.cours` ; les « encadrants » doivent être dans ce jury.
+- **Commandes côté organisateur** : client générique `EtudiantResourceCommandesClient` + `listEtudiantResourceCommandesAction` (`context`: `sujet-recherche` | `stage-enseignement` — libellé API interne ; les deux types relèvent du volet recherche côté métier).
+- **UI réutilisable** : `ResourceWorkspaceShell`, `ResourceMultiStepFormShell`, éditeur de description partagé `SujetResourceDescriptionEditor` (blocs `title` / `contenu[]`).
+
+### Pour les utilisateurs (chef de parcours côté section)
+
+1. **Ressources sujets** : être désigné **chargé de recherche** sur la section. Configurer le **jury de recherche** et les **programmes** de la section. Créer une ressource (multi-étapes), puis **activer** la publication sur la carte lorsque le sujet doit être visible sur le service étudiant. Les **commandes** des étudiants sont consultables depuis la carte « Demandes ».
+2. **Ressources stages** : être désigné **chargé de recherche** ou **chargé d’enseignement** sur le bureau (volet **recherche** côté étudiant). Configurer le **jury de cours** (`jury.cours`) pour les encadrants. Même principe : création en **inactive**, activation par l’interrupteur, consultation des commandes par ressource.
+
+Menu applicatif (**organisateur**) : **Ressources sujets (recherche)** et **Ressources stages (recherche)** — sujets = CR uniquement ; stages = CR ou CE ; chaque page vérifie l’affectation côté serveur.
+
+---
+
 ## Instruction de continuité pour prochains chats IA
 - Respecter strictement:
   - API interne = local
