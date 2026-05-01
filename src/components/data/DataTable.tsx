@@ -45,6 +45,8 @@ type DataTableProps<T extends { id: string }> = {
   searchPlaceholder?: string;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  /** Si false, masque le champ recherche (liste 100 % serveur ailleurs). */
+  showSearch?: boolean;
   filterSlot?: React.ReactNode;
   primaryAction?: { label: string; onClick: () => void; icon?: string };
   secondaryActions?: React.ReactNode;
@@ -143,6 +145,7 @@ export function DataTable<T extends { id: string }>(props: DataTableProps<T>) {
     searchPlaceholder = "Rechercher…",
     searchValue,
     onSearchChange,
+    showSearch = true,
     filterSlot,
     primaryAction,
     secondaryActions,
@@ -207,7 +210,7 @@ export function DataTable<T extends { id: string }>(props: DataTableProps<T>) {
                 onClick={() => tabs.onChange(tab.value)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                   active
-                    ? "bg-[#082b1c] text-white"
+                    ? "bg-primary text-white"
                     : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                 }`}
               >
@@ -219,20 +222,22 @@ export function DataTable<T extends { id: string }>(props: DataTableProps<T>) {
       )}
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <input
-          type="search"
-          value={searchValue}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder={searchPlaceholder}
-          className="min-w-[12rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-        />
+        {showSearch ? (
+          <input
+            type="search"
+            value={searchValue}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder={searchPlaceholder}
+            className="min-w-[12rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          />
+        ) : null}
         {filterSlot}
         {secondaryActions}
         {primaryAction && (
           <button
             type="button"
             onClick={primaryAction.onClick}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-darkprimary"
           >
             {primaryAction.icon && <Icon icon={primaryAction.icon} className="size-4" />}
             {primaryAction.label}

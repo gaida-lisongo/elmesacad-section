@@ -48,6 +48,8 @@ export type OrganisateurCeChargeRow = {
 /** Données SSR : une section d’attache, liste des programmes (filtre), toutes les lignes UE. */
 export type OrganisateurCeChargesHorairesPayload = {
   sectionId: string;
+  /** Slug section locale — aligné sur `branding.sectionRef` (service étudiant). */
+  sectionSlug: string;
   sectionDesignation: string;
   programmes: { _id: string; designation: string; credits: number }[];
   rows: OrganisateurCeChargeRow[];

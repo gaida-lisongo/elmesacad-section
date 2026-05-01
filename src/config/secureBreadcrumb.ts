@@ -10,6 +10,11 @@ export const secureBreadcrumbLabels: Record<string, { label: string; href?: stri
   "/sections": [{ label: "Sections" }],
   "/section/autorisations": [{ label: "Autorisations de section" }],
   "/section/archivage": [{ label: "Archivage des notes" }],
+  "/section/recherche/ressources-sujets/sujets": [
+    { label: "Ressources sujets", href: "/section/recherche/ressources-sujets" },
+    { label: "Demandes" },
+  ],
+  "/section/recherche/ressources-sujets": [{ label: "Ressources sujets" }],
   "/titulaire/notes": [{ label: "Fiche de cotation" }],
   "/titulaire/descripteurs": [{ label: "Descripteurs de cours" }],
   "/tickets": [{ label: "Tickets" }],

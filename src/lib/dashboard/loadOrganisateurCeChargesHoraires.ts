@@ -1,10 +1,10 @@
 import { Types } from "mongoose";
+import { connectDB } from "@/lib/services/connectedDB";
 import { MatiereModel } from "@/lib/models/Matiere";
 import { ProgrammeModel } from "@/lib/models/Programme";
-import { SectionModel } from "@/lib/models/Section";
 import { SemestreModel } from "@/lib/models/Semestre";
 import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
-import { connectDB } from "@/lib/services/connectedDB";
+import { getOrganisateurPrimaryBureauSection } from "@/lib/section/getOrganisateurPrimaryBureauSection";
 import type {
   OrganisateurCeChargeRow,
   OrganisateurCeChargesHorairesPayload,
@@ -32,6 +32,7 @@ function sortSemestres(a: SemestreLeanWithUnites, b: SemestreLeanWithUnites): nu
 function emptyPayload(): OrganisateurCeChargesHorairesPayload {
   return {
     sectionId: "",
+    sectionSlug: "",
     sectionDesignation: "",
     programmes: [],
     rows: [],
@@ -47,28 +48,16 @@ export async function loadOrganisateurCeChargesHoraires(
 ): Promise<OrganisateurCeChargesHorairesPayload> {
   if (!Types.ObjectId.isValid(agentSub)) return emptyPayload();
 
+  const ctx = await getOrganisateurPrimaryBureauSection(agentSub);
+  if (!ctx) return emptyPayload();
+
   await connectDB();
   void SemestreModel;
   void UniteEnseignementModel;
   void MatiereModel;
 
-  const oid = new Types.ObjectId(agentSub);
-  const sections = await SectionModel.find({
-    $or: [
-      { "bureau.chefSection": oid },
-      { "bureau.chargeEnseignement": oid },
-      { "bureau.chargeRecherche": oid },
-    ],
-  })
-    .select("_id designation")
-    .sort({ designation: 1 })
-    .limit(1)
-    .lean();
-
-  if (!sections.length) return emptyPayload();
-
-  const sec = sections[0];
-  const programmes = await ProgrammeModel.find({ section: sec._id })
+  const secId = new Types.ObjectId(ctx.sectionId);
+  const programmes = await ProgrammeModel.find({ section: secId })
     .select("_id designation credits")
     .sort({ designation: 1 })
     .lean();
@@ -123,10 +112,10 @@ export async function loadOrganisateurCeChargesHoraires(
       }>;
       for (const u of unites) {
         rows.push({
-          key: `${String(sec._id)}-${pid}-${sid}-${String(u._id)}`,
+          key: `${String(ctx.sectionId)}-${pid}-${sid}-${String(u._id)}`,
           programmeId: pid,
-          sectionId: String(sec._id),
-          sectionDesignation: sec.designation ?? "",
+          sectionId: String(ctx.sectionId),
+          sectionDesignation: ctx.sectionDesignation,
           programmeDesignation: pDoc.designation ?? "",
           semestreDesignation: s.designation ?? "",
           uniteDesignation: u.designation ?? "",
@@ -138,8 +127,9 @@ export async function loadOrganisateurCeChargesHoraires(
   }
 
   return {
-    sectionId: String(sec._id),
-    sectionDesignation: sec.designation ?? "",
+    sectionId: ctx.sectionId,
+    sectionSlug: ctx.sectionSlug,
+    sectionDesignation: ctx.sectionDesignation,
     programmes: programmeOptions,
     rows,
   };

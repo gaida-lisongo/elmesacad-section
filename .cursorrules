@@ -488,6 +488,78 @@ Microservice de gestion des parcours étudiants, des ressources académiques et 
 ## 🚀 Endpoints API
 
 ### 🎓 Parcours (Student Programs)
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface IParcours extends Document {
+  student: {
+    email: string;
+    matricule: string;
+    sexe: 'M' | 'F';
+    photo?: string;
+    nomComplet: string;
+    nationalite?: string;
+    date_naissance?: string;
+    lieu_naissance?: string;
+  };
+  programme: {
+    classe: string;
+    filiere: string;
+    credits: number;
+  };
+  annee: {
+    debut: string;
+    fin: string;
+    slug: string;
+  };
+  status: 'inscrit' | 'suspendu' | 'abandon' | 'diplômé';
+  ncv?: number;
+  reference: string;
+}
+
+const ParcoursSchema: Schema = new Schema({
+  student: {
+    email: { type: String, required: true },
+    matricule: { type: String, required: true },
+    sexe: { type: String, enum: ['M', 'F'], required: true },
+    photo: { type: String },
+    nomComplet: { type: String, required: true },
+    nationalite: { type: String },
+    date_naissance: { type: String },
+    lieu_naissance: { type: String },
+  },
+  programme: {
+    classe: { type: String, required: true },
+    filiere: { type: String, required: true },
+    credits: { type: Number, required: true },
+  },
+  annee: {
+    debut: { type: String, required: true },
+    fin: { type: String, required: true },
+    slug: { type: String, required: true },
+  },
+  status: { 
+    type: String, 
+    enum: ['inscrit', 'suspendu', 'abandon', 'diplômé'], 
+    default: 'inscrit',
+    required: true 
+  },
+  ncv: { type: Number },
+  reference: { type: String, required: true, unique: true },
+}, {
+  timestamps: true,
+});
+
+// Index pour la recherche
+ParcoursSchema.index({ 'student.nomComplet': 'text' });
+ParcoursSchema.index({ 'student.matricule': 1 });
+ParcoursSchema.index({ 'student.email': 1 });
+ParcoursSchema.index({ 'programme.filiere': 1 });
+ParcoursSchema.index({ 'programme.classe': 1 });
+ParcoursSchema.index({ 'annee.slug': 1 });
+ParcoursSchema.index({ status: 1 });
+
+export default mongoose.model<IParcours>('Parcours', ParcoursSchema);
+
 
 Vue d’ensemble : préfixe **`/api/parcours`** (ex. derrière Traefik : `https://services.inbtp.ac.cd/student/api/parcours`).
 
@@ -638,23 +710,432 @@ Aucun corps. L’`_id` est un ObjectId hexadécimal sur 24 caractères.
 | `200` | `{ "success": true, "data": <document supprimé> }` |
 | `400` | Identifiant mal formé (Zod) |
 | `404` | `{ "success": false, "message": "Parcours non trouvé" }` |
-
 ### 📚 Ressources (Available Documents)
-- `GET /api/resources` : Liste des ressources disponibles (Filtres : `category`, `status`, `search`).
-- `POST /api/resources` : Création d'une nouvelle ressource (Admin).
-- `PATCH /api/resources/:id` : Modification d'une ressource.
-- `DELETE /api/resources/:id` : Suppression d'une ressource.
+
+Préfixe: **`/api/resources`**
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface ISection {
+  title: string;
+  contenu: string[];
+}
+
+export interface IResource extends Document {
+  categorie: string;
+  designation: string;
+  description: ISection[];
+  amount: number;
+  currency: string;
+  status: string;
+}
+
+const SectionSchema = new Schema({
+  title: { type: String, required: true },
+  contenu: [{ type: String }],
+}, { _id: false });
+
+const ResourceSchema = new Schema({
+  categorie: { type: String, required: true },
+  designation: { type: String, required: true },
+  description: [SectionSchema],
+  amount: { type: Number, required: true },
+  currency: { type: String, default: 'USD' },
+  status: { type: String, default: 'active' },
+  branding: {
+    institut: { type: String, default: 'INBTP' },
+    section: { type: String, default: '' },
+    sectionRef: { type: String, default: '' },
+    chef: { type: String, default: '' },
+    contact: { type: String, default: '' },
+    email: { type: String, default: '' },
+    adresse: { type: String, default: '' },
+  },
+}, {
+  timestamps: true,
+  discriminatorKey: 'categorie',
+});
+
+const ResourceModel = mongoose.models.Resource || mongoose.model<IResource>('Resource', ResourceSchema);
+
+// Discriminants
+const LaboSchema = new Schema({
+  matiere: { reference: String, designation: String, credit: String },
+  titulaire: { reference: String, email: String, matricule: String, nom: String },
+  note: { type: Number, default: 0 },
+});
+
+const StageSchema = new Schema({
+  matiere: { reference: String, designation: String, credit: String },
+  titulaire: { reference: String, email: String, matricule: String, nom: String },
+  note: { type: Number, default: 0 },
+});
+
+const SujetSchema = new Schema({
+  matiere: { reference: String, credit: String },
+  lecteurs: [{ reference: String, email: String, matricule: String, nom: String }],
+  note: { type: Number, default: 0 },
+});
+
+const SessionSchema = new Schema({
+  matieres: [{ reference: String, credit: String, designation: String }],
+});
+
+const ResultatSchema = new Schema({
+  programme: { classe: String, filiere: String, credits: Number },
+  annee: { debut: String, fin: String, slug: String },
+});
+
+// Utilisation de try-catch pour l'enregistrement des discriminants (plus robuste en dev/HMR)
+function getResourceDiscriminator(name: string, schema: Schema, value: string) {
+  if (ResourceModel.discriminators && ResourceModel.discriminators[name]) {
+    return ResourceModel.discriminators[name];
+  }
+  try {
+    return ResourceModel.discriminator(name, schema, value);
+  } catch (e) {
+    return ResourceModel.discriminators![name];
+  }
+}
+
+export const ResourceLabo = getResourceDiscriminator('ResourceLabo', LaboSchema, 'labo');
+export const ResourceStage = getResourceDiscriminator('ResourceStage', StageSchema, 'stage');
+export const ResourceSujet = getResourceDiscriminator('ResourceSujet', SujetSchema, 'sujet');
+export const ResourceSession = getResourceDiscriminator('ResourceSession', SessionSchema, 'session');
+export const ResourceResultat = getResourceDiscriminator('ResourceValidation', ResultatSchema.clone(), 'validation');
+export const ResourceReleve = getResourceDiscriminator('ResourceReleve', ResultatSchema.clone(), 'releve');
+
+export default ResourceModel;
+
+| Méthode | Chemin | Description |
+|--------|--------|-------------|
+| `GET` | `/api/resources` | Liste des ressources (filtres `categorie`, `status`, `search`) |
+| `GET` | `/api/resources/:id` | Détail d’une ressource par `_id` |
+| `POST` | `/api/resources` | Création d’une ressource (schéma discriminé par `categorie`) |
+| `PATCH` | `/api/resources/:id` | Mise à jour partielle d’une ressource |
+| `DELETE` | `/api/resources/:id` | Suppression d’une ressource |
+
+#### Types communs (toutes les ressources)
+
+| Champ | Type | Requis | Valeur par défaut / Notes |
+|------|------|--------|---------------------------|
+| `categorie` | `string` (`labo`, `stage`, `sujet`, `session`, `validation`, `releve`) | Oui | Clé discriminante |
+| `designation` | `string` | Oui | Libellé affiché |
+| `description` | `Array<{ title: string, contenu: string[] }>` | Oui | Sections de contenu |
+| `amount` | `number` (>= 0) | Oui | Montant |
+| `currency` | `string` | Non | `USD` |
+| `status` | `string` | Non | `active` |
+| `branding.institut` | `string` | Non | `INBTP` |
+| `branding.section` | `string` | Non | `""` |
+| `branding.sectionRef` | `string` | Non | `""` |
+| `branding.chef` | `string` | Non | `""` |
+| `branding.contact` | `string` | Non | `""` |
+| `branding.email` | `string` | Non | `""` |
+| `branding.adresse` | `string` | Non | `""` |
+
+#### Champs spécifiques par `categorie` (création `POST /api/resources`)
+
+| Catégorie | Champs supplémentaires requis | Champs optionnels |
+|----------|-------------------------------|-------------------|
+| `labo` | `matiere.reference`, `titulaire.nom` | `matiere.designation`, `matiere.credit`, `titulaire.reference`, `titulaire.email`, `titulaire.matricule`, `note` |
+| `stage` | `matiere.reference`, `titulaire.nom` | identiques à `labo` |
+| `sujet` | `matiere.reference`, `lecteurs[]` (chaque lecteur doit avoir `nom`) | `matiere.credit`, infos optionnelles des lecteurs, `note` |
+| `session` | `matieres[]` | Chaque matière peut contenir `reference`, `designation`, `credit` |
+| `validation` | `programme.classe`, `programme.filiere`, `programme.credits`, `annee.slug` | `annee.debut`, `annee.fin` |
+| `releve` | `programme.classe`, `programme.filiere`, `programme.credits`, `annee.slug` | `annee.debut`, `annee.fin` |
+
+#### Lecture des ressources
+
+##### `GET /api/resources` — filtres
+
+Tous les filtres sont optionnels et combinés par **ET**.
+
+| Paramètre | Type | Effet |
+|----------|------|-------|
+| `categorie` | `string` | Filtre exact sur `categorie` |
+| `status` | `string` | Filtre exact sur `status` |
+| `search` ou `designation` | `string` | Recherche partielle (regex insensible à la casse) sur `designation` |
+| `page` | `number` | Numéro de page (défaut `1`) |
+| `limit` | `number` | Taille de page (défaut `10`, max `200`) |
+| `sortBy` | `string` | Champ de tri (défaut `createdAt`) |
+| `sortOrder` | `asc \| desc` | Sens du tri (défaut `desc`) |
+| `criteria` | `string` (JSON) | Critères dynamiques JSON (objet) |
+
+**Critères dynamiques / multi-critères**
+- Vous pouvez envoyer des critères additionnels directement en query string (hors clés réservées), ex. `branding.section=BTP&amount__gte=10`.
+- Opérateurs supportés via suffixe `__`: `eq`, `ne`, `gt`, `gte`, `lt`, `lte`, `in`, `nin`, `regex`.
+- Exemples:
+  - `amount__gte=10&amount__lte=50`
+  - `categorie__in=labo,stage`
+  - `branding.section__regex=btp`
+  - `criteria={"branding.section":"BTP","amount__gte":10}`
+
+**Réponse**
+- `200`: `{ "success": true, "data": [ Resource ], "meta": { "total": number, "page": number, "limit": number } }`
+
+##### `GET /api/resources/:id`
+
+- `200`: `{ "success": true, "data": Resource }`
+- `404`: `{ "success": false, "error": "Resource not found" }`
+
+#### Modification et suppression des ressources
+
+##### `PATCH /api/resources/:id`
+
+- Corps: objet JSON partiel (les champs à modifier).
+- Note: cette route ne passe pas par un schéma Zod partiel; les validations strictes de format sont moins encadrées qu’au `POST`.
+
+Exemple:
+```json
+{
+  "designation": "Bon de Laboratoire - Physique II",
+  "amount": 20,
+  "status": "active"
+}
+```
+
+Réponse:
+- `200`: `{ "success": true, "data": Resource | null }`
+
+##### `DELETE /api/resources/:id`
+
+- Aucun corps JSON.
+- `200`: `{ "success": true, "message": "Resource deleted" }`
+
+---
 
 ### 🛒 Commandes (Orders)
-- `POST /api/commandes` : Soumission d'une commande par un étudiant.
-- `GET /api/commandes/:id` : Détails d'une commande (avec population parcours/ressource).
-- `GET /api/commandes/:id/download` : Génération et téléchargement du PDF (si payé).
-- `GET /api/commandes/verify/:id` : Endpoint public de vérification (QR Code).
+import mongoose, { Schema, Document } from 'mongoose';
 
-### 🛠️ Administration des Commandes
-- `GET /api/commandes/admin/list` : Liste complète pour la section (Filtres : `type`, `payment`, `matricule`).
-- `PATCH /api/commandes/admin/:id` : **Validation manuelle**, ajout de notes, changement de statut de paiement.
-- `POST /api/commandes/test/email` : Test manuel d'envoi d'email groupé.
+export interface IOrder extends Document {
+  parcoursId: mongoose.Types.ObjectId;
+  ressourceId: mongoose.Types.ObjectId;
+  orderNumber: string;
+  telephone: string;
+  reference: string;
+  payment: 'success' | 'pending' | 'failed';
+  delivered: boolean;
+  validationStatus: 'pending' | 'validated' | 'rejected';
+  validationDate?: Date;
+  validatedBy?: string;
+  type: 'labo' | 'stage' | 'sujet' | 'session' | 'resultat';
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const OrderSchema = new Schema({
+  parcoursId: { type: Schema.Types.ObjectId, ref: 'Parcours', required: true },
+  ressourceId: { type: Schema.Types.ObjectId, ref: 'Resource', required: true },
+  orderNumber: { type: String, required: true, unique: true },
+  telephone: { type: String, required: true },
+  reference: { type: String, required: true, unique: true },
+  payment: { type: String, enum: ['success', 'pending', 'failed'], default: 'pending' },
+  delivered: { type: Boolean, default: false },
+  validationStatus: { type: String, enum: ['pending', 'validated', 'rejected'], default: 'pending' },
+  validationDate: { type: Date },
+  validatedBy: { type: String },
+  type: { type: String, required: true },
+}, {
+  timestamps: true,
+  discriminatorKey: 'type',
+});
+
+const OrderModel = mongoose.models.Order || mongoose.model<IOrder>('Order', OrderSchema);
+
+// Extensions
+const OrderLaboSchema = new Schema({
+  cote: { type: Number, min: 0, max: 20 },
+  observation: String,
+});
+
+const OrderStageSchema = new Schema({
+  stageTitle: { type: String, required: true },
+  recipientName: { type: String, required: true },
+  recipientQuality: { type: String, required: true },
+  recipientSex: { type: String, enum: ['M', 'F'], required: true },
+  companyName: { type: String, required: true },
+  companyLocation: { type: String, required: true },
+  documentReference: String,
+});
+
+const SectionSchema = new Schema({
+  title: String,
+  contenu: [String],
+}, { _id: false });
+
+const OrderSujetSchema = new Schema({
+  titre: { type: String, required: true },
+  directeur: { type: String, required: true },
+  co_directeur: { type: String, required: true },
+  thematique: { type: String, required: true },
+  justification: [String],
+  problematique: [String],
+  objectif: [String],
+  methodologie: [SectionSchema],
+  resultats_attendus: [SectionSchema],
+  chronogrammes: [SectionSchema],
+  references: [SectionSchema],
+  note: { type: Number, default: null },
+  validation: { type: Boolean, default: null },
+  observations: { type: Schema.Types.Mixed, default: null },
+});
+
+const OrderSessionSchema = new Schema({
+  bulletin: { type: Boolean, default: false },
+  recoursIds: [String],
+});
+
+// Utilisation de try-catch pour l'enregistrement des discriminants (plus robuste en dev/HMR)
+function getOrderDiscriminator(name: string, schema: Schema, value: string) {
+  if (OrderModel.discriminators && OrderModel.discriminators[name]) {
+    return OrderModel.discriminators[name];
+  }
+  try {
+    return OrderModel.discriminator(name, schema, value);
+  } catch (e) {
+    return OrderModel.discriminators![name];
+  }
+}
+
+export const OrderLabo = getOrderDiscriminator('OrderLabo', OrderLaboSchema, 'labo');
+export const OrderStage = getOrderDiscriminator('OrderStage', OrderStageSchema, 'stage');
+export const OrderSujet = getOrderDiscriminator('OrderSujet', OrderSujetSchema, 'sujet');
+export const OrderSession = getOrderDiscriminator('OrderSession', OrderSessionSchema, 'session');
+export const OrderResultat = getOrderDiscriminator('OrderResultat', new Schema({}, { _id: false }), 'resultat');
+
+export default OrderModel;
+
+
+Préfixe: **`/api/commandes`**
+
+| Méthode | Chemin | Description |
+|--------|--------|-------------|
+| `POST` | `/api/commandes` | Création d’une commande (union discriminée par `type`) |
+| `GET` | `/api/commandes` | Liste paginée **pour un parcours** (voir `parcoursId` obligatoire) |
+| `GET` | `/api/commandes/:id` | Détail d’une commande (avec `populate` parcours + ressource) |
+| `GET` | `/api/commandes/:id/download` | Téléchargement PDF si `payment=success` |
+| `GET` | `/api/commandes/verify/:id` | Vérification publique (QR code / partage) |
+| `GET` | `/api/commandes/admin/list` | Liste admin paginée + filtres |
+| `PATCH` | `/api/commandes/admin/:id` | Mise à jour admin (validation, paiement, livraison, notes...) |
+| `POST` | `/api/commandes/test/email` | Test d’envoi email groupé |
+
+#### Types communs (toutes les commandes)
+
+| Champ | Type | Requis | Valeur par défaut / Notes |
+|------|------|--------|---------------------------|
+| `parcoursId` | `string` | Oui | `_id` du parcours étudiant |
+| `ressourceId` | `string` | Oui | `_id` de la ressource demandée |
+| `telephone` | `string` | Oui | Téléphone de contact |
+| `type` | `labo \| stage \| sujet \| session \| resultat` | Oui | Discriminant |
+| `payment` | `success \| pending \| failed` | Non | `pending` |
+| `delivered` | `boolean` | Non | `false` |
+| `validationStatus` | `pending \| validated \| rejected` | Non | `pending` |
+| `validationDate` | `string` (ISO recommandé) | Non | Défini côté admin |
+| `validatedBy` | `string` | Non | Défini côté admin |
+
+Champs générés automatiquement à la création:
+- `orderNumber` (format `CMD-YYYY-XXXX`)
+- `reference` (format `REF-TYPE-YYYY-MATRICULE-XXXX`)
+
+#### Création `POST /api/commandes` (payload par `type`)
+
+| Type | Champs supplémentaires requis | Optionnels |
+|------|-------------------------------|------------|
+| `labo` | aucun | `cote` (`0..20`), `observation` |
+| `stage` | `stageTitle`, `recipientName`, `recipientQuality`, `recipientSex` (`M`/`F`), `companyName`, `companyLocation` | `documentReference` |
+| `sujet` | `titre`, `directeur`, `co_directeur`, `thematique`, `justification[]`, `problematique[]`, `objectif[]`, `methodologie[]`, `resultats_attendus[]`, `chronogrammes[]`, `references[]` | `note`, `validation`, `observations` |
+| `session` | aucun | `bulletin` (défaut `false`), `recoursIds[]` |
+| `resultat` | aucun | aucun |
+
+Structure de section utilisée dans `methodologie`, `resultats_attendus`, `chronogrammes`, `references`:
+```json
+{ "title": "string", "contenu": ["ligne 1", "ligne 2"] }
+```
+
+Réponses:
+- `201`: `{ "success": true, "data": Order }`
+- `400`: erreur de validation (Zod)
+- `500`: erreur métier possible (ex. parcours non trouvé, ressource non trouvée, parcours suspendu/abandon)
+
+#### Lecture des commandes
+
+##### `GET /api/commandes` — liste (non-admin)
+
+Retourne les commandes **uniquement** pour le parcours indiqué. Les filtres (pagination, désignation, critères dynamiques) sont les **mêmes** que pour `GET /api/commandes/admin/list`, sauf :
+
+- **`parcoursId`** (query, **obligatoire**) : `_id` MongoDB du parcours ; le résultat est toujours restreint à ce parcours (toute tentative de filtre `parcoursId` dans `criteria` ou en query dynamique est ignorée côté serveur).
+- **`matricule`** : ignoré sur cette route (utiliser le parcours ciblé).
+- **Sécurité** : ce microservice n’applique pas d’auth JWT ici ; en production, l’API doit être protégée (gateway) ou vous devez valider que l’appelant a le droit de consulter ce `parcoursId`.
+
+| Paramètre | Type | Description |
+|----------|------|-------------|
+| `parcoursId` | `string` | **Requis** — périmètre liste |
+| `type` | `string` | Filtre exact sur le type |
+| `payment` | `string` | Filtre exact sur le paiement |
+| `search` ou `designation` | `string` | Recherche par `ressource.designation` |
+| `page` | `number` | Page (défaut `1`) |
+| `limit` | `number` | Taille (défaut `10`, max `200`) |
+| `sortBy` | `string` | Tri (défaut `createdAt`) |
+| `sortOrder` | `asc \| desc` | Sens (défaut `desc`) |
+| `criteria` | `string` (JSON) | Critères dynamiques (voir admin) |
+
+Réponses :
+- `200` : `{ "success": true, "data": [ OrderPopulated ], "meta": { "total", "page", "limit" } }`
+- `400` : `parcoursId` manquant ou ObjectId invalide
+
+##### `GET /api/commandes/:id`
+- `200`: `{ "success": true, "data": OrderPopulated }`
+- `404`: `{ "success": false, "error": "Commande non trouvée" }`
+
+##### `GET /api/commandes/:id/download`
+- Condition: `payment` doit être `success`
+- `200`: PDF (`Content-Type: application/pdf`)
+- `403`: `{ "success": false, "error": "Paiement non confirmé" }`
+- `404`: commande introuvable
+
+##### `GET /api/commandes/verify/:id`
+- Endpoint public de vérification.
+- `200`: `{ "success": true, "verified": true, "data": { orderNumber, reference, type, student, status, delivered } }`
+- `404`: commande introuvable
+
+#### Admin: filtres, pagination, update
+
+##### `GET /api/commandes/admin/list`
+
+| Paramètre | Type | Description |
+|----------|------|-------------|
+| `type` | `string` | Filtre exact sur le type de commande |
+| `payment` | `string` | Filtre exact sur le statut de paiement |
+| `matricule` | `string` | Recherche via `parcours.student.matricule` |
+| `search` ou `designation` | `string` | Recherche par `ressource.designation` (insensible à la casse) |
+| `page` | `number` | Page (défaut `1`) |
+| `limit` | `number` | Taille de page (défaut `10`, max `200`) |
+| `sortBy` | `string` | Champ de tri (défaut `createdAt`) |
+| `sortOrder` | `asc \| desc` | Sens du tri (défaut `desc`) |
+| `criteria` | `string` (JSON) | Critères dynamiques JSON (objet) |
+
+Critères dynamiques / multi-critères:
+- Même mécanisme que les ressources (`field=value`, `field__op=value`, JSON `criteria`).
+- Exemples:
+  - `validationStatus=validated&delivered=true`
+  - `createdAt__gte=2026-01-01&createdAt__lte=2026-12-31`
+  - `criteria={"type__in":"stage,sujet","delivered":false}`
+
+Réponse:
+- `200`: `{ "success": true, "data": [ OrderPopulated ], "meta": { "total": number, "page": number, "limit": number } }`
+
+##### `PATCH /api/commandes/admin/:id`
+
+Corps: objet partiel de mise à jour. Exemples de champs fréquemment patchés:
+- `payment`: `success`/`pending`/`failed`
+- `validationStatus`: `pending`/`validated`/`rejected`
+- `validationDate`: date ISO
+- `validatedBy`: string
+- `delivered`: boolean
+- champs métier de type (ex. `cote`, `observation`, etc.)
+
+Réponse:
+- `200`: `{ "success": true, "data": Order }`
+- `404`/`500`: si commande introuvable ou autre erreur serveur
 
 ## 📖 Exemples de requêtes (cURL)
 
@@ -803,6 +1284,12 @@ curl -X POST http://localhost:3000/api/commandes \
 }'
 ```
 
+**Lister les commandes du parcours** (pagination, recherche par désignation de ressource, critères dynamiques — `parcoursId` obligatoire en query) :
+
+```bash
+curl -sS "http://localhost:3000/api/commandes?parcoursId=ID_DU_PARCOURS&page=1&limit=10&payment=pending&designation=laboratoire"
+```
+
 ### 4. Validation Manuelle & Paiement (Admin)
 *Cette action déclenche l'envoi de l'email stylisé avec le lien PDF.*
 
@@ -849,6 +1336,7 @@ curl -X GET http://localhost:3000/api/commandes/ID_DE_LA_COMMANDE/download --out
 curl -X GET http://localhost:3000/api/commandes/verify/ID_DE_LA_COMMANDE
 ```
 
+
 ## 🛠️ Technologies
 - **Node.js / Express** : Serveur backend.
 - **TypeScript** : Type safety.
@@ -869,3 +1357,17 @@ Lorsqu'une commande passe au statut `payment: 'success'` (via validation manuell
 1. Un bouton de téléchargement direct.
 2. Un lien de vérification d'authenticité.
 3. Une notification est également envoyée aux administrateurs.
+
+Charte Graphique App 
+{
+  logo: /images/inbtp/img-2.png,
+  logo-uncolored: /images/inbtp/png/img-1.png,
+  primary: "#058AC5",
+  secondary: "#E76067",
+  black: "#272826",
+  gray: "#D4D6D3",
+  white: "#FFFFFF",
+  green: "#5ECB44"
+}
+
+**UI / agents — couleur dominante :** le bleu **`primary` (#058AC5)** est la couleur d’accent et des CTA. Utiliser les utilitaires Tailwind du projet : `bg-primary`, `text-primary`, `border-primary`, `hover:bg-darkprimary`. **Ne pas** utiliser pour boutons ou surfaces principales : `emerald-*`, `green-*` (sauf intention explicite type « nature / validation »), ni les hex legacy `#082b1c`, `#5ec998`. Le vert `#5ECB44` reste un **accent secondaire** charte, pas le fond des écrans workspace.
