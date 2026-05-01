@@ -471,11 +471,9 @@ export default function OrganisateurSujetResourceForm({
               <p className="mt-3 flex items-start gap-1.5 text-xs text-gray-500 dark:text-gray-400">
                 <Icon icon="solar:info-circle-linear" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Le slug est envoyé comme{" "}
-                  <code className="rounded bg-gray-100 px-0.5 font-mono dark:bg-gray-800">matiere.reference</code>, la
-                  désignation et les crédits du programme comme{" "}
-                  <code className="rounded bg-gray-100 px-0.5 font-mono dark:bg-gray-800">matiere.designation</code> et{" "}
-                  <code className="rounded bg-gray-100 px-0.5 font-mono dark:bg-gray-800">matiere.credit</code>.
+                  Le service étudiant reçoit <code className="rounded bg-gray-100 px-0.5 font-mono dark:bg-gray-800">matiere.reference</code> et{" "}
+                  <code className="rounded bg-gray-100 px-0.5 font-mono dark:bg-gray-800">matiere.designation</code> (crédits affichés depuis le programme
+                  local).
                 </span>
               </p>
             </div>

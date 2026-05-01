@@ -242,7 +242,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
         <div className={step === 1 ? "block" : "hidden"} aria-hidden={step !== 1}>
           <div className="grid gap-3 md:grid-cols-2">
             <p className="md:col-span-2 text-xs text-body-color">
-              Cycle appliqué à la création : <strong>{defaultCycle}</strong> (selon l&apos;onglet actif ci-dessus).
+              Mention appliquée à la création : <strong>{defaultCycle}</strong> (selon l&apos;onglet actif ci-dessus).
             </p>
 
             <div className="md:col-span-2">

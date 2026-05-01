@@ -70,7 +70,12 @@ export default function SectionsPage() {
       description="Création, consultation et suivi des sections pédagogiques"
       bareListItems
       items={items}
-      tabs={SECTION_CYCLE_TABS}
+      tabs={[
+        { label: "Tous", value: "all" },
+        { label: "SPRE-LICENCE", value: "PREPARATOIRE" },
+        { label: "B.T.P", value: "B.T.P" },
+        { label: "G.T", value: "G.T" },
+      ]}
       activeTab={activeTab}
       onTabChange={setActiveTab}
       searchText={searchText}

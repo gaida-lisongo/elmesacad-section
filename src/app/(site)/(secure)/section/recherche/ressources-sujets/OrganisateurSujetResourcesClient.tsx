@@ -7,6 +7,7 @@ import type { SujetResourceRow } from "@/actions/organisateurSujetResources";
 import {
   deleteOrganisateurSujetResourceAction,
   listOrganisateurSujetResourcesAction,
+  patchOrganisateurSujetResourceStatusAction,
 } from "@/actions/organisateurSujetResources";
 import ResourceWorkspaceShell from "@/components/secure/etudiant-resources/ResourceWorkspaceShell";
 import type { ResourceWorkspaceMode } from "@/components/secure/etudiant-resources/types";
@@ -39,6 +40,12 @@ function creditsLabel(row: SujetResourceRow, programmes: ProgrammeOption[]): str
   return "—";
 }
 
+/** Ressource considérée comme publiée / visible pour l’interrupteur (aligné sur les libellés API). */
+function isPublicationActive(status: string): boolean {
+  const st = (status || "").toLowerCase();
+  return st === "active" || st === "published" || st === "disponible";
+}
+
 export default function OrganisateurSujetResourcesClient({
   sectionSlug,
   sectionDesignation,
@@ -57,6 +64,7 @@ export default function OrganisateurSujetResourcesClient({
   const [bannerError, setBannerError] = useState<string | undefined>(initialError);
   const [uiMode, setUiMode] = useState<ResourceWorkspaceMode>("list");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [statusToggleId, setStatusToggleId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const sectionRefDisplay = sectionSlug;
@@ -111,6 +119,27 @@ export default function OrganisateurSujetResourcesClient({
     });
   };
 
+  const togglePublicationStatus = (row: SujetResourceRow) => {
+    const nextActive = !isPublicationActive(row.status);
+    const nextStatus = nextActive ? "active" : "inactive";
+    setBannerError(undefined);
+    setStatusToggleId(row.id);
+    void (async () => {
+      try {
+        const updated = await patchOrganisateurSujetResourceStatusAction({
+          sectionSlug,
+          id: row.id,
+          status: nextStatus,
+        });
+        setRows((prev) => prev.map((x) => (x.id === row.id ? updated : x)));
+      } catch (e) {
+        setBannerError((e as Error).message);
+      } finally {
+        setStatusToggleId(null);
+      }
+    })();
+  };
+
   const tablePageIndex = Math.max(0, page - 1);
   const pageCount = Math.max(1, Math.ceil(total / limit) || 1);
   const canCreate = programmes.length > 0 && juryRechercheMembers.length > 0;
@@ -123,8 +152,8 @@ export default function OrganisateurSujetResourcesClient({
             Sujets proposés aux étudiants
           </h2>
           <p className="mt-0.5 max-w-xl text-sm text-gray-600 dark:text-gray-400">
-            Ressources « sujet » du service étudiant, filtrées par votre{" "}
-            <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">sectionRef</code>.
+            Les nouvelles ressources sont créées en <strong>inactive</strong> ; activez-les ici lorsque le sujet doit
+            apparaître sur le service étudiant.
           </p>
         </div>
         <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
@@ -230,8 +259,8 @@ export default function OrganisateurSujetResourcesClient({
           aria-busy={pending}
         >
           {rows.map((r) => {
-            const st = (r.status || "—").toLowerCase();
-            const active = st === "active" || st === "published" || st === "disponible";
+            const active = isPublicationActive(r.status);
+            const switching = statusToggleId === r.id;
             return (
               <article
                 key={r.id}
@@ -243,20 +272,57 @@ export default function OrganisateurSujetResourcesClient({
                     <h3 className="line-clamp-2 text-base font-bold leading-snug text-midnight_text dark:text-white">
                       {r.designation}
                     </h3>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
-                        active
-                          ? "bg-primary/15 text-primary dark:bg-primary/25 dark:text-sky-100"
-                          : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-                      }`}
-                    >
-                      {r.status || "—"}
-                    </span>
                   </div>
                   <p className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-gray-400">
                     <Icon icon="solar:hashtag-bold-duotone" className="h-3 w-3" />
                     {r.id.slice(-10)}
                   </p>
+
+                  <div
+                    className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 transition-colors duration-300 ${
+                      active
+                        ? "border-primary/35 bg-primary/[0.07] dark:border-primary/40 dark:bg-primary/10"
+                        : "border-gray-200/90 bg-gray-50/90 dark:border-gray-700 dark:bg-gray-800/60"
+                    }`}
+                  >
+                    <div className="min-w-0">
+                      <p className="flex items-center gap-1.5 text-xs font-bold text-midnight_text dark:text-white">
+                        <Icon
+                          icon={active ? "solar:eye-bold-duotone" : "solar:eye-closed-bold-duotone"}
+                          className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-gray-400"}`}
+                        />
+                        Publication
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-gray-600 dark:text-gray-400">
+                        {active
+                          ? "Visible sur le service étudiant"
+                          : "Inactive — masquée jusqu’à activation"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={active}
+                      aria-label={active ? "Désactiver la ressource" : "Activer la ressource"}
+                      disabled={switching || !!statusToggleId}
+                      onClick={() => togglePublicationStatus(r)}
+                      className={`relative h-8 w-[3.25rem] shrink-0 rounded-full border-2 transition-all duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-gray-900 ${
+                        active
+                          ? "border-primary/50 bg-primary shadow-inner shadow-primary/20"
+                          : "border-gray-300 bg-gray-200 dark:border-gray-600 dark:bg-gray-700"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ease-out ${
+                          active ? "translate-x-[1.25rem]" : "translate-x-0"
+                        }`}
+                      >
+                        {switching ? (
+                          <Icon icon="svg-spinners:ring-resize" className="size-3.5 text-primary" aria-hidden />
+                        ) : null}
+                      </span>
+                    </button>
+                  </div>
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-midnight_text dark:bg-gray-800 dark:text-white">

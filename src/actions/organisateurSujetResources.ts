@@ -199,6 +199,34 @@ function pickErrorMessage(payload: Record<string, unknown>, fallback: string): s
   );
 }
 
+/** Enrichit le message avec issues / errors souvent renvoyés par les validateurs côté service. */
+function formatEtudiantApiError(payload: Record<string, unknown>, base: string): string {
+  const parts: string[] = [];
+  const collect = (raw: unknown) => {
+    if (!Array.isArray(raw)) return;
+    for (const item of raw) {
+      if (!item) continue;
+      if (typeof item === "string") {
+        parts.push(item);
+        continue;
+      }
+      if (typeof item === "object") {
+        const o = item as Record<string, unknown>;
+        const m = o.message ?? o.msg ?? o.error;
+        const p = o.path;
+        if (typeof m === "string" && m) {
+          parts.push(typeof p === "string" && p ? `${p}: ${m}` : m);
+        }
+      }
+    }
+  };
+  collect(payload.errors);
+  collect(payload.issues);
+  collect(payload.details);
+  if (parts.length === 0) return base;
+  return `${base} — ${parts.join(" · ")}`;
+}
+
 function rowFromApi(raw: unknown): SujetResourceRow | null {
   const r = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const id = String(r._id ?? r.id ?? "").trim();
@@ -477,7 +505,6 @@ export async function createOrganisateurSujetResourceAction(input: {
     matiere: {
       reference: programme.slug,
       designation: programme.designation,
-      credit: programme.credits,
     },
     lecteurs,
     branding: {
@@ -499,11 +526,25 @@ export async function createOrganisateurSujetResourceAction(input: {
   const rawText = await upstream.text();
   const payload = readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Création de la ressource impossible."));
+    throw new Error(formatEtudiantApiError(payload, pickErrorMessage(payload, "Création de la ressource impossible.")));
   }
   const created = payload.data ?? JSON.parse(rawText || "{}");
-  const row = rowFromApi(created);
+  let row = rowFromApi(created);
   if (!row) throw new Error("Réponse service invalide après création.");
+
+  /* Le schéma POST du service n’accepte en général ni status ni matiere.credit : publication initiale via PATCH. */
+  try {
+    row = await patchOrganisateurSujetResourceStatusAction({
+      sectionSlug: input.sectionSlug,
+      id: row.id,
+      status: "inactive",
+    });
+  } catch (e) {
+    throw new Error(
+      `${(e as Error).message} — La ressource a peut‑être été créée sans statut « inactive » ; vérifiez sur le service étudiant.`
+    );
+  }
+
   return row;
 }
 
@@ -553,7 +594,6 @@ export async function updateOrganisateurSujetResourceAction(input: {
     matiere: {
       reference: programme.slug,
       designation: programme.designation,
-      credit: programme.credits,
     },
     lecteurs,
     branding: {
@@ -581,6 +621,39 @@ export async function updateOrganisateurSujetResourceAction(input: {
   const updated = payload.data ?? JSON.parse(rawText || "{}");
   const row = rowFromApi(updated);
   if (!row) throw new Error("Réponse service invalide après mise à jour.");
+  return row;
+}
+
+/**
+ * Bascule le statut de publication (PATCH partiel). Valeurs typiques côté service : active | inactive.
+ */
+export async function patchOrganisateurSujetResourceStatusAction(input: {
+  sectionSlug: string;
+  id: string;
+  status: "active" | "inactive";
+}): Promise<SujetResourceRow> {
+  const ctx = await assertChargeRechercheContext();
+  if (input.sectionSlug !== ctx.sectionSlug) {
+    throw new Error("Section incohérente avec votre habilitation.");
+  }
+  const id = String(input.id ?? "").trim();
+  if (!id) throw new Error("Identifiant ressource requis.");
+
+  await getOrganisateurSujetResourceAction({ sectionSlug: ctx.sectionSlug, id });
+
+  const upstream = await fetchEtudiantApi(`/resources/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status: input.status }),
+  });
+  const rawText = await upstream.text();
+  const payload = readJsonPayload(upstream, rawText);
+  if (!upstream.ok) {
+    throw new Error(pickErrorMessage(payload, "Mise à jour du statut impossible."));
+  }
+  const updated = payload.data ?? JSON.parse(rawText || "{}");
+  const row = rowFromApi(updated);
+  if (!row) throw new Error("Réponse service invalide après mise à jour du statut.");
   return row;
 }
 

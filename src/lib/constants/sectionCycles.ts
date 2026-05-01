@@ -6,4 +6,4 @@ export const SECTION_CYCLE_TABS: { label: string; value: string }[] = [
   ...STUDENT_CYCLES.map((c) => ({ label: c, value: c })),
 ];
 
-export const DEFAULT_SECTION_CYCLE_FOR_CREATE = "Licence" as const;
+export const DEFAULT_SECTION_CYCLE_FOR_CREATE = "B.T.P" as const;
