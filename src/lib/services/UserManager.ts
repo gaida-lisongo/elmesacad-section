@@ -65,6 +65,7 @@ export type AdminRechargeListItem = {
     studentName: string;
     studentEmail: string;
     studentMatricule: string;
+    commandeId?: string;
     orderNumber?: string;
     amount: number;
     currency: "USD" | "CDF";
@@ -121,6 +122,124 @@ class UserManager {
 
     public async getStudentById(id: Id): Promise<Student | null> {
         return StudentModel.findById(id);
+    }
+
+    public async getStudentByMatriculeAndEmail(matricule: string, email: string): Promise<Student | null> {
+        const m = String(matricule ?? "").trim();
+        const e = String(email ?? "").trim().toLowerCase();
+        if (!m || !e) return null;
+        return StudentModel.findOne({ matricule: m, email: e });
+    }
+
+    /**
+     * Recharge + entrée `deposits[]` liée à une commande (unicité par `commandeId`).
+     */
+    public async createRechargeForStudentWithCommande(
+        studentId: Id,
+        input: {
+            commandeId: string;
+            amount: number;
+            currency: "USD" | "CDF";
+            phoneNumber: string;
+            orderNumber?: string;
+            status?: "pending" | "paid" | "failed";
+        }
+    ): Promise<RechargeDoc | null> {
+        const commandeId = String(input.commandeId ?? "").trim();
+        if (!commandeId) return null;
+
+        const dup = await RechargeModel.findOne({ commandeId });
+        if (dup) return dup;
+
+        const student = await StudentModel.findById(studentId);
+        if (!student) return null;
+
+        const r = await RechargeModel.create({
+            studentId: student._id,
+            commandeId,
+            amount: input.amount,
+            currency: input.currency,
+            phoneNumber: input.phoneNumber,
+            orderNumber: input.orderNumber,
+            status: input.status ?? "pending",
+        });
+        const rid = String(r._id);
+        await StudentModel.findByIdAndUpdate(student._id, {
+            $push: {
+                deposits: {
+                    rechargeId: rid,
+                    orderNumber: input.orderNumber,
+                    amount: r.amount,
+                    currency: r.currency,
+                    phoneNumber: r.phoneNumber,
+                    status: r.status,
+                },
+            },
+        });
+        return r;
+    }
+
+    /**
+     * Crée ou met à jour une entrée `transactions[]` liée à une commande locale (`commandeId` unique).
+     */
+    public async upsertStudentTransactionForCommande(
+        studentId: Id,
+        input: {
+            commandeId: string;
+            ressourceId: string;
+            amount: number;
+            status: "pending" | "paid" | "failed";
+            categorie: string;
+            microserviceOrderId?: string;
+            microserviceData?: unknown;
+        }
+    ): Promise<void> {
+        const sid = new Types.ObjectId(String(studentId));
+        const cid = String(input.commandeId ?? "").trim();
+        if (!cid) return;
+
+        const existing = await StudentModel.findOne(
+            { _id: sid, "transactions.commandeId": cid },
+            { _id: 1 }
+        ).lean();
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const $set: Record<string, any> = {
+            "transactions.$[t].ressourceId": input.ressourceId,
+            "transactions.$[t].amount": input.amount,
+            "transactions.$[t].status": input.status,
+            "transactions.$[t].categorie": input.categorie,
+            "transactions.$[t].date": new Date(),
+        };
+        if (input.microserviceOrderId !== undefined) {
+            $set["transactions.$[t].microserviceOrderId"] = input.microserviceOrderId;
+        }
+        if (input.microserviceData !== undefined) {
+            $set["transactions.$[t].microserviceData"] = input.microserviceData;
+        }
+
+        if (existing) {
+            await StudentModel.updateOne({ _id: sid }, { $set }, { arrayFilters: [{ "t.commandeId": cid }] });
+            return;
+        }
+
+        await StudentModel.updateOne(
+            { _id: sid },
+            {
+                $push: {
+                    transactions: {
+                        ressourceId: input.ressourceId,
+                        amount: input.amount,
+                        status: input.status,
+                        date: new Date(),
+                        categorie: input.categorie,
+                        commandeId: cid,
+                        microserviceOrderId: input.microserviceOrderId,
+                        microserviceData: input.microserviceData,
+                    },
+                },
+            }
+        );
     }
 
     public async getAllStudents(): Promise<Student[]> {
@@ -464,6 +583,7 @@ class UserManager {
             const or: any[] = [
                 { orderNumber: rx },
                 { phoneNumber: rx },
+                { commandeId: rx },
                 { "student.name": rx },
                 { "student.email": rx },
                 { "student.matricule": rx },
@@ -487,6 +607,7 @@ class UserManager {
                 $project: {
                     _id: 1,
                     studentId: 1,
+                    commandeId: 1,
                     orderNumber: 1,
                     amount: 1,
                     currency: 1,
@@ -506,6 +627,7 @@ class UserManager {
             studentName: d.studentName != null ? String(d.studentName) : "—",
             studentEmail: d.studentEmail != null ? String(d.studentEmail) : "—",
             studentMatricule: d.studentMatricule != null ? String(d.studentMatricule) : "—",
+            commandeId: d.commandeId != null ? String(d.commandeId) : undefined,
             orderNumber: d.orderNumber != null ? String(d.orderNumber) : undefined,
             amount: d.amount as number,
             currency: d.currency as "USD" | "CDF",
@@ -553,6 +675,7 @@ class UserManager {
                 $project: {
                     _id: 1,
                     studentId: 1,
+                    commandeId: 1,
                     orderNumber: 1,
                     amount: 1,
                     currency: 1,
@@ -574,6 +697,7 @@ class UserManager {
             studentName: d.studentName != null ? String(d.studentName) : "—",
             studentEmail: d.studentEmail != null ? String(d.studentEmail) : "—",
             studentMatricule: d.studentMatricule != null ? String(d.studentMatricule) : "—",
+            commandeId: d.commandeId != null ? String(d.commandeId) : undefined,
             orderNumber: d.orderNumber != null ? String(d.orderNumber) : undefined,
             amount: d.amount as number,
             currency: d.currency as "USD" | "CDF",

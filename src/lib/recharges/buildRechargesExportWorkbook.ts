@@ -80,12 +80,13 @@ export async function buildRechargesExportWorkbook(args: {
     "Statut",
     "Téléphone",
     "N° commande",
+    "ID commande marketplace",
     "Date création (ISO)",
   ];
   dataSheet.addRow(headers);
   dataSheet.getRow(1).font = { bold: true };
   [
-    14, 14, 22, 14, 28, 10, 8, 12, 16, 18, 24,
+    14, 14, 22, 14, 28, 10, 8, 12, 16, 18, 22, 24,
   ].forEach((w, i) => {
     dataSheet.getColumn(i + 1).width = w;
   });
@@ -102,6 +103,7 @@ export async function buildRechargesExportWorkbook(args: {
       r.status,
       r.phoneNumber,
       r.orderNumber ?? "",
+      r.commandeId ?? "",
       r.createdAt,
     ]);
   }

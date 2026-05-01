@@ -1,22 +1,18 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
 import { CommandeModel } from "@/lib/models/Commande";
-import { runCheckWithLogging } from "@/lib/payment/paymentRun";
+import type { CommandeDoc } from "@/lib/models/Commande";
+import { isCommandeProduit } from "@/lib/constants/commandeProduit";
 import {
-  extractTransactionStatusFromCheckResponse,
-  mapProviderTransactionToDeposit,
-} from "@/lib/payment/transactionStatus";
+  collectMobileMoneyForCommande,
+  ensureRechargeForCommandeAfterCollect,
+  syncCommandePaymentStatusFromProvider,
+  type CommandePaymentTransaction,
+} from "@/lib/commande/commandePayment";
 import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
-import { CollectCardPayload, PaymentService } from "@/lib/services/PaymentService";
 
 type ResolutionCategorie = "TP" | "QCM";
 type CommandeStatus = "pending" | "paid" | "failed" | "completed";
-type CommandeTransaction = {
-  orderNumber?: string;
-  amount: number;
-  currency: "USD" | "CDF";
-  phoneNumber: string;
-};
 
 type BaseBody = {
   action: "ensure" | "pay" | "check" | "reset" | "complete" | "get";
@@ -28,6 +24,9 @@ type BaseBody = {
   amount?: number;
   currency?: "USD" | "CDF";
   phoneNumber?: string;
+  /** Ressource marketplace : type de produit (hérité du schéma Commande). */
+  produit?: string;
+  metadata?: Record<string, unknown>;
 };
 
 function normalizeString(value: unknown): string {
@@ -38,6 +37,28 @@ function toCategorie(value: unknown): ResolutionCategorie | null {
   const v = normalizeString(value).toUpperCase();
   if (v === "TP" || v === "QCM") return v;
   return null;
+}
+
+function mergeCommandeTransaction(
+  existing: CommandeDoc["transaction"],
+  incoming: CommandePaymentTransaction
+): CommandeDoc["transaction"] {
+  return {
+    ...existing,
+    ...incoming,
+    providerResponses: {
+      ...existing?.providerResponses,
+      ...incoming.providerResponses,
+    },
+    microserviceResponse: existing?.microserviceResponse,
+  };
+}
+
+function normalizeMetadata(raw: unknown): Record<string, unknown> {
+  if (raw != null && typeof raw === "object" && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return {};
 }
 
 async function findResolutionNoteForCommande(commandeId: string): Promise<number | null> {
@@ -72,22 +93,6 @@ async function getActiveCommande(input: {
   }).sort({ createdAt: -1 });
 }
 
-async function syncCommandeStatusFromProvider(commande: InstanceType<typeof CommandeModel>) {
-  const orderNumber = normalizeString(commande.transaction?.orderNumber);
-  if (!orderNumber) {
-    return { message: "Aucun orderNumber.", providerStatus: null as string | null, check: null as unknown };
-  }
-  const check = await runCheckWithLogging(orderNumber);
-  const providerStatus = extractTransactionStatusFromCheckResponse(check);
-  console.log("providerStatus", providerStatus);
-  if (providerStatus != null) {
-    const mapped = mapProviderTransactionToDeposit(providerStatus);
-    commande.status = mapped;
-    await commande.save();
-  }
-  return { message: "Vérification paiement effectuée.", providerStatus, check };
-}
-
 export async function POST(request: Request) {
   try {
     await connectDB();
@@ -108,7 +113,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, exists: false, commande: null }, { status: 200 });
       }
       if (commande.status === "pending" && normalizeString(commande.transaction.orderNumber)) {
-        await syncCommandeStatusFromProvider(commande as unknown as InstanceType<typeof CommandeModel>);
+        await syncCommandePaymentStatusFromProvider(commande);
       }
       const note = commande.status === "completed" ? await findResolutionNoteForCommande(String(commande._id)) : null;
       return NextResponse.json(
@@ -141,33 +146,26 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, message: "Paramètres paiement invalides." }, { status: 400 });
       }
 
-      const paymentPayload = {
-        channel: "MOBILE_MONEY",
-        amount,
-        currency,
-        reference,
-        phone: phoneNumber,
-      };
+      const produit = isCommandeProduit(body.produit) ? body.produit : "activite";
+      const metadata = normalizeMetadata(body.metadata);
 
-      const service = PaymentService.getInstance();
-      const {
-        success,
-        data,
-        message,
-      } = await service.collect(paymentPayload as CollectCardPayload);
-
-      if(!data || typeof data !== "object") {
-        return NextResponse.json({ success: false, message: "Paiement refusé." }, { status: 400 });
+      let collect: { message?: string };
+      let transaction: CommandePaymentTransaction;
+      try {
+        const out = await collectMobileMoneyForCommande({
+          amount,
+          currency,
+          reference,
+          phoneNumber,
+        });
+        collect = { message: out.response.message };
+        transaction = out.transaction;
+      } catch (e) {
+        return NextResponse.json(
+          { success: false, message: e instanceof Error ? e.message : "Paiement refusé." },
+          { status: 400 }
+        );
       }
-
-      const paymentData = ((data as { data?: unknown }).data ?? data) as Record<string, unknown>;
-
-      const transaction: CommandeTransaction = {
-        orderNumber: normalizeString(paymentData.orderNumber) || undefined,
-        amount: Number(paymentData.amount ?? 0),
-        currency: paymentData.currency === "CDF" ? "CDF" : "USD",
-        phoneNumber: phoneNumber,
-      };
 
       let commande = await CommandeModel.findOne({
         "student.email": email,
@@ -194,44 +192,57 @@ export async function POST(request: Request) {
         );
       }
 
+      const ressourceBlock = {
+        categorie,
+        reference,
+        produit,
+        metadata,
+      };
+
       if (!commande) {
         commande = await CommandeModel.create({
           student: { email, matricule },
-          ressource: { categorie, reference },
+          ressource: ressourceBlock,
           transaction,
           status: "pending",
         });
-
-        return NextResponse.json({
-          success: true,
-          message,
-          existing: false,
-          commande: commande.toObject(),
-        }, { status: 200 });
-      } else {
-        commande.transaction = {
-          ...commande.transaction,
-          ...transaction,
-        };
-        commande.status = "pending";
-        await commande.save();
-
-        return NextResponse.json({
-          success: true,
-          message,
-          existing: false,
-          commande: commande.toObject(),
-        }, { status: 200 });
+        await ensureRechargeForCommandeAfterCollect(commande);
+        return NextResponse.json(
+          {
+            success: true,
+            message: collect.message,
+            existing: false,
+            commande: commande.toObject(),
+          },
+          { status: 200 }
+        );
       }
+
+      commande.ressource = {
+        ...commande.ressource,
+        ...ressourceBlock,
+        produit: commande.ressource?.produit ?? produit,
+        metadata: { ...(commande.ressource?.metadata ?? {}), ...metadata },
+      };
+      commande.transaction = mergeCommandeTransaction(commande.transaction, transaction);
+      commande.status = "pending";
+      await commande.save();
+      await ensureRechargeForCommandeAfterCollect(commande);
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: collect.message,
+          existing: false,
+          commande: commande.toObject(),
+        },
+        { status: 200 }
+      );
     }
 
     if (action === "check") {
       const id = normalizeString(body.commandeId);
-      console.log("id", id);
-      let commande =
-        id.length > 0
-          ? await CommandeModel.findById(id)
-          : null;
+      let commande = id.length > 0 ? await CommandeModel.findById(id) : null;
       if (!commande) {
         const email = normalizeString(body.email).toLowerCase();
         const matricule = normalizeString(body.matricule);
@@ -242,13 +253,15 @@ export async function POST(request: Request) {
         }
       }
       if (!commande) return NextResponse.json({ success: false, message: "Commande introuvable." }, { status: 404 });
-      const { providerStatus, check } = await syncCommandeStatusFromProvider(commande as unknown as InstanceType<typeof CommandeModel>);
-      console.log("providerStatus", providerStatus);
-      console.log("check", check);
+      const { providerStatus, check } = await syncCommandePaymentStatusFromProvider(commande);
       return NextResponse.json(
         {
           success: true,
-          commande: { id: String(commande._id), status: "paid"/*commande.status*/, transaction: commande.transaction },
+          commande: {
+            id: String(commande._id),
+            status: commande.status,
+            transaction: commande.transaction,
+          },
           providerStatus,
           check,
         },

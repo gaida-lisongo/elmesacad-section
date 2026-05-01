@@ -3,6 +3,8 @@ import mongoose, { Schema, Types } from "mongoose";
 export interface RechargeDoc {
   _id: Types.ObjectId;
   studentId: Types.ObjectId;
+  /** Lien optionnel vers une commande marketplace / résolution (id Mongo string). */
+  commandeId?: string;
   orderNumber?: string;
   amount: number;
   currency: "USD" | "CDF";
@@ -15,6 +17,7 @@ export interface RechargeDoc {
 const rechargeSchema = new Schema<RechargeDoc>(
   {
     studentId: { type: Schema.Types.ObjectId, ref: "Student", required: true, index: true },
+    commandeId: { type: String, sparse: true, index: true },
     orderNumber: { type: String, sparse: true, index: true },
     amount: { type: Number, required: true },
     currency: { type: String, required: true, enum: ["USD", "CDF"] },

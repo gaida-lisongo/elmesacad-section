@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
 import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
 import { gradeQcmResolution } from "@/lib/qcm/gradeResolution";
+import { connectDB } from "@/lib/services/connectedDB";
+import { CommandeModel } from "@/lib/models/Commande";
+import { persistCommandeMicroserviceResponseAndSyncStudent } from "@/lib/commande/syncStudentCommandeTransaction";
 
 type ResolutionPayload = {
   email: string;
@@ -73,5 +76,22 @@ export async function POST(request: Request) {
     const msg = isObject(body) ? String(body.message ?? body.error ?? "Soumission refusée.") : "Soumission refusée.";
     return NextResponse.json({ success: false, message: msg }, { status: upstream.status });
   }
+
+  try {
+    await connectDB();
+    const commande = await CommandeModel.findOne({
+      "student.email": payload.email.toLowerCase(),
+      "student.matricule": payload.matricule,
+      "ressource.reference": payload.activite_id,
+      status: { $in: ["pending", "paid", "completed"] },
+    }).sort({ createdAt: -1 });
+
+    if (commande) {
+      await persistCommandeMicroserviceResponseAndSyncStudent(String(commande._id), body);
+    }
+  } catch (e) {
+    console.error("[resolutions/submit] sync commande / étudiant:", e);
+  }
+
   return NextResponse.json(body, { status: upstream.status });
 }

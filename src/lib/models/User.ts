@@ -29,6 +29,12 @@ export interface Student extends User {
         status: 'pending' | 'paid' | 'failed';
         date: Date;
         categorie: string;
+        /** Commande Next.js (marketplace / résolution). */
+        commandeId?: string;
+        /** Identifiant commande côté microservice (étudiant ou titulaire), si exposé par l’API. */
+        microserviceOrderId?: string;
+        /** Réponse ou extrait renvoyé par le microservice (création de commande, soumission, etc.). */
+        microserviceData?: unknown;
     }[];
     deposits: {
         /** Synchronisé avec la collection `recharges` (même id) */
@@ -96,7 +102,10 @@ const studentSchema = new Schema<Student>({
         amount: { type: Number, required: true },
         status: { type: String, required: true, enum: ['pending', 'paid', 'failed'] },
         date: { type: Date, default: Date.now },
-        categorie: { type: String, required: true }
+        categorie: { type: String, required: true },
+        commandeId: { type: String, required: false },
+        microserviceOrderId: { type: String, required: false },
+        microserviceData: { type: Schema.Types.Mixed, required: false },
     }]
 }, { timestamps: true });
 

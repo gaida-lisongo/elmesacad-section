@@ -359,6 +359,9 @@ function StudentPanel({ user }: { user: Student }) {
                 </span>
                 <span className="text-xs text-gray-500">
                   {t.status} {t.ressourceId && `· ${t.ressourceId}`}
+                  {t.microserviceOrderId && (
+                    <span className="block">MS: {t.microserviceOrderId}</span>
+                  )}
                 </span>
               </li>
             ))}
