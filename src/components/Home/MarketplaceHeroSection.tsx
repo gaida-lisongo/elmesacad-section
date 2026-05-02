@@ -62,7 +62,7 @@ export default function MarketplaceHeroSection({
 
             <div className="flex flex-wrap justify-center gap-3 pt-1">
               <Link
-                href={`/student/${currentSlide.categorie}?activiteId=${encodeURIComponent(currentSlide.id)}`}
+                href={`/product/${currentSlide.categorie}?productId=${encodeURIComponent(currentSlide.id)}`}
                 className="rounded-md bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-darkprimary"
               >
                 Voir le detail de l'activite

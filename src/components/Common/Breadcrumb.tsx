@@ -1,3 +1,6 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { BreadcrumbProps } from "../../types/breadcrumb"; // Adjust the import path based on your project structure
@@ -5,6 +8,7 @@ import { BreadcrumbProps } from "../../types/breadcrumb"; // Adjust the import p
 const Breadcrumb: React.FC<BreadcrumbProps> = ({
   pageName,
   pageDescription,
+  trail,
 }) => {
   return (
     <section className="relative z-10 min-h-[420px] overflow-hidden pb-12 pt-32 md:min-h-[460px] md:pt-28 lg:min-h-[500px] lg:pt-32">
@@ -34,6 +38,20 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   Accueil
                 </Link>
               </li>
+              {(trail ?? []).map((seg, i) => (
+                <React.Fragment key={`trail-${seg.label}-${i}`}>
+                  <li className="text-white/70">/</li>
+                  <li className={seg.href ? "text-white/85" : "text-white"}>
+                    {seg.href ? (
+                      <Link href={seg.href} className="transition hover:text-white">
+                        {seg.label}
+                      </Link>
+                    ) : (
+                      <span>{seg.label}</span>
+                    )}
+                  </li>
+                </React.Fragment>
+              ))}
               <li className="text-white/70">/</li>
               <li className="text-white">{pageName}</li>
             </ul>

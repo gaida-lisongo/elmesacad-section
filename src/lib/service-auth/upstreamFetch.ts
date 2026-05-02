@@ -63,6 +63,7 @@ export async function fetchTitulaireService(
   }
 
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  
   let res = await doFetch(url, init, await buildAuthHeaders(init));
   if (res.status !== 401) return res;
 

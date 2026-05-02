@@ -523,7 +523,7 @@ export default function TitulaireActivitesManagerClient({ categorie, chargeTabs 
                     }
                     setError(null);
                     const origin = window.location.origin;
-                    const url = `${origin}/student/${categorie.toLowerCase()}?activiteId=${encodeURIComponent(oid)}`;
+                    const url = `${origin}/product/${categorie.toLowerCase()}?productId=${encodeURIComponent(oid)}`;
                     setQrSheet({
                       item,
                       url,

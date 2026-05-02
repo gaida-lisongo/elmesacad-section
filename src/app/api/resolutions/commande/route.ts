@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
 import { CommandeModel } from "@/lib/models/Commande";
 import type { CommandeDoc } from "@/lib/models/Commande";
+import type { CommandeProduit } from "@/lib/constants/commandeProduit";
 import { isCommandeProduit } from "@/lib/constants/commandeProduit";
 import {
   collectMobileMoneyForCommande,
@@ -9,22 +10,23 @@ import {
   syncCommandePaymentStatusFromProvider,
   type CommandePaymentTransaction,
 } from "@/lib/commande/commandePayment";
+import { sendMarketplaceCommandePendingMail } from "@/lib/mail/marketplaceCommandeMail";
 import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
+import { extractMicroserviceOrderId } from "@/lib/commande/extractMicroserviceOrderId";
 
-type ResolutionCategorie = "TP" | "QCM";
 type CommandeStatus = "pending" | "paid" | "failed" | "completed";
 
 type BaseBody = {
-  action: "ensure" | "pay" | "check" | "reset" | "complete" | "get";
+  action: "ensure" | "pay" | "check" | "reset" | "complete" | "get" | "getById";
   matricule?: string;
   email?: string;
-  categorie?: ResolutionCategorie;
+  /** Activités : QCM | TP. Ressources : ligne SUJET, STAGE, … (cohérent avec `produit`). */
+  categorie?: string;
   reference?: string;
   commandeId?: string;
   amount?: number;
   currency?: "USD" | "CDF";
   phoneNumber?: string;
-  /** Ressource marketplace : type de produit (hérité du schéma Commande). */
   produit?: string;
   metadata?: Record<string, unknown>;
 };
@@ -33,19 +35,61 @@ function normalizeString(value: unknown): string {
   return String(value ?? "").trim();
 }
 
-function toCategorie(value: unknown): ResolutionCategorie | null {
-  const v = normalizeString(value).toUpperCase();
-  if (v === "TP" || v === "QCM") return v;
+const LINE_BY_PRODUIT: Partial<Record<CommandeProduit, string>> = {
+  sujet: "SUJET",
+  stage: "STAGE",
+  "fiche-validation": "VALIDATION",
+  releve: "RELEVE",
+  laboratoire: "LABO",
+  session: "SESSION",
+  recours: "RECOURS",
+};
+
+function resolveRessourceCategorie(body: BaseBody): string | null {
+  const produit = isCommandeProduit(body.produit) ? body.produit : null;
+  const rawCat = normalizeString(body.categorie).toUpperCase();
+
+  if (produit === "activite") {
+    return rawCat === "QCM" || rawCat === "TP" ? rawCat : null;
+  }
+
+  if (produit) {
+    const line = LINE_BY_PRODUIT[produit];
+    if (!line) return null;
+    if (rawCat && rawCat !== line) return null;
+    return line;
+  }
+
+  if (rawCat === "QCM" || rawCat === "TP") return rawCat;
+
   return null;
+}
+
+function defaultProduitFromLine(line: string): CommandeProduit {
+  const u = line.toUpperCase();
+  if (u === "QCM" || u === "TP") return "activite";
+  const inv: Record<string, CommandeProduit> = {
+    SUJET: "sujet",
+    STAGE: "stage",
+    VALIDATION: "fiche-validation",
+    RELEVE: "releve",
+    LABO: "laboratoire",
+    SESSION: "session",
+    RECOURS: "recours",
+  };
+  return inv[u] ?? "activite";
 }
 
 function mergeCommandeTransaction(
   existing: CommandeDoc["transaction"],
   incoming: CommandePaymentTransaction
 ): CommandeDoc["transaction"] {
+  const mergedOn =
+    normalizeString(incoming.orderNumber) || normalizeString(existing?.orderNumber) || undefined;
   return {
     ...existing,
     ...incoming,
+    orderNumber: mergedOn,
     providerResponses: {
       ...existing?.providerResponses,
       ...incoming.providerResponses,
@@ -81,7 +125,7 @@ async function findResolutionNoteForCommande(commandeId: string): Promise<number
 async function getActiveCommande(input: {
   matricule: string;
   email: string;
-  categorie: ResolutionCategorie;
+  categorie: string;
   reference: string;
 }) {
   return CommandeModel.findOne({
@@ -93,6 +137,83 @@ async function getActiveCommande(input: {
   }).sort({ createdAt: -1 });
 }
 
+function summarizeMicroserviceForClient(ms: unknown): {
+  orderId?: string;
+  syncAttempted: boolean;
+  success?: boolean;
+  errorHint?: string;
+} {
+  if (ms == null || (typeof ms !== "object" && typeof ms !== "string")) {
+    return { syncAttempted: false };
+  }
+  const orderId = extractMicroserviceOrderId(ms);
+  if (typeof ms === "string") {
+    return { syncAttempted: true, orderId, success: Boolean(orderId) };
+  }
+  const o = ms as Record<string, unknown>;
+  const success = o.success === true;
+  const err =
+    typeof o.error === "string"
+      ? o.error
+      : typeof o.message === "string"
+        ? o.message
+        : undefined;
+  return {
+    syncAttempted: true,
+    orderId,
+    success: success || Boolean(orderId),
+    errorHint: success ? undefined : err,
+  };
+}
+
+function summarizeCommandeForClient(commande: {
+  _id: unknown;
+  status: CommandeDoc["status"];
+  transaction?: CommandeDoc["transaction"];
+  ressource?: CommandeDoc["ressource"];
+  student?: CommandeDoc["student"];
+}) {
+  const ms = commande.transaction?.microserviceResponse;
+  const meta = commande.ressource?.metadata;
+  const metadata =
+    meta != null && typeof meta === "object" && !Array.isArray(meta) ? (meta as Record<string, unknown>) : {};
+  return {
+    id: String(commande._id),
+    status: commande.status,
+    transaction: {
+      orderNumber: commande.transaction?.orderNumber,
+      amount: commande.transaction?.amount,
+      currency: commande.transaction?.currency,
+      phoneNumber: commande.transaction?.phoneNumber,
+      microservice: summarizeMicroserviceForClient(ms),
+    },
+    ressource: {
+      reference: commande.ressource?.reference,
+      produit: commande.ressource?.produit,
+      categorie: commande.ressource?.categorie,
+      metadata,
+    },
+    student: {
+      email: commande.student?.email,
+      matricule: commande.student?.matricule,
+    },
+  };
+}
+
+function queueCommandePendingEmail(body: BaseBody, commandeId: string): void {
+  const email = normalizeString(body.email).toLowerCase();
+  if (!email) return;
+  const meta = normalizeMetadata(body.metadata);
+  const title = String(meta.productTitle ?? "").trim() || "Votre commande INBTP";
+  const studentName = String(meta.fullName ?? "").trim();
+  void sendMarketplaceCommandePendingMail({
+    to: email,
+    studentName: studentName || undefined,
+    commandeId,
+    productLabel: title,
+  }).catch((e) => console.error("[commande] email reprise:", e));
+}
+
 export async function POST(request: Request) {
   try {
     await connectDB();
@@ -100,10 +221,21 @@ export async function POST(request: Request) {
     const action = body.action;
     if (!action) return NextResponse.json({ success: false, message: "action requise." }, { status: 400 });
 
+    if (action === "getById") {
+      const id = normalizeString(body.commandeId);
+      if (!id) return NextResponse.json({ success: false, message: "commandeId requis." }, { status: 400 });
+      const commande = await CommandeModel.findById(id).lean();
+      if (!commande) return NextResponse.json({ success: false, message: "Commande introuvable." }, { status: 404 });
+      return NextResponse.json({
+        success: true,
+        commande: summarizeCommandeForClient(commande),
+      });
+    }
+
     if (action === "ensure" || action === "get") {
       const email = normalizeString(body.email).toLowerCase();
       const matricule = normalizeString(body.matricule);
-      const categorie = toCategorie(body.categorie);
+      const categorie = resolveRessourceCategorie(body);
       const reference = normalizeString(body.reference);
       if (!email || !matricule || !reference || !categorie) {
         return NextResponse.json({ success: false, message: "Paramètres invalides." }, { status: 400 });
@@ -115,13 +247,15 @@ export async function POST(request: Request) {
       if (commande.status === "pending" && normalizeString(commande.transaction.orderNumber)) {
         await syncCommandePaymentStatusFromProvider(commande);
       }
-      const note = commande.status === "completed" ? await findResolutionNoteForCommande(String(commande._id)) : null;
+      const lineId = String(commande._id);
+      const note =
+        commande.status === "completed" ? await findResolutionNoteForCommande(lineId) : null;
       return NextResponse.json(
         {
           success: true,
           exists: true,
           commande: {
-            id: String(commande._id),
+            id: lineId,
             status: commande.status,
             transaction: commande.transaction,
           },
@@ -139,14 +273,16 @@ export async function POST(request: Request) {
       }
       const email = normalizeString(body.email).toLowerCase();
       const matricule = normalizeString(body.matricule);
-      const categorie = toCategorie(body.categorie);
+      const categorie = resolveRessourceCategorie(body);
       const amount = Number(body.amount ?? 0);
       const currency = body.currency === "CDF" ? "CDF" : "USD";
       if (!email || !matricule || !reference || !categorie || amount <= 0) {
         return NextResponse.json({ success: false, message: "Paramètres paiement invalides." }, { status: 400 });
       }
 
-      const produit = isCommandeProduit(body.produit) ? body.produit : "activite";
+      const produit: CommandeProduit = isCommandeProduit(body.produit)
+        ? body.produit
+        : defaultProduitFromLine(categorie);
       const metadata = normalizeMetadata(body.metadata);
 
       let collect: { message?: string };
@@ -207,6 +343,7 @@ export async function POST(request: Request) {
           status: "pending",
         });
         await ensureRechargeForCommandeAfterCollect(commande);
+        queueCommandePendingEmail(body, String(commande._id));
         return NextResponse.json(
           {
             success: true,
@@ -228,6 +365,7 @@ export async function POST(request: Request) {
       commande.status = "pending";
       await commande.save();
       await ensureRechargeForCommandeAfterCollect(commande);
+      queueCommandePendingEmail(body, String(commande._id));
 
       return NextResponse.json(
         {
@@ -246,7 +384,7 @@ export async function POST(request: Request) {
       if (!commande) {
         const email = normalizeString(body.email).toLowerCase();
         const matricule = normalizeString(body.matricule);
-        const categorie = toCategorie(body.categorie);
+        const categorie = resolveRessourceCategorie(body);
         const reference = normalizeString(body.reference);
         if (email && matricule && categorie && reference) {
           commande = await getActiveCommande({ email, matricule, categorie, reference });
@@ -257,11 +395,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         {
           success: true,
-          commande: {
-            id: String(commande._id),
-            status: commande.status,
-            transaction: commande.transaction,
-          },
+          commande: summarizeCommandeForClient(commande.toObject()),
           providerStatus,
           check,
         },

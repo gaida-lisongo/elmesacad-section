@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { normalizeMongoObjectIdString } from "@/lib/mongo/normalizeObjectId";
+import type { ResolutionResumeFromPaidOrder } from "@/lib/commande/resolutionResumeTypes";
 
 type QcmQuestion = {
   id: string;
@@ -48,10 +49,19 @@ function normalizeCommande(raw: unknown): CommandeView | null {
   };
 }
 
-export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: string }) {
+export default function QcmResolutionClient({
+  activiteIdRaw,
+  resumeFromPaidOrder,
+  embedded = false,
+}: {
+  activiteIdRaw: string;
+  resumeFromPaidOrder?: ResolutionResumeFromPaidOrder;
+  embedded?: boolean;
+}) {
   const activiteId = useMemo(() => normalizeMongoObjectIdString(activiteIdRaw), [activiteIdRaw]);
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resumeLoading, setResumeLoading] = useState(Boolean(resumeFromPaidOrder));
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [matricule, setMatricule] = useState("");
@@ -111,6 +121,77 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
       mounted = false;
     };
   }, [activiteId]);
+
+  useEffect(() => {
+    if (!resumeFromPaidOrder) {
+      setResumeLoading(false);
+      return;
+    }
+    const { commandeId, email: em, matricule: mat } = resumeFromPaidOrder;
+    if (!String(commandeId).trim()) {
+      setResumeLoading(false);
+      return;
+    }
+    let mounted = true;
+    void (async () => {
+      setResumeLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/resolutions/commande", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "getById", commandeId }),
+        });
+        const payload = (await res.json().catch(() => ({}))) as {
+          success?: boolean;
+          commande?: unknown;
+          message?: string;
+        };
+        if (!mounted) return;
+        if (!res.ok || payload.success === false) {
+          throw new Error(payload.message ?? "Commande introuvable.");
+        }
+        const cmd = normalizeCommande(payload.commande);
+        if (!cmd) throw new Error("Réponse commande invalide.");
+        setMatricule(mat.trim());
+        setEmail(em.trim());
+        setPhoneNumber(cmd.transaction.phoneNumber ?? "");
+        setCommande(cmd);
+        if (cmd.status === "completed") {
+          setIsCompletedLocked(true);
+          setStep(3);
+          if (activiteId) {
+            const ens = await fetch("/api/resolutions/commande", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "ensure",
+                matricule: mat.trim(),
+                email: em.trim(),
+                categorie: "QCM",
+                reference: activiteId,
+              }),
+            });
+            const eb = (await ens.json().catch(() => ({}))) as { note?: number | null };
+            if (mounted && typeof eb.note === "number") setFinalNote(eb.note);
+          }
+        } else if (cmd.status === "paid") {
+          setIsCompletedLocked(false);
+          setStep(3);
+        } else {
+          setIsCompletedLocked(false);
+          setStep(2);
+        }
+      } catch (e) {
+        if (mounted) setError((e as Error).message ?? "Erreur.");
+      } finally {
+        if (mounted) setResumeLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [resumeFromPaidOrder, activiteId]);
 
   async function ensureCommande(nextMatricule?: string, nextEmail?: string) {
     if (!activiteId) return;
@@ -253,7 +334,7 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
     setMessage(null);
     try {
       const reponses_qcm = activity.qcm.map((q) => ({
-        qcm_id: "",
+        qcm_id: q?.id,
         reponse: String(answers[q.id] ?? "").trim(),
       }));
       if (reponses_qcm.some((x) => !x.reponse)) {
@@ -262,7 +343,7 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
       if (!commande || commande.status !== "paid") throw new Error("Paiement non validé.");
       const orderNumber = String(commande.transaction.orderNumber ?? "").trim();
       if (!orderNumber) throw new Error("orderNumber introuvable sur la commande.");
-      const mappedReponses = reponses_qcm.map((r) => ({ ...r, qcm_id: orderNumber }));
+      const mappedReponses = reponses_qcm.map((r) => ({ ...r }));
       const payload = {
         email: email.trim(),
         matricule: matricule.trim(),
@@ -296,13 +377,22 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
   }
 
   return (
-    <section className="mx-auto w-full max-w-3xl rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-      <h1 className="text-xl font-semibold text-midnight_text dark:text-white">Soumission QCM</h1>
+    <section
+      className={`mx-auto w-full rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 ${
+        embedded ? "max-w-3xl" : "max-w-3xl"
+      }`}
+    >
+      {embedded ? (
+        <h2 className="text-lg font-semibold text-midnight_text dark:text-white">Soumission QCM</h2>
+      ) : (
+        <h1 className="text-xl font-semibold text-midnight_text dark:text-white">Soumission QCM</h1>
+      )}
       <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">Répondez puis soumettez votre résolution.</p>
       <p className="mt-2 rounded-md bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300">
         Activité : <strong>{activiteId ?? "Introuvable"}</strong>
       </p>
 
+      {resumeLoading ? <p className="mt-3 text-sm text-gray-500">Chargement de la commande…</p> : null}
       {loading ? <p className="mt-3 text-sm text-gray-500">Chargement du QCM…</p> : null}
       {message ? <p className="mt-3 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
       {error ? <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
@@ -338,7 +428,7 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
             />
           </div>
         </div>
-        {step === 1 ? (
+        {step === 1 && !resumeFromPaidOrder ? (
           <div className="space-y-3 rounded-md border border-gray-200 p-3 dark:border-gray-700">
             <p className="text-xs font-semibold text-gray-600">Étape 1 : vérifier/initialiser la commande</p>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400">Téléphone mobile money</label>
@@ -427,7 +517,14 @@ export default function QcmResolutionClient({ activiteIdRaw }: { activiteIdRaw: 
         {step === 3 && !isCompletedLocked ? (
           <button
             type="submit"
-            disabled={busy || !activiteId || loading || !activity || commande?.status !== "paid"}
+            disabled={
+              busy ||
+              !activiteId ||
+              loading ||
+              resumeLoading ||
+              !activity ||
+              commande?.status !== "paid"
+            }
             className="w-full rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
           >
             {busy ? "Soumission..." : "Soumettre ma résolution QCM"}

@@ -512,7 +512,7 @@ export async function updateResolutionNote(input: {
   if (!Number.isFinite(note)) return { ok: false, message: "Note invalide." };
 
   const payload = JSON.stringify({ note });
-  const paths = [`/resolutions/update/${encodeURIComponent(id)}`, `resolutions/${encodeURIComponent(id)}`];
+  const paths = [`/resolutions/update-note/${encodeURIComponent(id)}`, `resolutions/${encodeURIComponent(id)}`];
   for (const path of paths) {
     for (const method of ["PATCH", "PUT"] as const) {
       const res = await fetchTitulaireService(path.startsWith("/") ? path : `/${path}`, {

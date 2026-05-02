@@ -2,7 +2,8 @@
 
 import { Icon } from "@iconify/react";
 import Image from "next/image";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { fetchUserSearch } from "@/lib/user-search/fetchUserSearch";
 import { HighlightMatch } from "@/lib/user-search/HighlightMatch";
 import type { Agent } from "@/lib/models/User";
@@ -32,6 +33,11 @@ type CommonUserSearchProps = {
   clearOnSelect?: boolean;
   showContextBadge?: boolean;
   placeholder?: string;
+  /**
+   * Affiche la liste dans un portail (position fixe), pour les parents en overflow masqué
+   * (ex. tiroir / modale).
+   */
+  listboxAppendToBody?: boolean;
 };
 
 type AgentUserSearchProps = CommonUserSearchProps & {
@@ -83,6 +89,7 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
     clearOnSelect = false,
     showContextBadge = true,
     placeholder = "Rechercher par nom, e-mail ou matricule…",
+    listboxAppendToBody = false,
   } = props;
 
   const agentRole = kind === "agent" ? props.agentRole : undefined;
@@ -101,7 +108,13 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const listboxPanelRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [listboxViewportRect, setListboxViewportRect] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const propsRef = useRef(props);
   propsRef.current = props;
 
@@ -167,15 +180,43 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
     return () => ac.abort();
   }, [debouncedQuery, minQueryLength, kind, resultLimit, agentRole, studentCycle]);
 
+  const showPanel = open && debouncedQuery.length >= minQueryLength;
+
   useEffect(() => {
     const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) {
-        setOpen(false);
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t) || listboxPanelRef.current?.contains(t)) {
+        return;
       }
+      setOpen(false);
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!listboxAppendToBody || !showPanel) {
+      setListboxViewportRect(null);
+      return;
+    }
+    const root = rootRef.current;
+    if (!root) return;
+    const sync = () => {
+      const r = root.getBoundingClientRect();
+      setListboxViewportRect({
+        top: r.bottom + 8,
+        left: r.left,
+        width: r.width,
+      });
+    };
+    sync();
+    window.addEventListener("scroll", sync, true);
+    window.addEventListener("resize", sync);
+    return () => {
+      window.removeEventListener("scroll", sync, true);
+      window.removeEventListener("resize", sync);
+    };
+  }, [listboxAppendToBody, showPanel, debouncedQuery, loading, items.length]);
 
   const selectItem = useCallback(
     (item: AgentListItem | StudentListItem) => {
@@ -197,8 +238,6 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
     },
     [clearOnSelect, kind]
   );
-
-  const showPanel = open && debouncedQuery.length >= minQueryLength;
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (!items.length) {
@@ -224,6 +263,84 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
   const canShowList = debouncedQuery.length >= minQueryLength;
   const queryForHighlight = highlightQuery ? debouncedQuery : "";
   const showMinCharHint = open && query.trim().length < minQueryLength;
+
+  const listboxShellClass =
+    "max-h-80 overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(8,43,28,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60";
+
+  const listboxBody = (
+    <>
+      {loading && !items.length ? (
+        <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          <span className="inline-flex items-center justify-center gap-2">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400" />
+            Recherche en cours…
+          </span>
+        </p>
+      ) : null}
+
+      {error ? (
+        <p className="m-1 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
+          {error}
+        </p>
+      ) : null}
+
+      {!loading && !error && items.length === 0 ? (
+        <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+          Aucun résultat pour « {debouncedQuery} »
+        </p>
+      ) : null}
+
+      {items.map((item, index) => {
+        const active = index === highlight;
+        const context =
+          kind === "agent" ? (item as AgentListItem).role : (item as StudentListItem).cycle;
+
+        return (
+          <button
+            type="button"
+            key={item.id}
+            role="option"
+            aria-selected={active}
+            onMouseDown={(e) => e.preventDefault()}
+            onMouseEnter={() => setHighlight(index)}
+            onClick={() => selectItem(item)}
+            className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
+              active
+                ? "bg-[#082b1c]/8 ring-1 ring-[#082b1c]/15 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+                : "hover:bg-gray-50 dark:hover:bg-gray-800/80"
+            }`}
+          >
+            <ResultAvatar src={item.photo} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="truncate font-semibold text-midnight_text dark:text-white">
+                  <HighlightMatch text={item.name} query={queryForHighlight} />
+                </p>
+                {showContextBadge && context ? (
+                  <span className="shrink-0 rounded-full bg-[#082b1c]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#082b1c] dark:bg-emerald-500/20 dark:text-emerald-200">
+                    {context}
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
+                <Icon icon="solar:letter-bold-duotone" className="h-3.5 w-3.5 shrink-0 text-primary/60" />
+                <span>
+                  <HighlightMatch text={item.email} query={queryForHighlight} />
+                </span>
+              </p>
+              <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-500">
+                <span className="text-gray-400">Mat. </span>
+                <span className="text-midnight_text dark:text-gray-200">
+                  <HighlightMatch text={item.matricule} query={queryForHighlight} />
+                </span>
+              </p>
+            </div>
+            <Icon icon="solar:alt-arrow-right-linear" className="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600" />
+          </button>
+        );
+      })}
+    </>
+  );
 
   return (
     <div ref={rootRef} className={`relative w-full ${className}`.trim()}>
@@ -261,84 +378,30 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
         ) : null}
       </div>
 
-      {showPanel ? (
-        <div
-          id={listboxId}
-          role="listbox"
-          className="absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(8,43,28,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60"
-        >
-          {loading && !items.length ? (
-            <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              <span className="inline-flex items-center justify-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400" />
-                Recherche en cours…
-              </span>
-            </p>
-          ) : null}
-
-          {error ? (
-            <p className="m-1 rounded-xl bg-rose-50 px-3 py-2.5 text-sm text-rose-800 dark:bg-rose-950/50 dark:text-rose-200">
-              {error}
-            </p>
-          ) : null}
-
-          {!loading && !error && items.length === 0 ? (
-            <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
-              Aucun résultat pour « {debouncedQuery} »
-            </p>
-          ) : null}
-
-          {items.map((item, index) => {
-            const active = index === highlight;
-            const context =
-              kind === "agent" ? (item as AgentListItem).role : (item as StudentListItem).cycle;
-
-            return (
-              <button
-                type="button"
-                key={item.id}
-                role="option"
-                aria-selected={active}
-                onMouseDown={(e) => e.preventDefault()}
-                onMouseEnter={() => setHighlight(index)}
-                onClick={() => selectItem(item)}
-                className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
-                  active
-                    ? "bg-[#082b1c]/8 ring-1 ring-[#082b1c]/15 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
-                    : "hover:bg-gray-50 dark:hover:bg-gray-800/80"
-                }`}
-              >
-                <ResultAvatar src={item.photo} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate font-semibold text-midnight_text dark:text-white">
-                      <HighlightMatch text={item.name} query={queryForHighlight} />
-                    </p>
-                    {showContextBadge && context ? (
-                      <span className="shrink-0 rounded-full bg-[#082b1c]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#082b1c] dark:bg-emerald-500/20 dark:text-emerald-200">
-                        {context}
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
-                    <Icon icon="solar:letter-bold-duotone" className="h-3.5 w-3.5 shrink-0 text-primary/60" />
-                    <span>
-                      <HighlightMatch text={item.email} query={queryForHighlight} />
-                    </span>
-                  </p>
-                  <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-500">
-                    <span className="text-gray-400">Mat. </span>
-                    <span className="text-midnight_text dark:text-gray-200">
-                      <HighlightMatch text={item.matricule} query={queryForHighlight} />
-                    </span>
-                  </p>
-                </div>
-                <Icon icon="solar:alt-arrow-right-linear" className="h-4 w-4 shrink-0 text-gray-300 dark:text-gray-600" />
-              </button>
-            );
-          })}
+      {showPanel && !listboxAppendToBody ? (
+        <div id={listboxId} role="listbox" className={`absolute z-50 mt-2 w-full ${listboxShellClass}`}>
+          {listboxBody}
         </div>
       ) : null}
+
+      {showPanel && listboxAppendToBody && listboxViewportRect && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={listboxPanelRef}
+              id={listboxId}
+              role="listbox"
+              className={`fixed z-[220] ${listboxShellClass}`}
+              style={{
+                top: listboxViewportRect.top,
+                left: listboxViewportRect.left,
+                width: listboxViewportRect.width,
+              }}
+            >
+              {listboxBody}
+            </div>,
+            document.body
+          )
+        : null}
 
       {showMinCharHint ? (
         <p className="mt-1.5 px-1 text-xs text-gray-500 dark:text-gray-400">

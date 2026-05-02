@@ -2,12 +2,15 @@ import type { HydratedDocument } from "mongoose";
 import type { CommandeDoc } from "@/lib/models/Commande";
 import { runCheckWithLogging, runCollectWithLogging } from "@/lib/payment/paymentRun";
 import {
+  extractFlexPayOrderKeyFromPayload,
   extractTransactionStatusFromCheckResponse,
   mapProviderTransactionToDeposit,
 } from "@/lib/payment/transactionStatus";
 import type { CollectMobileMoneyPayload, PaymentResponse } from "@/lib/services/PaymentService";
 import { RechargeModel } from "@/lib/models/Recharge";
+import { CommandeModel } from "@/lib/models/Commande";
 import userManager from "@/lib/services/UserManager";
+import { createEtudiantOrderAfterMarketplacePaid } from "@/lib/commande/createEtudiantOrderAfterMarketplacePaid";
 
 export type CommandePaymentTransaction = CommandeDoc["transaction"];
 
@@ -16,14 +19,10 @@ function normalizeString(value: unknown): string {
 }
 
 /**
- * Extrait orderNumber depuis la charge renvoyée par collect (même heuristique que l’historique route commande).
+ * Extrait la clé suivie FlexPay (orderNumber ou reference) depuis le collect / une couche data imbriquée.
  */
 export function extractOrderNumberFromCollectData(data: unknown): string | undefined {
-  if (data == null || typeof data !== "object") return undefined;
-  const root = data as Record<string, unknown>;
-  const inner = (root.data ?? root) as Record<string, unknown>;
-  const n = normalizeString(inner.orderNumber);
-  return n || undefined;
+  return extractFlexPayOrderKeyFromPayload(data);
 }
 
 export function buildTransactionFromCollectResponse(
@@ -83,7 +82,19 @@ export async function syncCommandePaymentStatusFromProvider(
   if (commande.status === "completed") {
     return { message: "Commande complétée.", providerStatus: null, check: null };
   }
-  const orderNumber = normalizeString(commande.transaction?.orderNumber);
+  let orderNumber = normalizeString(commande.transaction?.orderNumber);
+  if (!orderNumber) {
+    const collectRaw = commande.transaction?.providerResponses?.collect;
+    const fallback = extractFlexPayOrderKeyFromPayload(collectRaw);
+    if (fallback) {
+      orderNumber = fallback;
+      commande.transaction = {
+        ...commande.transaction,
+        orderNumber: fallback,
+      } as CommandeDoc["transaction"];
+      await commande.save();
+    }
+  }
   if (!orderNumber) {
     return { message: "Aucun orderNumber.", providerStatus: null, check: null };
   }
@@ -103,6 +114,18 @@ export async function syncCommandePaymentStatusFromProvider(
     commande.status = mapped;
     await commande.save();
     await syncRechargeStatusFromCommande(commande);
+    if (mapped === "paid") {
+      try {
+        await createEtudiantOrderAfterMarketplacePaid(commande);
+      } catch (e) {
+        console.error("[commandePayment] création commande service étudiant:", e);
+      }
+      const updated = await CommandeModel.findById(commande._id);
+      if (updated) {
+        commande.transaction = updated.transaction;
+        commande.status = updated.status;
+      }
+    }
   } else {
     await commande.save();
   }
