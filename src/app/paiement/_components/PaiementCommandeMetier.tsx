@@ -68,21 +68,39 @@ function MetierBody({ commande, commandeId, busy, onRecheck }: Props) {
  */
 export default function PaiementCommandeMetier({ commande, commandeId, busy, onRecheck }: Props) {
   const status = String(commande.status ?? "");
+  const produit = String(commande.ressource?.produit ?? "").trim();
+  const categorie = String(commande.ressource?.categorie ?? "").toUpperCase();
+  const fullBleedQuestionnaire =
+    produit === "activite" && (categorie === "QCM" || categorie === "TP");
+
+  const header = (
+    <div className="flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+        <Icon icon="solar:check-circle-bold" className="text-2xl" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
+          {status === "completed" ? "Commande clôturée" : "Paiement confirmé"}
+        </p>
+        <h2 className="mt-1 text-base font-bold text-midnight_text dark:text-white">Suite de la commande</h2>
+      </div>
+    </div>
+  );
+
+  if (fullBleedQuestionnaire) {
+    return (
+      <div className="mt-6 w-full min-w-0 max-w-none">
+        <div className="border-b border-emerald-200/70 pb-4 dark:border-emerald-900/45">{header}</div>
+        <div className="mt-6 w-full min-w-0">
+          <MetierBody commande={commande} commandeId={commandeId} busy={busy} onRecheck={onRecheck} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6 rounded-2xl border border-emerald-200/80 bg-gradient-to-b from-emerald-50/90 to-white p-5 shadow-sm dark:border-emerald-900/50 dark:from-emerald-950/30 dark:to-darklight">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
-          <Icon icon="solar:check-circle-bold" className="text-2xl" aria-hidden />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800 dark:text-emerald-200">
-            {status === "completed" ? "Commande clôturée" : "Paiement confirmé"}
-          </p>
-          <h2 className="mt-1 text-base font-bold text-midnight_text dark:text-white">Suite de la commande</h2>
-        </div>
-      </div>
-
+      {header}
       <div className="mt-4">
         <MetierBody commande={commande} commandeId={commandeId} busy={busy} onRecheck={onRecheck} />
       </div>

@@ -71,7 +71,9 @@ export default function PaiementResumeClient({ commandeId }: Props) {
   const showMetier = Boolean(data) && (status === "paid" || status === "completed");
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-14">
+    <div
+      className={`w-full px-4 py-10 sm:px-6 lg:px-10 xl:px-14 ${showMetier ? "max-w-none" : "mx-auto max-w-lg"}`}
+    >
       <Link
         href="/etudes"
         className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
