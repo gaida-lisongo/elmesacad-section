@@ -6,6 +6,8 @@ import type {
   PaiementProduitDetailRecord,
 } from "@/app/paiement/_components/commandeResumePayload";
 import PaiementMetierResultatWithConsolidation from "@/app/paiement/_components/metier/PaiementMetierResultatWithConsolidation";
+import { buildDocumentBulletinPayload } from "@/lib/paiement/documentBulletinPayload";
+import type { ConsolidatedResultDocumentPayload } from "@/lib/notes/consolidatedResultTypes";
 
 type Props = {
   commande: PaiementCommandeClientPayload;
@@ -16,6 +18,37 @@ type Props = {
   onRecheck?: () => void;
 };
 
-export default function PaiementMetierFicheValidationPanel(props: Props) {
-  return <PaiementMetierResultatWithConsolidation {...props} variant="fiche-validation" />;
+export default function PaiementMetierFicheValidationPanel({
+  commande,
+  commandeId,
+  produitDetail,
+  etudiant,
+  busy,
+  onRecheck,
+}: Props) {
+  const label = "Générer la Fiche de Validation";
+
+  const onGenerateDocument = async (payload: ConsolidatedResultDocumentPayload) => {
+    const bulletinPayload = buildDocumentBulletinPayload(payload, {
+      commande,
+      commandeId,
+      etudiant,
+    });
+    console.log("Générer la Fiche de Validation", bulletinPayload);
+  };
+
+  return (
+    <PaiementMetierResultatWithConsolidation
+      commande={commande}
+      commandeId={commandeId}
+      produitDetail={produitDetail}
+      etudiant={etudiant}
+      variant="fiche-validation"
+      busy={busy}
+      onRecheck={onRecheck}
+      onGenerateDocument={onGenerateDocument}
+      generateDocumentLabel={label}
+      generateDocumentDisabled={false}
+    />
+  );
 }

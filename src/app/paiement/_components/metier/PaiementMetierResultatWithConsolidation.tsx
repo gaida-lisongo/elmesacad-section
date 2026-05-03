@@ -7,6 +7,7 @@ import type {
 } from "@/app/paiement/_components/commandeResumePayload";
 import PaiementMetierRessourceCore from "@/app/paiement/_components/metier/PaiementMetierRessourceCore";
 import StudentConsolidatedResultEmbed from "@/components/notes/StudentConsolidatedResultEmbed";
+import type { ConsolidatedResultDocumentPayload } from "@/lib/notes/consolidatedResultTypes";
 
 type Variant = "releve" | "fiche-validation";
 
@@ -16,6 +17,9 @@ type Props = {
   produitDetail: PaiementProduitDetailRecord | null;
   etudiant: PaiementEtudiantLocalView | null;
   variant: Variant;
+  onGenerateDocument?: (data: ConsolidatedResultDocumentPayload) => void | Promise<void>;
+  generateDocumentLabel?: string;
+  generateDocumentDisabled?: boolean;
   busy?: boolean;
   onRecheck?: () => void;
 };
@@ -26,6 +30,9 @@ export default function PaiementMetierResultatWithConsolidation({
   produitDetail,
   etudiant,
   variant,
+  onGenerateDocument,
+  generateDocumentLabel,
+  generateDocumentDisabled,
   busy,
   onRecheck,
 }: Props) {
@@ -45,6 +52,9 @@ export default function PaiementMetierResultatWithConsolidation({
         commande={commande}
         produitDetail={produitDetail}
         etudiant={etudiant}
+        onGenerateDocument={(payload) => onGenerateDocument?.(payload)}
+        generateDocumentLabel={generateDocumentLabel}
+        generateDocumentDisabled={generateDocumentDisabled}
       />
     </div>
   );

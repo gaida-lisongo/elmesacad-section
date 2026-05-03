@@ -1,14 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentType } from "react";
 import { Icon } from "@iconify/react";
 import type {
+  ConsolidatedResultDocumentPayload,
   ConsolidatedStudentProfile,
   ProgrammeMatiereContext,
   StructuredNotesEntry,
 } from "@/lib/notes/consolidatedResultTypes";
 
-export type { ProgrammeMatiereContext, ConsolidatedStudentProfile, StructuredNotesEntry };
+export type {
+  ConsolidatedResultDocumentPayload,
+  ProgrammeMatiereContext,
+  ConsolidatedStudentProfile,
+  StructuredNotesEntry,
+};
 
 type NotesElement = {
   _id: string;
@@ -37,6 +43,17 @@ export type StudentConsolidatedResultPanelProps = {
   mappingRows: ProgrammeMatiereContext[];
   /** Affiché dans la carte Parcours (ex. slug année). */
   anneeLabel: string;
+  onPrint?: () => void;
+  /** Composant bouton d’impression (affiché seulement si fourni). */
+  BtnPrint?: ComponentType<{ onClick?: () => void; label?: string }>;
+  /** Libellé du bouton d’impression (défaut : « Imprimer »). */
+  btnPrintLabel?: string;
+  /** Affiche le bouton « Générer le document » uniquement si défini. Reçoit le snapshot affiché. */
+  onGenerateDocument?: (payload: ConsolidatedResultDocumentPayload) => void | Promise<void>;
+  /** Libellé du bouton document (défaut : « Générer le document »). */
+  generateDocumentLabel?: string;
+  /** Désactive le bouton document (ex. génération en cours). */
+  generateDocumentDisabled?: boolean;
 };
 
 function decodeText(input: string): string {
@@ -112,6 +129,12 @@ export default function StudentConsolidatedResultPanel({
   programmeName,
   mappingRows,
   anneeLabel,
+  onPrint,
+  BtnPrint,
+  btnPrintLabel = "Imprimer",
+  onGenerateDocument,
+  generateDocumentLabel = "Générer le document",
+  generateDocumentDisabled,
 }: StudentConsolidatedResultPanelProps) {
   console.log("notes parsed : ", notes);
   console.log("mappingRows : ", mappingRows);
@@ -192,6 +215,65 @@ export default function StudentConsolidatedResultPanel({
   const mention = resolveMentionFromPercentage(percent);
   const decision = ncv >= 45 ? "Passé" : "Double";
 
+  const documentPayload: ConsolidatedResultDocumentPayload = useMemo(
+    () => ({
+      title,
+      nomAffiche: displayName,
+      student,
+      programmeName,
+      programmeCredits,
+      anneeLabel,
+      mappingRows,
+      notes,
+      synthese: {
+        ncv,
+        ncnv,
+        pourcentage: percent,
+        mention,
+        decisionJury: decision,
+        nombreSemestres: reconciled.length,
+      },
+      semestres: reconciled.map((s) => ({
+        semestreId: s._id,
+        designation: s.designation,
+        credit: s.credit,
+        unites: s.unites.map((u) => ({
+          uniteId: u._id,
+          code: u.code,
+          designation: u.designation,
+          credit: u.credit,
+          moyenne: moyUnite(u),
+          matieres: u.elements.map((e) => ({
+            matiereId: e._id,
+            designation: e.designation,
+            credit: e.credit,
+            cc: e.cc,
+            examen: e.examen,
+            rattrapage: e.rattrapage,
+            rachat: e.rachat,
+            noteFinale: noteMatiere(e),
+          })),
+        })),
+      })),
+    }),
+    [
+      title,
+      displayName,
+      student,
+      programmeName,
+      programmeCredits,
+      anneeLabel,
+      mappingRows,
+      notes,
+      ncv,
+      ncnv,
+      percent,
+      mention,
+      decision,
+      reconciled,
+    ]
+  );
+
   return (
     <div
       className="rounded-2xl border border-primary/20 bg-gradient-to-br from-white via-white to-primary/[0.06] p-4 shadow-sm dark:border-primary/25 dark:from-darklight dark:via-darklight dark:to-primary/10 sm:p-6"
@@ -265,6 +347,22 @@ export default function StudentConsolidatedResultPanel({
               <strong className="text-midnight_text dark:text-white">Semestres:</strong> {reconciled.length}
             </p>
           </article>
+          {BtnPrint || onGenerateDocument ? (
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
+              {BtnPrint ? <BtnPrint onClick={onPrint} label={btnPrintLabel} /> : null}
+              {onGenerateDocument ? (
+                <button
+                  type="button"
+                  onClick={() => void onGenerateDocument(documentPayload)}
+                  disabled={generateDocumentDisabled}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-darkprimary disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <Icon icon="solar:document-add-bold-duotone" className="text-lg" aria-hidden />
+                  {generateDocumentLabel}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </aside>
 
         <main className="space-y-3 lg:col-span-7">

@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { fetchNotesMappingForConsolidation, fetchStructuredNotesByMatricules } from "@/actions/notesConsolidation";
-import StudentConsolidatedResultPanel from "@/components/notes/StudentConsolidatedResultPanel";
+import StudentConsolidatedResultPanel, {
+  type StudentConsolidatedResultPanelProps,
+} from "@/components/notes/StudentConsolidatedResultPanel";
 import type {
   PaiementCommandeClientPayload,
   PaiementEtudiantLocalView,
@@ -18,13 +20,19 @@ import type {
   StructuredNotesEntry,
 } from "@/lib/notes/consolidatedResultTypes";
 
+type PanelDocumentProps = Pick<
+  StudentConsolidatedResultPanelProps,
+  "onGenerateDocument" | "generateDocumentLabel" | "generateDocumentDisabled"
+>;
+
 type Props = {
   commande: PaiementCommandeClientPayload;
   /** Document ressource déjà hydraté côté serveur (`programme.filiere` = slug programme, `annee.slug`, `branding.sectionRef`). */
   produitDetail: PaiementProduitDetailRecord | null;
   /** Profil étudiant local (Mongo) déjà chargé en SSR. */
   etudiant: PaiementEtudiantLocalView | null;
-};
+  
+} & PanelDocumentProps;
 
 function buildStudentProfile(
   etudiant: PaiementEtudiantLocalView | null,
@@ -45,7 +53,14 @@ function buildStudentProfile(
   };
 }
 
-export default function StudentConsolidatedResultEmbed({ commande, produitDetail, etudiant }: Props) {
+export default function StudentConsolidatedResultEmbed({
+  commande,
+  produitDetail,
+  etudiant,
+  onGenerateDocument,
+  generateDocumentLabel,
+  generateDocumentDisabled,
+}: Props) {
   const meta = commande.ressource?.metadata;
   const metaRecord =
     meta && typeof meta === "object" && !Array.isArray(meta) ? (meta as Record<string, unknown>) : undefined;
@@ -178,6 +193,9 @@ export default function StudentConsolidatedResultEmbed({ commande, produitDetail
         programmeName={programmeName}
         mappingRows={mappingRows}
         anneeLabel={anneeLabel}
+        onGenerateDocument={onGenerateDocument}
+        generateDocumentLabel={generateDocumentLabel}
+        generateDocumentDisabled={generateDocumentDisabled}
       />
     </div>
   );
