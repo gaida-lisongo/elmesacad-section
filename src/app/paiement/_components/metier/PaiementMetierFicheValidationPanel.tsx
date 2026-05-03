@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useState } from "react";
+import { generateBulletinPdfAction } from "@/actions/bulletinGenerate";
 import type {
   PaiementCommandeClientPayload,
   PaiementEtudiantLocalView,
@@ -7,6 +9,7 @@ import type {
 } from "@/app/paiement/_components/commandeResumePayload";
 import PaiementMetierResultatWithConsolidation from "@/app/paiement/_components/metier/PaiementMetierResultatWithConsolidation";
 import { buildDocumentBulletinPayload } from "@/lib/paiement/documentBulletinPayload";
+import { downloadPdfFromBase64 } from "@/lib/paiement/downloadPdfFromBase64";
 import type { ConsolidatedResultDocumentPayload } from "@/lib/notes/consolidatedResultTypes";
 
 type Props = {
@@ -27,15 +30,31 @@ export default function PaiementMetierFicheValidationPanel({
   onRecheck,
 }: Props) {
   const label = "Générer la Fiche de Validation";
+  const [generatingPdf, setGeneratingPdf] = useState(false);
 
-  const onGenerateDocument = async (payload: ConsolidatedResultDocumentPayload) => {
-    const bulletinPayload = buildDocumentBulletinPayload(payload, {
-      commande,
-      commandeId,
-      etudiant,
-    });
-    console.log("Générer la Fiche de Validation", bulletinPayload);
-  };
+  const onGenerateDocument = useCallback(
+    async (payload: ConsolidatedResultDocumentPayload) => {
+      const bulletinPayload = buildDocumentBulletinPayload(payload, {
+        commande,
+        commandeId,
+        etudiant,
+        produitDetail,
+      });
+      setGeneratingPdf(true);
+      try {
+        const result = await generateBulletinPdfAction(bulletinPayload);
+        if (!result.ok) {
+          console.error("[Fiche validation PDF]", result.message, result.details);
+          window.alert(result.message);
+          return;
+        }
+        downloadPdfFromBase64(result.pdfBase64, result.filename);
+      } finally {
+        setGeneratingPdf(false);
+      }
+    },
+    [commande, commandeId, etudiant, produitDetail]
+  );
 
   return (
     <PaiementMetierResultatWithConsolidation
@@ -48,7 +67,7 @@ export default function PaiementMetierFicheValidationPanel({
       onRecheck={onRecheck}
       onGenerateDocument={onGenerateDocument}
       generateDocumentLabel={label}
-      generateDocumentDisabled={false}
+      generateDocumentDisabled={Boolean(busy) || generatingPdf}
     />
   );
 }

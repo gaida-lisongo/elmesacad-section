@@ -1,6 +1,8 @@
 import type {
   PaiementCommandeClientPayload,
   PaiementEtudiantLocalView,
+  PaiementProduitDetailRecord,
+  PaiementSectionBranding,
 } from "@/app/paiement/_components/commandeResumePayload";
 import type { ConsolidatedResultDocumentPayload } from "@/lib/notes/consolidatedResultTypes";
 
@@ -45,17 +47,72 @@ export type DocumentBulletinPayload = {
     dateCreate: string;
     other?: string;
   };
+  /** Détails ressource marketplace / service étudiant (document hydraté + branding section). */
+  ressource?: {
+    produit?: string;
+    categorie?: string;
+    reference?: string;
+    branding?: PaiementSectionBranding;
+  };
 };
 
 export type BuildDocumentBulletinContext = {
   commande: PaiementCommandeClientPayload;
   commandeId: string;
   etudiant: PaiementEtudiantLocalView | null;
+  /** Document produit SSR (contient souvent `branding`, `programme`, `annee`). */
+  produitDetail: PaiementProduitDetailRecord | null;
 };
 
 function trimOrEmpty(v: string | undefined | null): string {
   return String(v ?? "").trim();
 }
+
+function pickRecord(v: unknown): Record<string, unknown> | null {
+  if (v && typeof v === "object" && !Array.isArray(v)) return v as Record<string, unknown>;
+  return null;
+}
+
+function emptyBranding(): PaiementSectionBranding {
+  return {
+    institut: "",
+    section: "",
+    sectionRef: "",
+    chef: "",
+    contact: "",
+    email: "",
+    adresse: "",
+  };
+}
+
+/** Normalise le bloc `branding` du document ressource (même contrat que l’hydratation paiement). */
+export function brandingFromResourceRecord(raw: Record<string, unknown> | null | undefined): PaiementSectionBranding {
+  const b = pickRecord(raw?.branding);
+  if (!b) return emptyBranding();
+  return {
+    institut: String(b.institut ?? "").trim(),
+    section: String(b.section ?? "").trim(),
+    sectionRef: String(b.sectionRef ?? "").trim(),
+    chef: String(b.chef ?? "").trim(),
+    contact: String(b.contact ?? "").trim(),
+    email: String(b.email ?? "").trim(),
+    adresse: String(b.adresse ?? "").trim(),
+  };
+}
+
+function mergeBranding(primary: PaiementSectionBranding, fallback: PaiementSectionBranding): PaiementSectionBranding {
+  const pick = (a: string, b: string) => (trimOrEmpty(a) ? a : b);
+  return {
+    institut: pick(primary.institut, fallback.institut),
+    section: pick(primary.section, fallback.section),
+    sectionRef: pick(primary.sectionRef, fallback.sectionRef),
+    chef: pick(primary.chef, fallback.chef),
+    contact: pick(primary.contact, fallback.contact),
+    email: pick(primary.email, fallback.email),
+    adresse: pick(primary.adresse, fallback.adresse),
+  };
+}
+
 
 /**
  * Transforme le snapshot consolidé (`onGenerateDocument`) vers le format attendu par le moteur de document bulletin.
@@ -64,7 +121,7 @@ export function buildDocumentBulletinPayload(
   consolidated: ConsolidatedResultDocumentPayload,
   ctx: BuildDocumentBulletinContext
 ): DocumentBulletinPayload {
-  const { commande, commandeId, etudiant } = ctx;
+  const { commande, commandeId, etudiant, produitDetail } = ctx;
   const s = consolidated.student;
 
   const notes: Note[] = [];
@@ -100,6 +157,37 @@ export function buildDocumentBulletinPayload(
   const ressource = trimOrEmpty(commande.ressource?.produit) || "—";
   const detail = trimOrEmpty(commande.ressource?.categorie) || trimOrEmpty(commande.ressource?.reference) || "—";
 
+  const detailRecord = produitDetail && typeof produitDetail === "object" && !Array.isArray(produitDetail)
+    ? (produitDetail as Record<string, unknown>)
+    : null;
+  const metaRecord =
+    commande.ressource?.metadata && typeof commande.ressource.metadata === "object" && !Array.isArray(commande.ressource.metadata)
+      ? (commande.ressource.metadata as Record<string, unknown>)
+      : null;
+
+  const brandingFromDetail = detailRecord ? brandingFromResourceRecord(detailRecord) : emptyBranding();
+  const brandingFromCommande = metaRecord ? brandingFromResourceRecord(metaRecord) : emptyBranding();
+  const brandingMerged = mergeBranding(brandingFromDetail, brandingFromCommande);
+
+  const resProduit =
+    trimOrEmpty(detailRecord?.designation as string | undefined) ||
+    trimOrEmpty(commande.ressource?.produit) ||
+    "—";
+  const resCategorie =
+    trimOrEmpty(detailRecord?.categorie as string | undefined) || trimOrEmpty(commande.ressource?.categorie) || "—";
+  const resReference =
+    trimOrEmpty(detailRecord?.reference as string | undefined) ||
+    trimOrEmpty(commande.ressource?.reference) ||
+    trimOrEmpty(metaRecord?.reference as string | undefined) ||
+    "—";
+
+  const ressourceBlock: DocumentBulletinPayload["ressource"] = {
+    produit: resProduit,
+    categorie: resCategorie,
+    reference: resReference,
+    branding: brandingMerged,
+  };
+
   return {
     notes,
     student: {
@@ -120,7 +208,7 @@ export function buildDocumentBulletinPayload(
       adresse,
     },
     document: {
-      type: "fiche-validation",
+      type: "FICHE DE VALIDATION",
       ressource,
       detail,
       reference: ref,
@@ -131,5 +219,6 @@ export function buildDocumentBulletinPayload(
         programmeCredits: consolidated.programmeCredits,
       }),
     },
+    ressource: ressourceBlock,
   };
 }
