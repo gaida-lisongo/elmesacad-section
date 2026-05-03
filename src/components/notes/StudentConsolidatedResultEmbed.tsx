@@ -59,6 +59,8 @@ export default function StudentConsolidatedResultEmbed({ commande, produitDetail
     );
   }, [produitDetail, metaRecord]);
 
+  console.log("consolidationCtx : ", consolidationCtx);
+
   const studentProfile = useMemo(
     () => buildStudentProfile(etudiant, commande, metaRecord, consolidationCtx?.anneeSlug),
     [etudiant, commande, metaRecord, consolidationCtx?.anneeSlug]

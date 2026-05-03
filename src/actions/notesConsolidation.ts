@@ -71,6 +71,8 @@ async function loadNotesMappingFromDb(input: {
       })
       .lean();
 
+    console.log("[loadNotesMappingFromDb] programme : ", programme);
+
     if (!programme) {
       return { ok: false, message: "Programme introuvable pour cette section." };
     }
