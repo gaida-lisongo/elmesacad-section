@@ -20,6 +20,8 @@ type Props = {
   model: ProductPageModel;
   categoryLabel: string;
   categoriePath: string;
+  /** Masque les boutons « Commander » et ouvre le tiroir checkout au montage (listes ressources section). */
+  embedTrigger?: boolean;
 };
 
 type CommandeView = {
@@ -51,7 +53,12 @@ async function postCommande(body: Record<string, unknown>): Promise<{
   return { ok: res.ok, status: res.status, payload };
 }
 
-export default function ProductPurchaseBar({ model, categoryLabel, categoriePath }: Props) {
+export default function ProductPurchaseBar({
+  model,
+  categoryLabel,
+  categoriePath,
+  embedTrigger = false,
+}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const titleId = useId();
   const formId = useId();
@@ -96,15 +103,30 @@ export default function ProductPurchaseBar({ model, categoryLabel, categoriePath
     setStudentSearchKey((k) => k + 1);
   }, []);
 
-  const metadataPayload = useMemo(
-    () => ({
+  const metadataPayload = useMemo(() => {
+    const base: Record<string, unknown> = {
       fullName: fullName.trim(),
       productTitle,
       categoriePath,
       productId: model.id,
-    }),
-    [fullName, productTitle, categoriePath, model.id]
-  );
+    };
+    if (model.kind === "resource") {
+      if (model.sectionRefLabel) base.sectionRef = model.sectionRefLabel;
+      if (model.programmeFiliereId) base.programme = { filiere: model.programmeFiliereId };
+    }
+    return base;
+  }, [fullName, productTitle, categoriePath, model]);
+
+  useEffect(() => {
+    if (!embedTrigger) return;
+    setDrawerOpen(true);
+    setStep(1);
+    setError(null);
+    setInfo(null);
+    setCommande(null);
+    setSelectedStudent(null);
+    setStudentSearchKey((k) => k + 1);
+  }, [embedTrigger, model.id]);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -272,30 +294,32 @@ export default function ProductPurchaseBar({ model, categoryLabel, categoriePath
 
   return (
     <>
-      <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-        <button
-          type="button"
-          onClick={() => {
-            setDrawerOpen(true);
-            setStep(1);
-            setError(null);
-            setInfo(null);
-            setCommande(null);
-            setSelectedStudent(null);
-            setStudentSearchKey((k) => k + 1);
-          }}
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-darkprimary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none sm:min-w-[240px]"
-        >
-          <Icon icon="solar:cart-large-3-bold-duotone" className="text-xl" aria-hidden />
-          Commander
-        </button>
-        <Link
-          href="/"
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-midnight_text transition hover:bg-slate-50 dark:border-slate-600 dark:bg-transparent dark:text-white dark:hover:bg-slate-800"
-        >
-          Continuer les achats
-        </Link>
-      </div>
+      {!embedTrigger ? (
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+          <button
+            type="button"
+            onClick={() => {
+              setDrawerOpen(true);
+              setStep(1);
+              setError(null);
+              setInfo(null);
+              setCommande(null);
+              setSelectedStudent(null);
+              setStudentSearchKey((k) => k + 1);
+            }}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-center text-sm font-semibold text-white shadow-lg shadow-primary/30 transition hover:bg-darkprimary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex-none sm:min-w-[240px]"
+          >
+            <Icon icon="solar:cart-large-3-bold-duotone" className="text-xl" aria-hidden />
+            Commander
+          </button>
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-semibold text-midnight_text transition hover:bg-slate-50 dark:border-slate-600 dark:bg-transparent dark:text-white dark:hover:bg-slate-800"
+          >
+            Continuer les achats
+          </Link>
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {drawerOpen ? (

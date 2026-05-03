@@ -6,12 +6,39 @@ import { Icon } from "@iconify/react/dist/iconify.js";
 import { useEffect, useMemo, useState } from "react";
 import type { PublicSectionCard } from "@/actions/publicSections";
 import SectionContactPanel from "@/components/Etudes/SectionContactPanel";
+import type { EtudesResourceHubKey } from "@/components/Etudes/EtudesResourceCategoryBrowse";
+import type { EtudesSectionResourcesGrouped } from "@/lib/product/fetchEtudesSectionResourcesGrouped";
 
 type Props = {
   section: PublicSectionCard;
+  resourcesGrouped: EtudesSectionResourcesGrouped;
+  onOpenResourceCategory: (key: EtudesResourceHubKey) => void;
 };
 
-export default function SectionDetailContent({ section }: Props) {
+function countForHubKey(key: EtudesResourceHubKey, g: EtudesSectionResourcesGrouped): number {
+  switch (key) {
+    case "fiches-validation":
+      return g.validations.length;
+    case "enrollements":
+      return g.sessions.length;
+    case "releves":
+      return g.releves.length;
+    case "laboratoires":
+      return g.laboratoires.length;
+    case "lettres-stage":
+      return g.stages.length;
+    case "sujets-recherche":
+      return g.sujets.length;
+    default:
+      return 0;
+  }
+}
+
+export default function SectionDetailContent({
+  section,
+  resourcesGrouped,
+  onOpenResourceCategory,
+}: Props) {
   const juryMembers = useMemo(() => section.juryMembers, [section.juryMembers]);
   const [activeJuryIndex, setActiveJuryIndex] = useState(0);
 
@@ -35,7 +62,7 @@ export default function SectionDetailContent({ section }: Props) {
     setActiveJuryIndex((previous) => (previous + 1) % juryMembers.length);
   };
 
-  const resources = [
+  const resources: { categorySlug: EtudesResourceHubKey; label: string; icon: string }[] = [
     {
       categorySlug: "fiches-validation",
       label: "Fiche de validation",
@@ -214,17 +241,25 @@ export default function SectionDetailContent({ section }: Props) {
               </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-            {resources.map((resource) => (
-              <Link
+            {resources.map((resource) => {
+              const n = countForHubKey(resource.categorySlug, resourcesGrouped);
+              return (
+              <button
                 key={resource.categorySlug}
-                href={`/etudes/${resource.categorySlug}/section?section=${section.slug}`}
-                className="group relative min-h-[84px] border border-slate-300 bg-white p-4 pr-14 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-darklight"
+                type="button"
+                onClick={() => onOpenResourceCategory(resource.categorySlug)}
+                className="group relative min-h-[84px] border border-slate-300 bg-white p-4 pr-14 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-darklight"
               >
                 <div className="flex items-center gap-3">
                   <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center text-slate-700 dark:text-slate-200">
                     <Icon icon={resource.icon} className="text-3xl" />
                   </span>
-                  <p className="pr-6 text-lg font-bold leading-tight text-slate-900 dark:text-white">{resource.label}</p>
+                  <div className="min-w-0 pr-6">
+                    <p className="text-lg font-bold leading-tight text-slate-900 dark:text-white">{resource.label}</p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {n === 0 ? "Aucune offre publiée" : `${n} offre${n > 1 ? "s" : ""} disponible${n > 1 ? "s" : ""}`}
+                    </p>
+                  </div>
                 </div>
                 <span
                   aria-hidden="true"
@@ -232,8 +267,9 @@ export default function SectionDetailContent({ section }: Props) {
                 >
                   &#8594;
                 </span>
-              </Link>
-            ))}
+              </button>
+            );
+            })}
             </div>
           </div>
         </div>

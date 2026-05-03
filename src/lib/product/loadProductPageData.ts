@@ -48,6 +48,8 @@ export type ResourceProductVM = {
   matiereCredit: number;
   lecteursLabel: string;
   sectionRefLabel: string;
+  /** Identifiant programme Mongo (`programme.filiere` côté service étudiant), pour consolidation des notes. */
+  programmeFiliereId?: string;
   descriptionSections: DescriptionSectionVM[];
   highlights: string[];
 };
@@ -134,6 +136,15 @@ function mapActivityToVM(
   };
 }
 
+/** Expose pour pré-visualisation marketplace (ex. liste section Études) sans refetch par id. */
+export function mapResourceRecordToProductVM(
+  raw: Record<string, unknown>,
+  apiC: EtudiantResourceApiCategorie,
+  urlSlug: string
+): ResourceProductVM | null {
+  return mapResourceToVM(raw, apiC, urlSlug);
+}
+
 function mapResourceToVM(
   raw: Record<string, unknown>,
   apiC: EtudiantResourceApiCategorie,
@@ -151,6 +162,9 @@ function mapResourceToVM(
     .filter(Boolean)
     .join(", ");
   const branding = pickObject(raw.branding);
+  const programme = pickObject(raw.programme);
+  const programmeFiliereRaw = String(programme?.filiere ?? "").trim();
+  const programmeFiliereId = programmeFiliereRaw || undefined;
   const creditVal = matiere?.credit ?? matiere?.credits;
   let matiereCredit = 0;
   if (typeof creditVal === "number" && Number.isFinite(creditVal)) matiereCredit = Math.max(0, creditVal);
@@ -194,6 +208,7 @@ function mapResourceToVM(
     matiereCredit,
     lecteursLabel,
     sectionRefLabel,
+    programmeFiliereId,
     descriptionSections,
     highlights,
   };

@@ -2,20 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
-import StudentConsolidatedResultModal from "@/components/notes/StudentConsolidatedResultModal";
+import StudentConsolidatedResultPanel from "@/components/notes/StudentConsolidatedResultPanel";
 import { useParcoursByActiveProgramme } from "@/lib/notes/useParcoursByActiveProgramme";
-import {
-  fetchStructuredNotesByMatricules,
-  sendRattrapageNotesBatch,
-  type NotePayloadLine,
-} from "@/actions/organisateurArchivage";
+import { fetchStructuredNotesByMatricules } from "@/actions/notesConsolidation";
+import { sendRattrapageNotesBatch, type NotePayloadLine } from "@/actions/organisateurArchivage";
 
-export type ProgrammeMatiereContext = {
-  key: string;
-  matiere: { designation: string; reference: string; credits: number };
-  unite: { designation: string; reference: string; code: string; credits: number };
-  semestre: { designation: string; reference: string; credits: number };
-};
+import type { ProgrammeMatiereContext } from "@/lib/notes/consolidatedResultTypes";
+
+export type { ProgrammeMatiereContext };
 type ProgrammeLite = { id: string; designation: string; slug: string; credits: number; matieres: ProgrammeMatiereContext[] };
 type SectionLite = { id: string; designation: string; slug: string; cycle: string };
 type AnneeLite = { id: string; designation: string; slug: string; debut: number; fin: number; status: boolean };
@@ -150,8 +144,6 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
   const [activeNotesMatricule, setActiveNotesMatricule] = useState<string | null>(null);
   const [notesModalOpen, setNotesModalOpen] = useState(false);
   const [notesLoading, setNotesLoading] = useState(false);
-  const [activeSemestreId, setActiveSemestreId] = useState<string>("");
-  const [expandedUnites, setExpandedUnites] = useState<Record<string, boolean>>({});
 
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [csvMatches, setCsvMatches] = useState<MatchRow[]>([]);
@@ -217,6 +209,25 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
       : null
   );
 
+  const consolidatedStudentProfile = useMemo(() => {
+    if (!activeNotesMatricule) return null;
+    const row = parcoursRows.find((x) => x.matricule === activeNotesMatricule);
+    if (!row) return null;
+    return {
+      nomComplet: row.nomComplet,
+      matricule: row.matricule,
+      email: row.email,
+      sexe: row.sexe,
+      nationalite: row.nationalite,
+      anneeSlug: row.anneeSlug,
+    };
+  }, [parcoursRows, activeNotesMatricule]);
+
+  useEffect(() => {
+    setNotesModalOpen(false);
+    setActiveNotesMatricule(null);
+  }, [activeSectionId, selectedProgrammeId, activeAnneeSlug]);
+
   useEffect(() => {
     async function loadNotesMapping() {
       if (!activeSectionId || !selectedProgrammeId) {
@@ -250,8 +261,6 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
   async function openNotesModal(matricule: string) {
     setActiveNotesMatricule(matricule);
     setNotesModalOpen(true);
-    setActiveSemestreId("");
-    setExpandedUnites({});
     if (notesByMatricule[matricule]) return;
     setNotesLoading(true);
     try {
@@ -545,19 +554,19 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
 
   if (!bootstrap.authorized) {
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-6 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-        <h1 className="text-lg font-semibold">Archivage des notes</h1>
-        <p className="mt-2 text-sm">{bootstrap.message ?? "Accès non autorisé."}</p>
+      <div className="rounded-2xl border border-border bg-grey/90 p-6 dark:border-dark_border dark:bg-darklight">
+        <h1 className="text-lg font-bold text-midnight_text dark:text-white">Archivage des notes</h1>
+        <p className="mt-2 text-sm text-muted dark:text-slate-400">{bootstrap.message ?? "Accès non autorisé."}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <section className="rounded-2xl border border-primary/15 bg-gradient-to-br from-white via-white to-primary/[0.05] p-5 shadow-sm dark:border-primary/20 dark:from-darklight dark:via-darklight dark:to-primary/[0.08]">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-midnight_text dark:text-white">Archivage des notes</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-1 text-sm text-muted dark:text-slate-400">
             Choisissez l'année et le programme de travail pour charger les parcours.
           </p>
         </div>
@@ -567,10 +576,10 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
               key={tab.value}
               type="button"
               onClick={() => setActiveAnneeSlug(tab.value)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                 activeAnneeSlug === tab.value
-                  ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
-                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  ? "bg-primary text-white shadow-sm"
+                  : "bg-grey text-midnight_text hover:bg-light_grey dark:bg-darklight dark:text-slate-300 dark:hover:bg-dark_border"
               }`}
             >
               {tab.label}
@@ -583,12 +592,12 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
             value={searchProgramme}
             onChange={(e) => setSearchProgramme(e.target.value)}
             placeholder="Rechercher un programme..."
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-midnight_text placeholder:text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-dark_border dark:bg-darklight dark:text-white"
           />
           <select
             value={selectedProgrammeId}
             onChange={(e) => setSelectedProgrammeId(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-midnight_text focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-dark_border dark:bg-darklight dark:text-white"
           >
             <option value="">Choisir le programme de travail...</option>
             {filteredProgrammes.map((p) => (
@@ -600,139 +609,161 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-xl font-semibold text-midnight_text dark:text-white">PageDetail · Parcours du programme</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Section: <strong>{activeSection?.designation ?? "—"}</strong> · Programme:{" "}
-              <strong>{selectedProgramme?.designation ?? "—"}</strong>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+      <section className="rounded-2xl border border-primary/15 bg-gradient-to-br from-white via-white to-primary/[0.05] p-5 shadow-sm dark:border-primary/20 dark:from-darklight dark:via-darklight dark:to-primary/[0.08]">
+        {notesModalOpen && activeNotesMatricule ? (
+          <>
             <button
               type="button"
-              onClick={() => exportTemplate(parcoursRows, selectedMappingRows)}
-              disabled={!selectedProgramme || parcoursRows.length === 0}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-600"
+              onClick={() => setNotesModalOpen(false)}
+              className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
             >
-              Exporter template CSV
+              <Icon icon="solar:arrow-left-linear" className="text-lg" aria-hidden />
+              Retour à la liste des parcours
+              {parcoursRows.length > 0 ? (
+                <span className="font-normal text-slate-500 dark:text-slate-400">({parcoursRows.length})</span>
+              ) : null}
             </button>
-            <button
-              type="button"
-              onClick={openWizard}
-              disabled={!selectedProgramme || parcoursRows.length === 0}
-              className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
-            >
-              Importer cotes (2 étapes)
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <input
-            type="search"
-            value={parcoursSearch}
-            onChange={(e) => setParcoursSearch(e.target.value)}
-            placeholder="Rechercher un parcours (matricule, mail, nom)..."
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-        </div>
-
-        <div className="mt-4">
-          {loading ? (
-            <p className="text-sm text-gray-500">Chargement des parcours...</p>
-          ) : error ? (
-            <p className="text-sm text-red-600">{error}</p>
-          ) : parcoursRows.length === 0 ? (
-            <p className="text-sm text-gray-500">Aucun parcours trouvé pour ce programme/année.</p>
-          ) : (
-            <div className="space-y-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {parcoursRows.map((row) => {
-                  const initials = row.nomComplet
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((x) => x[0]?.toUpperCase() ?? "")
-                    .join("");
-                  return (
-                    <article
-                      key={row.id}
-                      className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-900/60"
-                    >
-                      <div className="flex items-start gap-3">
-                        {row.photo ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={row.photo}
-                            alt={row.nomComplet}
-                            className="h-12 w-12 rounded-full border border-gray-200 object-cover dark:border-gray-700"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 bg-gray-100 text-sm font-semibold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                            {initials || "ET"}
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-midnight_text dark:text-white">{row.nomComplet || "—"}</p>
-                          <p className="text-xs text-gray-500">{row.matricule || "—"}</p>
-                          <p className="text-xs text-gray-500">{row.email || "—"}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
-                        <p>Sexe: <strong>{row.sexe || "—"}</strong></p>
-                        <p>Nationalité: <strong>{row.nationalite || "—"}</strong></p>
-                        <p>Date nais.: <strong>{row.dateNaissance || "—"}</strong></p>
-                        <p>Lieu nais.: <strong>{row.lieuNaissance || "—"}</strong></p>
-                      </div>
-
-                      <div className="mt-4 flex justify-end">
-                        <button
-                          type="button"
-                          onClick={() => void openNotesModal(row.matricule)}
-                          className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
-                        >
-                          Voir les notes
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+            <StudentConsolidatedResultPanel
+              title="Résultat consolidé étudiant"
+              onClose={() => setNotesModalOpen(false)}
+              closeLabel="Retour à la liste"
+              student={consolidatedStudentProfile}
+              notes={notesByMatricule[activeNotesMatricule]}
+              notesLoading={notesLoading}
+              programmeCredits={Number(selectedProgramme?.credits ?? 0)}
+              programmeName={selectedProgramme?.designation ?? ""}
+              mappingRows={selectedMappingRows}
+              anneeLabel={activeAnneeSlug}
+            />
+          </>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-midnight_text dark:text-white">PageDetail · Parcours du programme</h2>
+                <p className="text-sm text-muted dark:text-slate-400">
+                  Section: <strong className="text-midnight_text dark:text-white">{activeSection?.designation ?? "—"}</strong> · Programme:{" "}
+                  <strong className="text-midnight_text dark:text-white">{selectedProgramme?.designation ?? "—"}</strong>
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => exportTemplate(parcoursRows, selectedMappingRows)}
+                  disabled={!selectedProgramme || parcoursRows.length === 0}
+                  className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-midnight_text transition hover:bg-grey dark:border-dark_border dark:bg-darklight dark:text-white dark:hover:bg-dark_border"
+                >
+                  Exporter template CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={openWizard}
+                  disabled={!selectedProgramme || parcoursRows.length === 0}
+                  className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-darkprimary disabled:opacity-50"
+                >
+                  Importer cotes (2 étapes)
+                </button>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="mt-4">
+              <input
+                type="search"
+                value={parcoursSearch}
+                onChange={(e) => setParcoursSearch(e.target.value)}
+                placeholder="Rechercher un parcours (matricule, mail, nom)..."
+                className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-midnight_text placeholder:text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-dark_border dark:bg-darklight dark:text-white"
+              />
+            </div>
+
+            <div className="mt-4">
+              {loading ? (
+                <p className="text-sm text-muted">Chargement des parcours...</p>
+              ) : error ? (
+                <p className="text-sm text-error">{error}</p>
+              ) : parcoursRows.length === 0 ? (
+                <p className="text-sm text-muted">Aucun parcours trouvé pour ce programme/année.</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {parcoursRows.map((row) => {
+                      const initials = row.nomComplet
+                        .split(" ")
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .map((x) => x[0]?.toUpperCase() ?? "")
+                        .join("");
+                      return (
+                        <article
+                          key={row.id}
+                          className="rounded-xl border border-border bg-white p-4 shadow-sm transition hover:border-primary/25 hover:shadow-md dark:border-dark_border dark:bg-darklight/80"
+                        >
+                          <div className="flex items-start gap-3">
+                            {row.photo ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={row.photo}
+                                alt={row.nomComplet}
+                                className="h-12 w-12 rounded-full border border-border object-cover dark:border-dark_border"
+                              />
+                            ) : (
+                              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-grey text-sm font-semibold text-midnight_text dark:border-dark_border dark:bg-dark_border dark:text-white">
+                                {initials || "ET"}
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold text-midnight_text dark:text-white">{row.nomComplet || "—"}</p>
+                          <p className="text-xs text-muted">{row.matricule || "—"}</p>
+                          <p className="text-xs text-muted">{row.email || "—"}</p>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted dark:text-slate-400">
+                            <p>Sexe: <strong>{row.sexe || "—"}</strong></p>
+                            <p>Nationalité: <strong>{row.nationalite || "—"}</strong></p>
+                            <p>Date nais.: <strong>{row.dateNaissance || "—"}</strong></p>
+                            <p>Lieu nais.: <strong>{row.lieuNaissance || "—"}</strong></p>
+                          </div>
+
+                          <div className="mt-4 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => void openNotesModal(row.matricule)}
+                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-darkprimary"
+                            >
+                              Voir les notes
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </section>
 
-      <StudentConsolidatedResultModal
-        open={notesModalOpen}
-        onClose={() => setNotesModalOpen(false)}
-        student={parcoursRows.find((x) => x.matricule === activeNotesMatricule) ?? null}
-        notes={activeNotesMatricule ? notesByMatricule[activeNotesMatricule] : undefined}
-        notesLoading={notesLoading}
-        selectedProgrammeCredits={Number(selectedProgramme?.credits ?? 0)}
-        selectedProgrammeName={selectedProgramme?.designation ?? ""}
-        selectedMappingRows={selectedMappingRows}
-        activeAnneeSlug={activeAnneeSlug}
-      />
-
       {wizardOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-xl bg-white p-6 dark:bg-gray-900">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-midnight_text dark:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-midnight_text/40 p-4 backdrop-blur-[2px] dark:bg-black/60">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-2xl border border-primary/15 bg-white p-6 shadow-xl dark:border-primary/25 dark:bg-darklight">
+            <div className="mb-4 flex items-center justify-between border-b border-border pb-4 dark:border-dark_border">
+              <h3 className="text-lg font-bold text-midnight_text dark:text-white">
                 Import cotes en bulk - Etape {wizardStep}/3
               </h3>
-              <button type="button" className="text-sm underline" onClick={() => setWizardOpen(false)}>
+              <button
+                type="button"
+                className="text-sm font-medium text-primary hover:underline"
+                onClick={() => setWizardOpen(false)}
+              >
                 Fermer
               </button>
             </div>
 
             {wizardStep === 1 ? (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted dark:text-slate-400">
                   1) Chargez le CSV puis on mappe les lignes avec les parcours via <strong>matricule</strong> et/ou{" "}
                   <strong>email</strong>.
                 </p>
@@ -743,7 +774,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
                   className="block w-full text-sm"
                 />
                 {csvMatches.length > 0 ? (
-                  <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800/50">
+                  <div className="rounded-lg border border-border bg-grey p-3 text-sm dark:border-dark_border dark:bg-darklight/80">
                     <p>
                       Lignes: <strong>{csvMatches.length}</strong> | Matchées: <strong>{matchedCount}</strong> | Non matchées:{" "}
                       <strong>{unmatchedCount}</strong>
@@ -755,7 +786,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
                     type="button"
                     disabled={matchedCount === 0}
                     onClick={() => setWizardStep(2)}
-                    className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-darkprimary disabled:opacity-50"
                   >
                     Passer au mapping des matières
                   </button>
@@ -763,20 +794,20 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
               </div>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-muted dark:text-slate-400">
                   2) Mappez chaque matière de la base avec la colonne du CSV correspondante.
                 </p>
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <tr className="border-b border-border dark:border-dark_border">
                         <th className="px-2 py-2 text-left">Matière BDD</th>
                         <th className="px-2 py-2 text-left">Colonne CSV</th>
                       </tr>
                     </thead>
                     <tbody>
                       {selectedMappingRows.map((m) => (
-                        <tr key={m.key} className="border-b border-gray-100 dark:border-gray-800">
+                        <tr key={m.key} className="border-b border-border/60 dark:border-dark_border">
                           <td className="px-2 py-2">{m.matiere.designation}</td>
                           <td className="px-2 py-2">
                             <select
@@ -787,7 +818,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
                                   [m.matiere.reference]: e.target.value,
                                 }))
                               }
-                              className="rounded-md border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-800"
+                              className="rounded-lg border border-border bg-white px-2 py-1 text-midnight_text dark:border-dark_border dark:bg-darklight dark:text-white"
                             >
                               <option value="">-- Choisir une colonne --</option>
                               {csvHeaders.map((h) => (
@@ -803,12 +834,16 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
                   </table>
                 </div>
                 <div className="flex justify-between">
-                  <button type="button" className="rounded-md border border-gray-300 px-3 py-2 text-sm" onClick={() => setWizardStep(1)}>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-midnight_text hover:bg-grey dark:border-dark_border dark:bg-darklight dark:text-white dark:hover:bg-dark_border"
+                    onClick={() => setWizardStep(1)}
+                  >
                     Retour étape 1
                   </button>
                   <button
                     type="button"
-                    className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-darkprimary"
                     onClick={() => setWizardStep(3)}
                   >
                     Passer à l'envoi (étape 3)
@@ -818,21 +853,21 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
             )}
             {wizardStep === 3 ? (
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  3) Envoi des cotes de rattrapage en <strong>10 lots</strong> avec feedback progressif.
+                <p className="text-sm text-muted dark:text-slate-400">
+                  3) Envoi des cotes de rattrapage en <strong className="text-midnight_text dark:text-white">10 lots</strong> avec feedback progressif.
                 </p>
-                <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm dark:border-gray-700 dark:bg-gray-800/50">
+                <div className="rounded-lg border border-border bg-grey p-3 text-sm dark:border-dark_border dark:bg-darklight/80">
                   <p>Lignes préparées: <strong>{buildPayloadLines().length}</strong></p>
-                  <p className="mt-1 text-xs text-gray-500">Règles: X ignoré, cc=0, examen=0, rachat=0.</p>
-                  {notesMappingLoading ? <p className="mt-1 text-xs text-blue-600">Chargement mapping endpoint...</p> : null}
+                  <p className="mt-1 text-xs text-muted">Règles: X ignoré, cc=0, examen=0, rachat=0.</p>
+                  {notesMappingLoading ? <p className="mt-1 text-xs font-medium text-primary">Chargement mapping endpoint…</p> : null}
                 </div>
-                {sendInfo ? <p className="text-sm text-blue-700 dark:text-blue-300">{sendInfo}</p> : null}
-                {sendError ? <p className="text-sm text-red-600">{sendError}</p> : null}
-                {sendSuccess ? <p className="text-sm text-emerald-700 dark:text-emerald-300">{sendSuccess}</p> : null}
+                {sendInfo ? <p className="text-sm text-darkprimary dark:text-primary">{sendInfo}</p> : null}
+                {sendError ? <p className="text-sm text-error">{sendError}</p> : null}
+                {sendSuccess ? <p className="text-sm font-medium text-primary dark:text-sky-300">{sendSuccess}</p> : null}
                 <div className="flex justify-between">
                   <button
                     type="button"
-                    className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-medium text-midnight_text hover:bg-grey dark:border-dark_border dark:bg-darklight dark:text-white dark:hover:bg-dark_border"
                     onClick={() => setWizardStep(2)}
                     disabled={sending}
                   >
@@ -840,7 +875,7 @@ export default function SectionArchivageClient({ bootstrap }: { bootstrap: Archi
                   </button>
                   <button
                     type="button"
-                    className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-darkprimary disabled:opacity-50"
                     onClick={() => void sendInTenBatches()}
                     disabled={sending}
                   >

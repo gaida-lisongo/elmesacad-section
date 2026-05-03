@@ -12,7 +12,8 @@ export function etudiantServiceUrl(path: string): string {
   return `${base}${p}`;
 }
 
-function normalizeEtudiantPath(input: string): string {
+/** Exposé pour logs / diagnostics (même règle que `fetchEtudiantApi`). */
+export function normalizeEtudiantPath(input: string): string {
   let p = String(input ?? "").trim();
   if (!p) return "/";
 

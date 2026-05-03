@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { fetchChargesHorairesByPromotionReferencesAction } from "@/actions/chargesHorairesTitulaire";
 import { getPublicSectionBySlug } from "@/actions/publicSections";
 import EtudesSectionClientView from "@/components/Etudes/EtudesSectionClientView";
+import { fetchEtudesSectionResourcesGrouped } from "@/lib/product/fetchEtudesSectionResourcesGrouped";
 import type { EtudesCourseSearchItem } from "@/types/etudesCourse";
 
 type Props = {
@@ -23,13 +24,16 @@ export default async function EtudesSectionPage({ params }: Props) {
 
   if (!section) notFound();
 
-  const chargesByProgramme = await fetchChargesHorairesByPromotionReferencesAction(
-    section.programmes.map((programme) => ({
-      id: programme.id,
-      slug: programme.slug,
-      designation: programme.designation,
-    }))
-  );
+  const [chargesByProgramme, resourcesGrouped] = await Promise.all([
+    fetchChargesHorairesByPromotionReferencesAction(
+      section.programmes.map((programme) => ({
+        id: programme.id,
+        slug: programme.slug,
+        designation: programme.designation,
+      })),
+    ),
+    fetchEtudesSectionResourcesGrouped(section.slug),
+  ]);
 
   const courses: EtudesCourseSearchItem[] = chargesByProgramme.ok
     ? chargesByProgramme.data.flatMap((programmeCharges) => {
@@ -94,5 +98,11 @@ export default async function EtudesSectionPage({ params }: Props) {
       : chargesByProgramme.message,
   });
 
-  return <EtudesSectionClientView section={section} courses={courses} />;
+  return (
+    <EtudesSectionClientView
+      section={section}
+      courses={courses}
+      resourcesGrouped={resourcesGrouped}
+    />
+  );
 }

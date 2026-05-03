@@ -111,32 +111,3 @@ export async function sendRattrapageNotesBatch(input: {
   };
 }
 
-export async function fetchStructuredNotesByMatricules(matricules: string[]) {
-  const session = await getSessionPayload();
-  if (!session || session.type !== "Agent" || session.role !== "organisateur") {
-    throw new Error("Accès réservé aux organisateurs.");
-  }
-  const clean = (Array.isArray(matricules) ? matricules : [])
-    .map((m) => String(m ?? "").trim())
-    .filter(Boolean);
-  const unique = [...new Set(clean)];
-  const result: Record<string, { ok: boolean; status: number; data: unknown | null; message?: string }> = {};
-  for (const matricule of unique) {
-    const res = await fetchTitulaireService(`/notes/student/${encodeURIComponent(matricule)}`, { method: "GET" });
-    const payload = (await res.json().catch(() => ({}))) as { message?: string; data?: unknown };
-    console.log("[ARCHIVAGE][NOTES_BY_MATRICULE]", {
-      matricule,
-      status: res.status,
-      ok: res.ok,
-      payload,
-    });
-    result[matricule] = {
-      ok: res.ok,
-      status: res.status,
-      data: res.ok ? (payload.data ?? payload) : null,
-      message: payload.message,
-    };
-  }
-  return result;
-}
-

@@ -53,6 +53,8 @@ type Props = {
   variant: RessourceMetierVariant;
   busy?: boolean;
   onRecheck?: () => void;
+  /** Masque le paragraphe « circuit administratif » (fiche / relevé) quand la synthèse des notes est affichée au-dessus. */
+  suppressAdministrativeMessage?: boolean;
 };
 
 function pickMetaString(meta: Record<string, unknown> | undefined, key: string): string {
@@ -67,6 +69,7 @@ export default function PaiementMetierRessourceCore({
   variant,
   busy,
   onRecheck,
+  suppressAdministrativeMessage,
 }: Props) {
   const copy = VARIANT_COPY[variant];
   const meta = commande.ressource?.metadata ?? {};
@@ -92,7 +95,9 @@ export default function PaiementMetierRessourceCore({
         <div>
           <p className="font-semibold text-midnight_text dark:text-white">{copy.title}</p>
           <p className="mt-1 text-sm font-medium text-primary">{title}</p>
-          <p className="mt-2 text-slate-600 dark:text-slate-300">{copy.short}</p>
+          {!suppressAdministrativeMessage ? (
+            <p className="mt-2 text-slate-600 dark:text-slate-300">{copy.short}</p>
+          ) : null}
         </div>
       </div>
 

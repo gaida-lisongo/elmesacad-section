@@ -31,6 +31,12 @@ function mergeHeaders(
   return h;
 }
 
+/** Quand le service titulaire n’exige plus de JWT (auth désactivée côté service). */
+export function isTitulaireServiceAuthSkipped(): boolean {
+  const v = process.env.TITULAIRE_SERVICE_SKIP_AUTH?.trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes";
+}
+
 async function buildAuthHeaders(
   init: RequestInit | undefined,
   bearer?: string
@@ -39,6 +45,16 @@ async function buildAuthHeaders(
   return mergeHeaders(init, {
     ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
   });
+}
+
+async function buildTitulaireAuthHeaders(
+  init: RequestInit | undefined,
+  bearer?: string
+): Promise<Headers> {
+  if (isTitulaireServiceAuthSkipped()) {
+    return mergeHeaders(init, {});
+  }
+  return buildAuthHeaders(init, bearer);
 }
 
 async function doFetch(url: string, init: RequestInit | undefined, headers: Headers): Promise<Response> {
@@ -50,7 +66,8 @@ async function doFetch(url: string, init: RequestInit | undefined, headers: Head
 }
 
 /**
- * GET/POST/etc. vers le service titulaire (Traefik) avec Authorization: Bearer.
+ * GET/POST/etc. vers le service titulaire (Traefik) avec Authorization: Bearer,
+ * sauf si `TITULAIRE_SERVICE_SKIP_AUTH` est activé (service sans auth en amont).
  * Sur 401: tente un refresh session, puis rejoue la requête.
  */
 export async function fetchTitulaireService(
@@ -64,13 +81,13 @@ export async function fetchTitulaireService(
 
   const url = `${base}${path.startsWith("/") ? path : `/${path}`}`;
   
-  let res = await doFetch(url, init, await buildAuthHeaders(init));
-  if (res.status !== 401) return res;
+  let res = await doFetch(url, init, await buildTitulaireAuthHeaders(init));
+  if (isTitulaireServiceAuthSkipped() || res.status !== 401) return res;
 
   const refreshed = await refreshSessionJwtFromDb();
   if (!refreshed) return res;
 
-  res = await doFetch(url, init, await buildAuthHeaders(init, refreshed.token));
+  res = await doFetch(url, init, await buildTitulaireAuthHeaders(init, refreshed.token));
   return res;
 }
 
