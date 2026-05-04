@@ -47,7 +47,8 @@ function etudiantCommandeType(produit: CommandeProduit): "labo" | "stage" | "suj
   }
 }
 
-async function resolveParcoursId(email: string, matricule: string): Promise<string | null> {
+/** Résolution parcours étudiant (GET service) — réutilisable pour la création différée de commande « sujet ». */
+export async function resolveParcoursId(email: string, matricule: string): Promise<string | null> {
   const res = await fetchEtudiantApi(
     `/parcours/by-student-email?email=${encodeURIComponent(email.toLowerCase())}`,
     { method: "GET" }
@@ -143,11 +144,16 @@ export async function createEtudiantOrderAfterMarketplacePaid(
   const produit = commande.ressource?.produit;
   if (produit === "activite") return;
 
-  const ms = commande.transaction?.microserviceResponse;
-  if (alreadySyncedEtudiantOrder(ms)) return;
-
   const type = produit ? etudiantCommandeType(produit) : null;
   if (!type) return;
+
+  /** Sujet : la commande service étudiant est créée au POST `/commandes` après le formulaire (payload complète). */
+  if (type === "sujet") {
+    return;
+  }
+
+  const ms = commande.transaction?.microserviceResponse;
+  if (alreadySyncedEtudiantOrder(ms)) return;
 
   const email = normalize(commande.student?.email).toLowerCase();
   const matricule = normalize(commande.student?.matricule);

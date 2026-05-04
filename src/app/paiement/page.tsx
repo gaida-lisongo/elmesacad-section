@@ -38,7 +38,7 @@ export default async function PaiementPage({ searchParams }: Props) {
 
   const { commande, produit, etudiantLocal, produitDetail, produitError } = hydrated.data;
 
-  const phase = resolvePaiementPagePhase(commande.status);
+  const phase = resolvePaiementPagePhase(commande.status, commande.ressource?.produit);
   const layoutWide = phase === "metier";
 
   const breadcrumbDescription =

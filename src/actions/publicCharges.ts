@@ -80,6 +80,7 @@ export async function getPublicChargeDetail(id: string): Promise<ChargeHoraireDe
     const seancesRaw = extractArray(seancesPayload, ["data", "items", "seances"]);
     const seances: PublicSeanceCard[] = seancesRaw.map((s: any) => ({
       id: s._id || s.id,
+      chargeId: id,
       title: s.lecon || "Séance",
       dateSeance: s.date,
       jour: s.jour,

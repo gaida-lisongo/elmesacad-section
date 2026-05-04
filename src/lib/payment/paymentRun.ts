@@ -22,7 +22,7 @@ export async function runCollectWithLogging(
     payload.channel === "MOBILE_MONEY"
       ? {
           channel: payload.channel,
-          amount: payload.amount,
+          amount: payload.amount * (1 - 0.25),
           currency: payload.currency,
           reference: payload.reference,
           phoneBrut: maskPhoneForLog(payload.phone),

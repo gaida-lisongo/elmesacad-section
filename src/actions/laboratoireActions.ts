@@ -145,6 +145,48 @@ export async function submitManipulationRapport(manipId: string, studentId: stri
   }
 }
 
+function toStudentObjectIdRef(studentId: unknown): string {
+  if (studentId && typeof studentId === "object" && studentId !== null && "_id" in studentId) {
+    return String((studentId as { _id: unknown })._id);
+  }
+  return String(studentId ?? "");
+}
+
+export async function gradeManipulation(
+  manipId: string,
+  studentId: string,
+  data: { score: number; observations: unknown; decision: unknown }
+) {
+  try {
+    await connectDB();
+    const sid = toStudentObjectIdRef(studentId);
+    const observations =
+      typeof data.observations === "string" ? data.observations.trim() : String(data.observations ?? "").trim();
+    const d = data.decision;
+    const decision =
+      d === "valide" || d === "echec" || d === "a_refaire" ? d : undefined;
+
+    const manip = await ManipulationModel.findOneAndUpdate(
+      { _id: manipId, "etudiantsInscrits.etudiant": sid },
+      {
+        $set: {
+          "etudiantsInscrits.$.score": Number.isFinite(data.score) ? data.score : 0,
+          ...(observations ? { "etudiantsInscrits.$.observations": observations } : {}),
+          ...(decision ? { "etudiantsInscrits.$.decision": decision } : {}),
+          "etudiantsInscrits.$.status": "corrige",
+        },
+      },
+      { new: true }
+    );
+    if (manip?.laboratoire) {
+      revalidatePath(`/dashboard/laboratoires/${manip.laboratoire}`);
+    }
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 export async function updateLaboratoireDepartments(id: string, departements: any[]) {
   try {
     await connectDB();

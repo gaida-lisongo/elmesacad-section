@@ -12,6 +12,9 @@ import PaiementMetierTpPanel from "@/app/paiement/_components/metier/PaiementMet
 import PaiementMetierRelevePanel from "@/app/paiement/_components/metier/PaiementMetierRelevePanel";
 import PaiementMetierFicheValidationPanel from "@/app/paiement/_components/metier/PaiementMetierFicheValidationPanel";
 import PaiementMetierSessionPanel from "@/app/paiement/_components/metier/PaiementMetierSessionPanel";
+import PaiementMetierLaboratoirePanel from "@/app/paiement/_components/metier/PaiementMetierLaboratoirePanel";
+import PaiementMetierSujetPanel from "@/app/paiement/_components/metier/PaiementMetierSujetPanel";
+import PaiementCommandeComplementEtudiant from "@/app/paiement/_components/PaiementCommandeComplementEtudiant";
 
 type Props = {
   commande: PaiementCommandeClientPayload;
@@ -160,6 +163,10 @@ function MetierBody({ commande, commandeId, produitDetail, etudiant, busy, onRec
       return <PaiementMetierFicheValidationPanel {...panelProps} />;
     case "session":
       return <PaiementMetierSessionPanel {...panelProps} />;
+    case "laboratoire":
+      return <PaiementMetierLaboratoirePanel {...panelProps} />;
+    case "sujet":
+      return <PaiementMetierSujetPanel commande={commande} commandeId={commandeId} busy={busy} onRecheck={onRecheck} />;
     default:
       return (
         <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -178,6 +185,7 @@ export default function PaiementCommandeMetier({ commande, commandeId, metierCon
   const categorie = String(commande.ressource?.categorie ?? "").toUpperCase();
   const fullBleedQuestionnaire =
     produitLigne === "activite" && (categorie === "QCM" || categorie === "TP");
+  const showComplementBloc = produitLigne !== "sujet";
 
   const header = (
     <div className="flex items-start gap-3">
@@ -212,6 +220,7 @@ export default function PaiementCommandeMetier({ commande, commandeId, metierCon
             busy={busy}
             onRecheck={onRecheck}
           />
+          {showComplementBloc ? <PaiementCommandeComplementEtudiant commandeId={commandeId} /> : null}
         </div>
       </div>
     );
@@ -231,6 +240,7 @@ export default function PaiementCommandeMetier({ commande, commandeId, metierCon
             busy={busy}
             onRecheck={onRecheck}
           />
+          {showComplementBloc ? <PaiementCommandeComplementEtudiant commandeId={commandeId} /> : null}
         </div>
       </div>
     </div>

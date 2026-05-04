@@ -37,19 +37,24 @@ export default function LaboratoiresAdminPage() {
       items={items}
       tabs={tabs}
       activeTab="all"
-      CardItem={LaboratoireCardItem}
+      CardItem={(props) => (
+        <LaboratoireCardItem
+          {...props}
+          onDelete={async (id) => {
+            if (confirm("Supprimer ce laboratoire ? Cette action est irréversible.")) {
+              await deleteLaboratoire(id);
+              await fetchLabs();
+            }
+          }}
+        />
+      )}
       CardCreate={LaboratoireCardCreate}
       onCreate={async (formData) => {
         const nom = String(formData.get("nom") ?? "");
         const slug = String(formData.get("slug") ?? "");
-        await createLaboratoire({ nom, slug });
+        const techniciens = JSON.parse(String(formData.get("techniciens") ?? "[]"));
+        await createLaboratoire({ nom, slug, techniciens });
         await fetchLabs();
-      }}
-      onDelete={async (id) => {
-        if (confirm("Supprimer ce laboratoire ? Cette action est irréversible.")) {
-          await deleteLaboratoire(id);
-          await fetchLabs();
-        }
       }}
     />
   );

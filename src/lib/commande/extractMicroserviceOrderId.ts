@@ -14,7 +14,8 @@ export function extractMicroserviceOrderId(payload: unknown): string | undefined
   if (!isRecord(payload)) return undefined;
 
   const tryKeys = (o: Record<string, unknown>): string | undefined => {
-    const keys = ["_id", "id", "orderId", "order_id", "commandeId", "commande_id", "numero", "reference"];
+    /** Ne pas inclure `reference` : souvent l’id commande marketplace, pas l’ordre côté service étudiant. */
+    const keys = ["_id", "id", "orderId", "order_id", "commandeId", "commande_id", "numero"];
     for (const k of keys) {
       const v = o[k];
       if (v != null && typeof v !== "object") {
