@@ -287,7 +287,7 @@ export default function UniteMatiereWizardModal({
                 onClick={() =>
                   setMatiereDrafts((prev) => [...prev, { key: newKey(), designation: "", credits: "", code: "" }])
                 }
-                className="inline-flex rounded-md border border-[#082b1c] px-3 py-1.5 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+                className="inline-flex rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
               >
                 + Matière
               </button>
@@ -309,7 +309,7 @@ export default function UniteMatiereWizardModal({
               type="button"
               disabled={saving || !designation.trim() || !code.trim()}
               onClick={() => void submitStep1()}
-              className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
             >
               {saving ? "Création…" : "Suivant : matières"}
             </button>
@@ -318,7 +318,7 @@ export default function UniteMatiereWizardModal({
               type="button"
               disabled={saving}
               onClick={() => void submitStep2()}
-              className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
             >
               {saving ? "Enregistrement…" : "Terminer"}
             </button>

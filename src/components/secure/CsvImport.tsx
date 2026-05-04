@@ -130,13 +130,13 @@ export default function CsvImport({ templateHeaders, onPersist }: CsvImportProps
       <h4 className="text-sm font-semibold text-midnight_text dark:text-white">Import CSV</h4>
 
       <div className="mt-3 space-y-2 text-xs">
-        <p className={currentStep === 1 ? "font-semibold text-[#082b1c]" : "text-gray-500"}>
+        <p className={currentStep === 1 ? "font-semibold text-primary" : "text-gray-500"}>
           Etape 1: Chargement de la source
         </p>
-        <p className={currentStep === 2 ? "font-semibold text-[#082b1c]" : "text-gray-500"}>
+        <p className={currentStep === 2 ? "font-semibold text-primary" : "text-gray-500"}>
           Etape 2: Chargement des donnees en memoire
         </p>
-        <p className={currentStep === 3 ? "font-semibold text-[#082b1c]" : "text-gray-500"}>
+        <p className={currentStep === 3 ? "font-semibold text-primary" : "text-gray-500"}>
           Etape 3: Persistance
         </p>
       </div>
@@ -186,7 +186,7 @@ export default function CsvImport({ templateHeaders, onPersist }: CsvImportProps
                       }
                       className={`rounded-full px-2 py-1 text-xs ${
                         selected
-                          ? "bg-[#082b1c] text-white"
+                          ? "bg-primary text-white"
                           : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                       }`}
                     >
@@ -200,7 +200,7 @@ export default function CsvImport({ templateHeaders, onPersist }: CsvImportProps
             <button
               type="button"
               onClick={() => setCurrentStep(2)}
-              className="mt-3 rounded-md border border-[#082b1c] px-3 py-1 text-xs font-semibold text-[#082b1c]"
+              className="mt-3 rounded-md border border-primary px-3 py-1 text-xs font-semibold text-primary"
             >
               Valider les entetes
             </button>
@@ -256,7 +256,7 @@ export default function CsvImport({ templateHeaders, onPersist }: CsvImportProps
             type="button"
             onClick={persistPayload}
             disabled={isPersisting || filteredRows.length === 0}
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
           >
             Enregistrer
           </button>
@@ -265,7 +265,7 @@ export default function CsvImport({ templateHeaders, onPersist }: CsvImportProps
             <div className="mt-3">
               <div className="h-2 w-full rounded bg-gray-200 dark:bg-gray-700">
                 <div
-                  className="h-2 rounded bg-[#082b1c] transition-all"
+                  className="h-2 rounded bg-primary transition-all"
                   style={{ width: `${progress}%` }}
                 />
               </div>

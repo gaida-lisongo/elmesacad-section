@@ -413,7 +413,7 @@ export default function ChargeMatiereClient({
               type="button"
               onClick={openCreate}
               disabled={!activeMatiere}
-              className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
             >
               Nouvelle charge
             </button>
@@ -443,7 +443,7 @@ export default function ChargeMatiereClient({
                       onClick={() => setActiveMatiereId(m._id)}
                       className={`w-full rounded-md px-2 py-2 text-left text-sm ${
                         m._id === activeMatiereId
-                          ? "bg-[#082b1c]/10 font-semibold text-[#082b1c] dark:bg-emerald-500/15 dark:text-emerald-200"
+                          ? "bg-primary/10 font-semibold text-primary dark:bg-primary/15 dark:text-emerald-200"
                           : "text-midnight_text hover:bg-gray-50 dark:text-white dark:hover:bg-gray-800"
                       }`}
                     >
@@ -495,7 +495,7 @@ export default function ChargeMatiereClient({
                               <button
                                 type="button"
                                 onClick={() => openEdit(c)}
-                                className="text-xs font-medium text-[#082b1c] underline dark:text-[#5ec998]"
+                                className="text-xs font-medium text-primary underline dark:text-primary"
                               >
                                 Modifier
                               </button>
@@ -718,7 +718,7 @@ export default function ChargeMatiereClient({
                       }
                       setFormStep((s) => ((s + 1) as 1 | 2 | 3));
                     }}
-                    className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
                   >
                     Suivant
                   </button>
@@ -727,7 +727,7 @@ export default function ChargeMatiereClient({
                     type="button"
                     disabled={saving}
                     onClick={submitCreate}
-                    className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
                   >
                     {saving ? "…" : "Confirmer et soumettre"}
                   </button>
@@ -736,7 +736,7 @@ export default function ChargeMatiereClient({
                   type="button"
                   disabled={saving}
                   onClick={submitEdit}
-                  className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
                 >
                   {saving ? "…" : "Confirmer et modifier"}
                 </button>

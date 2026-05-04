@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Icon } from "@iconify/react/dist/iconify.js";
+import ClientIcon from "@/components/Common/ClientIcon";
 import type { ProductPageModel } from "@/lib/product/loadProductPageData";
 import { formatProductPrice } from "@/lib/product/formatProductPrice";
 import ProductPurchaseBar from "@/components/product/ProductPurchaseBar";
@@ -10,6 +10,17 @@ type Props = {
   categoriePath: string;
 };
 
+function formatNaturalDate(value: string): string {
+  if (!value) return "Non définie";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return d.toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export default function ProductMarketplaceView({ model, categoryLabel, categoriePath }: Props) {
   const isActivity = model.kind === "activity";
   const title = isActivity ? model.title : model.designation;
@@ -19,230 +30,236 @@ export default function ProductMarketplaceView({ model, categoryLabel, categorie
   const highlights = isActivity ? model.highlights : model.highlights;
 
   return (
-    <div className="bg-gradient-to-b from-slate-100/90 via-slate-50 to-white dark:from-slate-950 dark:via-darkmode dark:to-darkmode">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <div className="grid gap-8 lg:grid-cols-12 lg:gap-10">
+    <div className="bg-[#f8fafc] dark:bg-darkmode">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-14">
+        <div className="grid gap-10 lg:grid-cols-12 lg:items-start">
+          {/* Left Column: Visual Card */}
           <div className="lg:col-span-5">
-            <div className="sticky top-24 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_20px_50px_-12px_rgba(15,23,42,0.18)] dark:border-slate-700 dark:bg-darklight dark:shadow-none">
-              <div className="aspect-square bg-gradient-to-br from-primary/20 via-white to-slate-100 dark:from-primary/25 dark:via-slate-900 dark:to-slate-950">
-                <div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
-                  <span className="rounded-full border border-white/60 bg-white/90 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-primary shadow-sm dark:border-slate-600 dark:bg-slate-800/90">
-                    {categoryLabel}
-                  </span>
-                  <Icon
-                    icon={isActivity ? "solar:document-text-bold-duotone" : "solar:box-minimalistic-bold-duotone"}
-                    className="text-8xl text-primary/85 drop-shadow-sm"
-                  />
-                  <p className="max-w-sm text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                    {isActivity ? model.summary : `Ressource officielle — ${model.apiCategorie}`}
-                  </p>
-                  <p className="text-2xl font-bold tabular-nums text-midnight_text dark:text-white">
-                    {formatProductPrice(priceAmount, priceCurrency)}
-                  </p>
+            <div className="sticky top-28 overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-2xl shadow-slate-200/50 dark:border-slate-800 dark:bg-gray-900 dark:shadow-none">
+              <div 
+                className="relative aspect-[4/5] w-full overflow-hidden bg-slate-900"
+                style={{ 
+                  backgroundImage: "url('/images/inbtp/jpg/img-7.jpg')", 
+                  backgroundSize: "cover", 
+                  backgroundPosition: "center" 
+                }}
+              >
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+                
+                <div className="absolute inset-0 flex flex-col justify-between p-8">
+                  <div className="flex justify-start">
+                    <span className="rounded-full bg-white/10 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white backdrop-blur-md ring-1 ring-white/20">
+                      {categoryLabel}
+                    </span>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-white shadow-xl shadow-primary/20">
+                      <ClientIcon
+                        icon={isActivity ? "solar:document-bold-duotone" : "solar:box-minimalistic-bold-duotone"}
+                        className="h-10 w-10"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-slate-300">Tarif de la ressource</p>
+                      <p className="text-4xl font-black tabular-nums text-white">
+                        {formatProductPrice(priceAmount, priceCurrency)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
+              
               {isActivity && model.chargeHoraireId ? (
-                <div className="border-t border-slate-100 p-4 dark:border-slate-700">
+                <div className="p-6">
                   <Link
                     href={`/charge_horaire/${encodeURIComponent(model.chargeHoraireId)}`}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:gap-3 hover:underline"
+                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-50 py-3 text-sm font-bold text-primary transition hover:bg-primary/10 dark:bg-slate-800 dark:text-primary dark:hover:bg-primary/20"
                   >
-                    <Icon icon="solar:calendar-bold-duotone" className="text-lg" />
-                    Charge horaire associée
+                    <ClientIcon icon="solar:calendar-bold-duotone" className="h-5 w-5" />
+                    Consulter la charge horaire
                   </Link>
                 </div>
-              ) : null}
+              ) : (
+                <div className="p-6">
+                   <div className="flex items-center gap-3 rounded-2xl bg-primary/5 p-4 text-primary">
+                      <ClientIcon icon="solar:info-circle-bold-duotone" className="h-6 w-6 shrink-0" />
+                      <p className="text-xs font-bold leading-relaxed">Ressource officielle certifiée par les services académiques de l&apos;INBTP.</p>
+                   </div>
+                </div>
+              )}
             </div>
           </div>
 
+          {/* Right Column: Details */}
           <div className="lg:col-span-7">
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.12)] dark:border-slate-700 dark:bg-darklight dark:shadow-none sm:p-8">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-2xl font-bold leading-tight tracking-tight text-midnight_text dark:text-white sm:text-3xl lg:text-[2rem]">
-                    {title}
-                  </h2>
+            <div className="space-y-8">
+              <div>
+                <div className="mb-4 flex items-center gap-3">
+                  <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider ${
+                    String(status).toLowerCase() === "active"
+                      ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                  }`}>
+                    {status || "Statut inconnu"}
+                  </span>
+                  <span className="h-1 w-1 rounded-full bg-slate-300" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">ID: {model.id.slice(-8)}</span>
+                </div>
+
+                <h1 className="text-3xl font-black leading-tight text-slate-900 dark:text-white sm:text-4xl lg:text-5xl">
+                  {title}
+                </h1>
+
+                <div className="mt-6 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-600 dark:text-slate-400">
                   {isActivity ? (
-                    <p className="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                      <span className="font-semibold text-slate-800 dark:text-slate-100">{model.matiereLabel}</span>
-                      <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
-                      {model.uniteLabel}
-                      <span className="mx-1 text-slate-300 dark:text-slate-600">·</span>
-                      {model.promotionLabel}
-                    </p>
+                    <>
+                      <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                        <ClientIcon icon="solar:book-bold-duotone" className="text-primary" />
+                        {model.matiereLabel}
+                      </div>
+                      <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                        <ClientIcon icon="solar:layers-bold-duotone" className="text-primary" />
+                        {model.promotionLabel}
+                      </div>
+                    </>
                   ) : (
-                    <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                      {model.sectionRefLabel ? (
-                        <>
-                          Section :{" "}
-                          <span className="font-medium text-slate-800 dark:text-slate-200">
-                            {model.sectionRefLabel}
-                          </span>
-                        </>
-                      ) : (
-                        "Document ou service lié à votre section."
-                      )}
-                    </p>
+                    <div className="flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 dark:bg-slate-800">
+                      <ClientIcon icon="solar:users-group-rounded-bold-duotone" className="text-primary" />
+                      {model.sectionRefLabel || "Section INBTP"}
+                    </div>
                   )}
                 </div>
-                <span
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold ${
-                    String(status).toLowerCase() === "active"
-                      ? "bg-emerald-500/15 text-emerald-800 ring-1 ring-emerald-500/25 dark:text-emerald-300"
-                      : "bg-amber-500/15 text-amber-900 ring-1 ring-amber-500/20 dark:text-amber-200"
-                  }`}
-                >
-                  {status || "—"}
-                </span>
               </div>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl bg-gradient-to-br from-primary/10 to-transparent px-5 py-4 ring-1 ring-primary/15">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Tarif
-                  </p>
-                  <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-primary">
-                    {formatProductPrice(priceAmount, priceCurrency)}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {isActivity && model.noteMaximale > 0 && (
+                  <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-gray-900">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Notation maximale</p>
+                    <div className="mt-2 flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900 dark:text-white">{model.noteMaximale}</span>
+                      <span className="text-sm font-bold text-slate-400">points</span>
+                    </div>
+                  </div>
+                )}
+                {!isActivity && model.matiereCredit > 0 && (
+                  <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-gray-900">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valeur académique</p>
+                    <div className="mt-2 flex items-baseline gap-1">
+                      <span className="text-3xl font-black text-slate-900 dark:text-white">{model.matiereCredit}</span>
+                      <span className="text-sm font-bold text-slate-400">crédits</span>
+                    </div>
+                  </div>
+                )}
+                <div className="rounded-3xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-gray-900">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Responsable</p>
+                  <p className="mt-2 text-lg font-bold text-slate-900 dark:text-white truncate">
+                    {isActivity ? model.teacherLabel : (model.lecteursLabel || "INBTP Académique")}
                   </p>
                 </div>
-                {isActivity && model.noteMaximale > 0 ? (
-                  <div className="rounded-2xl bg-slate-50 px-5 py-4 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:ring-slate-700">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Notation</p>
-                    <p className="mt-1 text-2xl font-bold text-midnight_text dark:text-white">
-                      /{model.noteMaximale} pts
-                    </p>
-                  </div>
-                ) : null}
-                {!isActivity && model.matiereCredit > 0 ? (
-                  <div className="rounded-2xl bg-slate-50 px-5 py-4 ring-1 ring-slate-200/80 dark:bg-slate-800/60 dark:ring-slate-700">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Crédits</p>
-                    <p className="mt-1 text-2xl font-bold text-midnight_text dark:text-white">{model.matiereCredit}</p>
-                  </div>
-                ) : null}
               </div>
 
-              <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-                {highlights.map((h) => (
-                  <li
-                    key={h}
-                    className="flex items-start gap-2.5 rounded-xl border border-slate-100 bg-slate-50/70 px-3.5 py-2.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200"
-                  >
-                    <Icon icon="mdi:check-decagram-outline" className="mt-0.5 shrink-0 text-lg text-primary" />
-                    <span>{h}</span>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4">
+                <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Points forts</h3>
+                <ul className="grid gap-3 sm:grid-cols-2">
+                  {highlights.map((h) => (
+                    <li
+                      key={h}
+                      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-gray-900/50 dark:text-slate-300"
+                    >
+                      <ClientIcon icon="solar:check-circle-bold-duotone" className="h-5 w-5 text-primary" />
+                      {h}
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-              {isActivity ? (
-                <p className="mt-5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-600 dark:text-slate-300">Enseignant :</span>{" "}
-                  {model.teacherLabel}
-                </p>
-              ) : model.lecteursLabel ? (
-                <p className="mt-5 text-xs text-slate-500 dark:text-slate-400">
-                  <span className="font-semibold text-slate-600 dark:text-slate-300">Encadrants :</span>{" "}
-                  {model.lecteursLabel}
-                </p>
-              ) : null}
-
-              <ProductPurchaseBar model={model} categoryLabel={categoryLabel} categoriePath={categoriePath} />
-
-              <div className="mt-8 grid gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/30 sm:grid-cols-3">
-                <div className="flex gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon icon="solar:shield-check-bold" className="text-xl" />
-                  </span>
-                  <span className="text-xs leading-snug text-slate-600 dark:text-slate-400">
-                    Paiement sécurisé (mobile money)
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon icon="solar:delivery-bold" className="text-xl" />
-                  </span>
-                  <span className="text-xs leading-snug text-slate-600 dark:text-slate-400">
-                    Accès après validation du paiement
-                  </span>
-                </div>
-                <div className="flex gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon icon="solar:headphones-round-sound-bold" className="text-xl" />
-                  </span>
-                  <span className="text-xs leading-snug text-slate-600 dark:text-slate-400">
-                    Support scolarité INBTP
-                  </span>
+              <div className="rounded-[2.5rem] bg-white p-8 shadow-xl shadow-slate-200/40 dark:bg-gray-900 dark:shadow-none">
+                <ProductPurchaseBar model={model} categoryLabel={categoryLabel} categoriePath={categoriePath} />
+                
+                <div className="mt-8 grid gap-6 border-t border-slate-100 pt-8 dark:border-slate-800 sm:grid-cols-3">
+                  <FeatureItem icon="solar:shield-check-bold-duotone" label="Paiement 100% sécurisé" />
+                  <FeatureItem icon="solar:plain-2-bold-duotone" label="Accès immédiat après validation" />
+                  <FeatureItem icon="solar:clapperboard-edit-bold-duotone" label="Support technique dédié" />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <section className="mt-12 overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-[0_24px_60px_-16px_rgba(15,23,42,0.14)] dark:border-slate-700 dark:bg-darklight dark:shadow-none">
-          <div className="border-b border-slate-100 bg-slate-50/80 px-6 py-5 dark:border-slate-800 dark:bg-slate-900/40">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <h2 className="text-lg font-bold text-midnight_text dark:text-white sm:text-xl">
-                  Description du produit
-                </h2>
-                <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">
-                  Détails publiés par l&apos;établissement — présentation en sections, comme sur une fiche
-                  marketplace.
-                </p>
-              </div>
-              <span className="rounded-lg bg-white px-3 py-1 text-xs font-semibold text-slate-500 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-700">
-                INBTP Marketplace
-              </span>
-            </div>
+        {/* Bottom Section: Description */}
+        <section className="mt-20">
+          <div className="mb-10 flex items-center gap-4">
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">Description détaillée</h2>
+            <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
           </div>
 
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
-            {isActivity ? (
-              <>
-                <div className="px-6 py-6 sm:px-8">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Résumé pédagogique</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200 sm:text-[15px]">
-                    {model.summary}
-                  </p>
-                </div>
-                <div className="px-6 py-6 sm:px-8">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.18em] text-primary">Modalités</h3>
-                  <ul className="mt-4 space-y-3 text-sm text-slate-700 dark:text-slate-200">
-                    <li className="flex flex-wrap gap-2">
-                      <span className="font-semibold text-midnight_text dark:text-white">Contenu :</span>
-                      <span>
-                        {model.qcmCount} QCM, {model.tpCount} TP
-                      </span>
-                    </li>
-                    {model.dateRemise ? (
-                      <li className="flex flex-wrap gap-2">
-                        <span className="font-semibold text-midnight_text dark:text-white">Échéance :</span>
-                        <span>{model.dateRemise}</span>
-                      </li>
-                    ) : null}
-                  </ul>
-                </div>
-              </>
-            ) : (
-              model.descriptionSections.map((sec, idx) => (
-                <div key={`${sec.title}-${idx}`} className="px-6 py-6 sm:px-8">
-                  <h3 className="text-base font-bold text-midnight_text dark:text-white">{sec.title}</h3>
-                  <ul className="mt-4 space-y-2.5 text-sm leading-relaxed text-slate-700 dark:text-slate-200 sm:text-[15px]">
-                    {sec.contenu.map((line, lineIdx) => (
-                      <li key={`${sec.title}-${lineIdx}`} className="flex gap-3">
-                        <span
-                          className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
-                          aria-hidden
-                        />
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))
-            )}
+          <div className="rounded-[3rem] border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-gray-900 md:p-12">
+            <div className="grid gap-12 lg:grid-cols-2">
+              {isActivity ? (
+                <>
+                  <div className="space-y-4">
+                    <h3 className="flex items-center gap-3 text-lg font-black text-slate-900 dark:text-white">
+                      <ClientIcon icon="solar:notes-bold-duotone" className="text-primary" />
+                      Objectifs pédagogiques
+                    </h3>
+                    <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+                      {model.summary}
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="flex items-center gap-3 text-lg font-black text-slate-900 dark:text-white">
+                      <ClientIcon icon="solar:settings-bold-duotone" className="text-primary" />
+                      Modalités de réalisation
+                    </h3>
+                    <ul className="space-y-4">
+                      <ModaliteItem label="Volume de travail" value={`${model.qcmCount} QCM et ${model.tpCount} Travaux Pratiques`} />
+                      {model.dateRemise && <ModaliteItem label="Date limite de remise" value={formatNaturalDate(model.dateRemise)} />}
+                      <ModaliteItem label="Méthode d'accès" value="Téléchargement après paiement mobile money" />
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                model.descriptionSections.map((sec, idx) => (
+                  <div key={`${sec.title}-${idx}`} className="space-y-4">
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white">{sec.title}</h3>
+                    <ul className="space-y-3">
+                      {sec.contenu.map((line, lineIdx) => (
+                        <li key={`${sec.title}-${lineIdx}`} className="flex items-start gap-3 text-slate-600 dark:text-slate-400">
+                          <span className="mt-2.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
+                          <span className="leading-relaxed">{line}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </section>
       </div>
     </div>
+  );
+}
+
+function FeatureItem({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-2 text-center">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-primary dark:bg-slate-800">
+        <ClientIcon icon={icon} className="h-6 w-6" />
+      </div>
+      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
+    </div>
+  );
+}
+
+function ModaliteItem({ label, value }: { label: string; value: string }) {
+  return (
+    <li className="flex flex-col border-b border-slate-100 pb-3 last:border-0 dark:border-slate-800">
+      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</span>
+      <span className="mt-1 font-bold text-slate-900 dark:text-white">{value}</span>
+    </li>
   );
 }

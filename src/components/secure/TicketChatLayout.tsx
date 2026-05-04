@@ -61,7 +61,7 @@ export default function TicketChatLayout({
                 <div
                   className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
                     isOperator
-                      ? "bg-[#082b1c] text-white"
+                      ? "bg-primary text-white"
                       : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
                   }`}
                 >
@@ -80,9 +80,9 @@ export default function TicketChatLayout({
             <input
               type="text"
               placeholder="Ecrire un message..."
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
             />
-            <button className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white">
+            <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white">
               Envoyer
             </button>
           </div>

@@ -178,7 +178,7 @@ export default function PaiementCommandeMetier({ commande, commandeId, metierCon
 
   const header = (
     <div className="flex items-start gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-emerald-700 dark:text-emerald-300">
         <Icon icon="solar:check-circle-bold" className="text-2xl" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">

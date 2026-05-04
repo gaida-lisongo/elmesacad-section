@@ -664,7 +664,7 @@ export default function TitulaireNotesDetailClient(props: {
         <article className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900/60">
           <p className="text-xs text-gray-500">Meilleure note</p>
           <p className="text-sm font-semibold text-midnight_text dark:text-white">{bestStudent?.name ?? "—"}</p>
-          <p className="mt-2 text-lg font-bold text-emerald-700 dark:text-emerald-400">
+          <p className="mt-2 text-lg font-bold text-emerald-700 dark:text-primary">
             {bestStudent ? bestStudent.total.toFixed(2) : "—"}
           </p>
         </article>
@@ -707,7 +707,7 @@ export default function TitulaireNotesDetailClient(props: {
           type="button"
           onClick={() => void saveAll()}
           disabled={saving}
-          className="whitespace-nowrap rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+          className="whitespace-nowrap rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
         >
           {saving ? "Enregistrement..." : `Enregistrer (${Object.values(staged).reduce((acc, d) => acc + Object.keys(d).length, 0)})`}
         </button>
@@ -723,7 +723,7 @@ export default function TitulaireNotesDetailClient(props: {
           <button
             type="button"
             onClick={() => router.push("/titulaire/notes")}
-            className="mt-3 rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+            className="mt-3 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
           >
             Retourner en arrière
           </button>
@@ -830,7 +830,7 @@ export default function TitulaireNotesDetailClient(props: {
                     type="file"
                     accept=".csv,text/csv"
                     onChange={(e) => void onPickCsvFile(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-[#082b1c] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white dark:file:bg-[#5ec998] dark:file:text-gray-900"
+                    className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white dark:file:bg-primary dark:file:text-gray-900"
                   />
                   <p className="mt-2 text-xs text-gray-500">
                     {csvFileName ? `Fichier sélectionné: ${csvFileName}` : "Aucun fichier sélectionné"}
@@ -902,7 +902,7 @@ export default function TitulaireNotesDetailClient(props: {
                   void runImportStep3();
                 }}
                 disabled={importing || (importStep >= 2 && !mapping.email)}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
               >
                 {importStep < 3 ? "Suivant" : importing ? "Import..." : "Importer par lots (10)"}
               </button>

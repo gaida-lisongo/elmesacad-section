@@ -62,6 +62,10 @@ export async function collectMobileMoneyForCommande(input: {
   const response = await runCollectWithLogging(payload);
   const data = response.data;
   if (data == null || typeof data !== "object") {
+    console.error(
+      "[marketplace-pay] collect réponse invalide (pas d’objet data) — probable bug ou contrat fournisseur",
+      JSON.stringify({ dataType: data === null ? "null" : typeof data })
+    );
     throw new Error("Paiement refusé — réponse fournisseur invalide.");
   }
   const transaction = buildTransactionFromCollectResponse(

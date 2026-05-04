@@ -194,7 +194,7 @@ function MatiereEditRow({
           type="button"
           disabled={saving || deleting}
           onClick={() => void save()}
-          className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+          className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
         >
           {saving ? "…" : "Enregistrer ce cours"}
         </button>
@@ -505,7 +505,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                   }}
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     editModalTab === EDIT_TAB_UNITE
-                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      ? "bg-primary text-white dark:bg-primary dark:text-gray-900"
                       : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                   }`}
                 >
@@ -519,7 +519,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                   }}
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
                     editModalTab === EDIT_TAB_COURS
-                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      ? "bg-primary text-white dark:bg-primary dark:text-gray-900"
                       : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
                   }`}
                 >
@@ -586,7 +586,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                     type="button"
                     disabled={savingEdit}
                     onClick={() => void submitEditUe()}
-                    className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
                   >
                     {savingEdit ? "…" : "Enregistrer l’unité"}
                   </button>
@@ -679,7 +679,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                     type="button"
                     disabled={addingMatiere}
                     onClick={() => void submitAddMatiere()}
-                    className="mt-3 rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="mt-3 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
                   >
                     {addingMatiere ? "…" : "Ajouter le cours"}
                   </button>
@@ -707,7 +707,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
             <nav className="mb-3">
               <Link
                 href="/dashboard"
-                className="inline-flex items-center gap-1 text-sm font-medium text-[#082b1c] hover:underline dark:text-[#5ec998]"
+                className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline dark:text-primary"
               >
                 ← Tableau de bord
               </Link>
@@ -716,7 +716,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
             <h1 className="mt-1 text-2xl font-bold text-midnight_text dark:text-white">{data.designation}</h1>
             <p className="mt-1 font-mono text-xs text-gray-500 dark:text-gray-400">{data.slug}</p>
             {canManageUnites ? (
-              <p className="mt-2 text-xs text-[#082b1c] dark:text-[#5ec998]">
+              <p className="mt-2 text-xs text-primary dark:text-primary">
                 Habilitation SA : création et édition des unités sur le semestre sélectionné.
               </p>
             ) : null}
@@ -732,7 +732,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Unité, code UE ou matière…"
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-midnight_text shadow-sm placeholder:text-gray-400 focus:border-[#082b1c] focus:outline-none focus:ring-1 focus:ring-[#082b1c] dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#5ec998] dark:focus:ring-[#5ec998]"
+                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-midnight_text shadow-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-primary dark:focus:ring-primary"
                   autoComplete="off"
                 />
               </label>
@@ -776,7 +776,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                           onClick={() => setActiveSemestreId(String(sem._id))}
                           className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition ${
                             isActive
-                              ? "border-[#082b1c] bg-[#082b1c]/10 font-semibold text-[#082b1c] dark:border-[#5ec998] dark:bg-[#5ec998]/15 dark:text-[#5ec998]"
+                              ? "border-primary bg-primary/10 font-semibold text-primary dark:border-primary dark:bg-primary/15 dark:text-primary"
                               : "border-gray-200 bg-white text-midnight_text hover:border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:border-gray-600"
                           }`}
                         >
@@ -810,7 +810,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                   label: `${data.designation} — ${activeSemestre.designation}`,
                 })
               }
-              className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
             >
               + Unité & matières
             </button>
@@ -832,14 +832,14 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
             {displayedUnites.map((u) => (
               <article
                 key={u._id}
-                className="group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition duration-300 hover:border-[#082b1c]/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-[#5ec998]/50"
+                className="group flex h-full flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition duration-300 hover:border-primary/40 hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:hover:border-primary/50"
               >
                 <div className="flex flex-1 flex-col gap-3">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
                       {u.code}
                     </p>
-                    <h2 className="mt-1 text-[22px] font-medium leading-tight text-midnight_text group-hover:text-[#082b1c] dark:text-white dark:group-hover:text-[#5ec998]">
+                    <h2 className="mt-1 text-[22px] font-medium leading-tight text-midnight_text group-hover:text-primary dark:text-white dark:group-hover:text-primary">
                       {u.designation}
                     </h2>
                     <p className="mt-2 font-mono text-sm text-gray-600 dark:text-gray-400">{u.credits} crédits ECTS</p>
@@ -853,7 +853,7 @@ export default function FiliereStructureClient({ slug, initialData, canManageUni
                   )}
                   {(u.matieres ?? []).length > 0 && (
                     <details className="mt-auto text-sm">
-                      <summary className="cursor-pointer text-sm font-medium text-[#082b1c] dark:text-[#5ec998]">
+                      <summary className="cursor-pointer text-sm font-medium text-primary dark:text-primary">
                         Détail des matières
                       </summary>
                       <ul className="mt-2 space-y-2 border-l-2 border-gray-200 pl-3 dark:border-gray-600">

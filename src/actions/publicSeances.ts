@@ -6,6 +6,7 @@ type PublicSeanceRaw = Record<string, unknown>;
 
 export type PublicSeanceCard = {
   id: string;
+  chargeId: string;
   title: string;
   dateSeance: string;
   jour: string;
@@ -56,11 +57,13 @@ function mapSeance(raw: unknown): PublicSeanceCard | null {
   if (!id) return null;
 
   const charge = pickObject(x.charge_horaire);
+  const chargeId = String(charge?._id ?? charge?.id ?? x.charge_horaire ?? "").trim();
   const matiere = pickObject(charge?.matiere);
   const promotion = pickObject(charge?.promotion);
 
   return {
     id,
+    chargeId,
     title: String(x.lecon ?? "").trim() || "Seance",
     dateSeance: toIsoDate(x.date),
     jour: String(x.jour ?? "").trim(),

@@ -35,7 +35,7 @@ export default function PageDetail({
           <CardDetail />
           <button
             type="submit"
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Enregistrer
           </button>

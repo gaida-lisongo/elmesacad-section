@@ -59,7 +59,7 @@ function PageTabulation({
             key={tab.value}
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               isActive
-                ? "bg-[#082b1c] text-white"
+                ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
             }`}
           >
@@ -149,13 +149,13 @@ export default function PageManager<T extends { id: string }>({
           value={currentSearch}
           onChange={(event) => handleSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="min-w-72 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          className="min-w-72 flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
         />
         {showCreateButton ? (
           <button
             type="button"
             onClick={() => setShowCreate((prev) => !prev)}
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
           >
             {showCreate ? "Retour a la table" : "Creer"}
           </button>
@@ -164,7 +164,7 @@ export default function PageManager<T extends { id: string }>({
           <button
             type="button"
             onClick={() => setShowBulkCreate((prev) => !prev)}
-            className="rounded-md border border-[#082b1c] px-4 py-2 text-sm font-semibold text-[#082b1c]"
+            className="rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary"
           >
             {showBulkCreate ? "Fermer bulk" : "Creation bulk"}
           </button>
@@ -180,7 +180,7 @@ export default function PageManager<T extends { id: string }>({
             <button
               type="button"
               onClick={downloadCsvTemplate}
-              className="mb-2 rounded-md border border-[#082b1c] px-3 py-1 text-xs font-semibold text-[#082b1c]"
+              className="mb-2 rounded-md border border-primary px-3 py-1 text-xs font-semibold text-primary"
             >
               Telecharger le modele CSV
             </button>
@@ -192,7 +192,7 @@ export default function PageManager<T extends { id: string }>({
                 await onBulkCreate(bulkText);
                 setBulkText("");
               }}
-              className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
             >
               Executer bulk create
             </button>
@@ -244,11 +244,11 @@ export default function PageManager<T extends { id: string }>({
                 className={`w-full transition ${
                   bareListItems
                     ? isSelected
-                      ? "ring-2 ring-[#082b1c] ring-offset-2 ring-offset-white dark:ring-offset-gray-900"
+                      ? "ring-2 ring-primary ring-offset-2 ring-offset-white dark:ring-offset-gray-900"
                       : ""
                     : `rounded-2xl border p-4 ${
                         isSelected
-                          ? "border-[#082b1c] bg-[#082b1c]/5 dark:border-[#5ec998]"
+                          ? "border-primary bg-primary/5 dark:border-primary"
                           : "border-gray-200 dark:border-gray-700"
                       }`
                 }`}
@@ -263,7 +263,7 @@ export default function PageManager<T extends { id: string }>({
                       setSelectedId(item.id);
                     }
                   }}
-                  className="w-full cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-[#082b1c]/40"
+                  className="w-full cursor-pointer text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   <CardItem item={item} />
                 </div>

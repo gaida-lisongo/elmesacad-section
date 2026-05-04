@@ -86,16 +86,47 @@ export class PaymentService {
       headers.set(key, value);
     }
 
-    const resp = await fetch(`${this.baseUrl}${endpoint}`, {
-      ...options,
-      headers,
-    });
+    const url = `${this.baseUrl}${endpoint}`;
+    console.info("[PAYMENT_SERVICE] HTTP", options.method ?? "GET", url);
+
+    let resp: Response;
+    try {
+      resp = await fetch(url, {
+        ...options,
+        headers,
+      });
+    } catch (err) {
+      const cause = err instanceof Error && "cause" in err ? (err as Error & { cause?: unknown }).cause : undefined;
+      const causeObj =
+        cause && typeof cause === "object" && cause !== null && "code" in cause
+          ? { code: String((cause as { code?: unknown }).code), message: String((cause as { message?: unknown }).message ?? "") }
+          : cause instanceof Error
+            ? { name: cause.name, message: cause.message }
+            : cause;
+      console.error(
+        "[PAYMENT_SERVICE] connexion échouée (aucune réponse HTTP) — réseau, TLS, DNS ou pare-feu",
+        JSON.stringify(
+          {
+            url,
+            error: err instanceof Error ? err.message : String(err),
+            cause: causeObj,
+            hint: "Tester depuis cette machine : curl -v -X POST URL -H 'Content-Type: application/json' -d '{}'",
+          },
+          null,
+          2
+        )
+      );
+      throw err;
+    }
 
     const payload = await (resp.json().catch(() => ({})));
 
     if (!resp.ok) {
       const message = (payload as any)?.message || `Payment service error ${resp.status}`;
-      console.error("Payment request failed", endpoint, resp.status, message, payload);
+      console.error(
+        "[PAYMENT_SERVICE] HTTP erreur — la requête a atteint le service mais la réponse est en échec",
+        JSON.stringify({ endpoint, httpStatus: resp.status, message, payload }, null, 2)
+      );
       throw new Error(message);
     }
 
@@ -117,6 +148,10 @@ export class PaymentService {
         reference: payload.reference,
         phone: normalizePhone(payload.phone),
       };
+      console.info(
+        "[PAYMENT_SERVICE] corps normalisé /collect (téléphone → 243…)",
+        JSON.stringify({ ...body, phone: body.phone })
+      );
 
       const data = await this.fetchJson("/collect", {
         method: "POST",

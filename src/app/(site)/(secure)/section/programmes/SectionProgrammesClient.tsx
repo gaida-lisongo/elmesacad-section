@@ -451,7 +451,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
         </p>
         <Link
           href="/sections"
-          className="mt-4 inline-block text-sm font-medium text-[#082b1c] underline dark:text-[#5ec998]"
+          className="mt-4 inline-block text-sm font-medium text-primary underline dark:text-primary"
         >
           Voir les sections
         </Link>
@@ -475,7 +475,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
             type="button"
             onClick={openModal}
             disabled={!activeSection}
-            className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#082b1c]/30 disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900 dark:focus:ring-[#5ec998]/30"
+            className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:opacity-50 dark:bg-primary dark:text-gray-900 dark:focus:ring-primary/30"
           >
             Nouveau programme
           </button>
@@ -493,7 +493,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
               {activeSection ? (
                 <Link
                   href={`/sections/${encodeURIComponent(activeSection.slug)}`}
-                  className="mt-2 inline-block text-xs text-[#082b1c] underline dark:text-[#5ec998]"
+                  className="mt-2 inline-block text-xs text-primary underline dark:text-primary"
                 >
                   Fiche section
                 </Link>
@@ -822,7 +822,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                     }
                     setStep((st) => st + 1);
                   }}
-                  className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
                 >
                   Suivant
                 </button>
@@ -831,7 +831,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                   type="button"
                   disabled={submitting}
                   onClick={confirmCreate}
-                  className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
                 >
                   {submitting ? "Enregistrement…" : "Confirmer et créer"}
                 </button>
@@ -852,7 +852,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                   onClick={() => setEditTab("info")}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                     editTab === "info"
-                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      ? "bg-primary text-white dark:bg-primary dark:text-gray-900"
                       : "border border-gray-300 dark:border-gray-600"
                   }`}
                 >
@@ -863,7 +863,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                   onClick={() => setEditTab("semestres")}
                   className={`rounded-md px-2.5 py-1 text-xs font-medium ${
                     editTab === "semestres"
-                      ? "bg-[#082b1c] text-white dark:bg-[#5ec998] dark:text-gray-900"
+                      ? "bg-primary text-white dark:bg-primary dark:text-gray-900"
                       : "border border-gray-300 dark:border-gray-600"
                   }`}
                 >
@@ -935,7 +935,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                         type="button"
                         onClick={() => void addSemestreToProgramme()}
                         disabled={semSubmitBusy || !newSemPick}
-                        className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 dark:bg-[#5ec998] dark:text-gray-900"
+                        className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-60 dark:bg-primary dark:text-gray-900"
                       >
                         {semSubmitBusy ? "Association..." : "Associer ce semestre"}
                       </button>
@@ -988,7 +988,7 @@ export default function SectionProgrammesClient({ isOrganisateur }: { isOrganisa
                 type="button"
                 onClick={() => void submitEdit()}
                 disabled={editSubmitting || editTab !== "info"}
-                className="rounded-lg bg-[#082b1c] px-4 py-2 text-sm font-medium text-white dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white dark:bg-primary dark:text-gray-900"
               >
                 {editSubmitting ? "Enregistrement…" : "Enregistrer les infos"}
               </button>

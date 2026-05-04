@@ -10,7 +10,7 @@ import { TitleContentBlocksEditor, type TitleContentBlock } from "@/components/T
 import { BureauAgentField, bureauRefToAgentPick, type AgentPick } from "./BureauAgentField";
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800 dark:text-white";
+  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800 dark:text-white";
 
 type BureauRef = { _id?: string; name?: string; email?: string } | string | null;
 
@@ -214,7 +214,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
     return (
       <section className="w-full rounded-xl border border-rose-200 bg-rose-50/50 p-6 dark:border-rose-900 dark:bg-rose-950/30">
         <p className="text-sm text-rose-700 dark:text-rose-300">{error ?? "Introuvable"}</p>
-        <Link href="/sections" className="mt-3 inline-block text-sm font-semibold text-[#082b1c]">
+        <Link href="/sections" className="mt-3 inline-block text-sm font-semibold text-primary">
           Retour aux sections
         </Link>
       </section>
@@ -257,7 +257,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
             onClick={() => setTab(t.id)}
             className={`rounded-full px-3 py-1 text-xs font-semibold ${
               tab === t.id
-                ? "bg-[#082b1c] text-white"
+                ? "bg-primary text-white"
                 : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
             }`}
           >
@@ -309,7 +309,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
           </div>
           <button
             type="submit"
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Enregistrer
           </button>
@@ -331,7 +331,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
           />
           <button
             type="submit"
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Enregistrer la description
           </button>
@@ -361,7 +361,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
           />
           <button
             type="submit"
-            className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
           >
             Enregistrer le bureau
           </button>
@@ -437,7 +437,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
                     type="button"
                     onClick={shareKeys}
                     disabled={!shareEmail.trim()}
-                    className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+                    className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
                   >
                     Envoyer
                   </button>

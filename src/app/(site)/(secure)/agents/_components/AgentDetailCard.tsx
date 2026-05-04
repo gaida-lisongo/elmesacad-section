@@ -40,7 +40,7 @@ const AUTHORIZATION_BY_ROLE: Record<string, AuthorizationItem[]> = {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
+  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
 
 const tabBase =
   "inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all duration-300";
@@ -142,7 +142,7 @@ export default function AgentDetailCard({
           onClick={() => setActiveTab("informations")}
           className={`${tabBase} ${
             activeTab === "informations"
-              ? "bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] text-white shadow-lg shadow-[#082b1c]/25"
+              ? "bg-gradient-to-r from-primary to-darkprimary text-white shadow-lg shadow-primary/25"
               : "text-gray-600 hover:bg-white/80 dark:text-gray-300 dark:hover:bg-gray-800/80"
           }`}
         >
@@ -154,7 +154,7 @@ export default function AgentDetailCard({
           onClick={() => setActiveTab("autorisations")}
           className={`${tabBase} ${
             activeTab === "autorisations"
-              ? "bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] text-white shadow-lg shadow-[#082b1c]/25"
+              ? "bg-gradient-to-r from-primary to-darkprimary text-white shadow-lg shadow-primary/25"
               : "text-gray-600 hover:bg-white/80 dark:text-gray-300 dark:hover:bg-gray-800/80"
           }`}
         >
@@ -164,7 +164,7 @@ export default function AgentDetailCard({
       </div>
 
       {activeTab === "informations" ? (
-        <div className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/90 p-6 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.1),0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-gray-100/80 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/95 dark:border-gray-700/80">
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/90 p-6 shadow-[0_4px_24px_-4px_rgba(5, 138, 197,0.1),0_2px_8px_rgba(0,0,0,0.04)] ring-1 ring-gray-100/80 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/95 dark:border-gray-700/80">
           <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-primary/5 blur-3xl" />
           <h3 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wide text-primary">
             <Icon icon="solar:pen-new-square-bold-duotone" className="h-5 w-5" />
@@ -257,7 +257,7 @@ export default function AgentDetailCard({
                 type="button"
                 onClick={saveInformations}
                 disabled={isSavingInfo}
-                className="group/save inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/25 transition duration-300 hover:scale-[1.01] hover:shadow-xl disabled:opacity-60 md:w-auto"
+                className="group/save inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition duration-300 hover:scale-[1.01] hover:shadow-xl disabled:opacity-60 md:w-auto"
               >
                 <Icon icon="solar:diskette-bold" className="h-5 w-5 transition group-hover/save:scale-110" />
                 {isSavingInfo ? "Enregistrement…" : "Enregistrer les informations"}
@@ -266,7 +266,7 @@ export default function AgentDetailCard({
           </div>
         </div>
       ) : (
-        <div className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/90 p-6 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.1)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/95 dark:border-gray-700/80">
+        <div className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-white via-white to-gray-50/90 p-6 shadow-[0_4px_24px_-4px_rgba(5, 138, 197,0.1)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950/95 dark:border-gray-700/80">
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
               <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
@@ -277,7 +277,7 @@ export default function AgentDetailCard({
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/20 transition hover:scale-[1.02] hover:shadow-xl"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition hover:scale-[1.02] hover:shadow-xl"
             >
               <Icon icon="solar:add-circle-bold" className="h-5 w-5" />
               Ajouter
@@ -333,7 +333,7 @@ export default function AgentDetailCard({
             onClick={() => setIsModalOpen(false)}
             aria-label="Fermer"
           />
-          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-white to-gray-50/95 p-0 shadow-[0_24px_64px_-12px_rgba(8,43,28,0.35)] dark:from-gray-900 dark:to-gray-950">
+          <div className="relative z-10 w-full max-w-md overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-b from-white to-gray-50/95 p-0 shadow-[0_24px_64px_-12px_rgba(5, 138, 197,0.35)] dark:from-gray-900 dark:to-gray-950">
             <div className="border-b border-gray-200/80 bg-gradient-to-r from-primary/5 to-transparent px-5 py-4 dark:border-gray-700">
               <h4
                 id="auth-modal-title"
@@ -379,7 +379,7 @@ export default function AgentDetailCard({
                 <button
                   type="button"
                   onClick={addAuthorization}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/25"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25"
                 >
                   <Icon icon="solar:check-circle-bold" className="h-5 w-5" />
                   Enregistrer

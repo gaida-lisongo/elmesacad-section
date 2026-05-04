@@ -40,7 +40,7 @@ export default function PresenceLocationsMap({ markers, statusOptions, onStatusC
   const pathOptions = {
     color: "#ffffff",
     weight: 2,
-    fillColor: "#082b1c",
+    fillColor: "#058AC5",
     fillOpacity: 0.92,
   };
 

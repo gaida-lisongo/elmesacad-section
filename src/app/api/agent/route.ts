@@ -98,7 +98,7 @@ export async function PATCH(request: Request) {
     try {
         await connectDB();
         const body = (await request.json()) as Partial<AgentAuthBody>;
-
+        console.log("PATCH body", body);
         if (!body.action || !body.email) {
             return NextResponse.json(
                 { message: "Invalid payload. Expected action and email." },
@@ -108,6 +108,7 @@ export async function PATCH(request: Request) {
 
         if (body.action === "requestOtp") {
             const otpData = await authManager.requestOtp("Agent", body.email);
+            console.log("PATCH otpData", otpData);
             return NextResponse.json(
                 {
                     message: "OTP sent successfully",
@@ -117,6 +118,7 @@ export async function PATCH(request: Request) {
                 { status: 200 }
             );
         }
+        console.log("PATCH body.action", body.action);
 
         if (body.action === "verifyOtp") {
             if (!body.otp) {

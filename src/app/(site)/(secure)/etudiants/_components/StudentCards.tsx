@@ -15,17 +15,17 @@ export type StudentItem = {
 };
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
+  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 placeholder:text-gray-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
 
 export function StudentCardItem({ item }: { item: StudentItem }) {
   const accountClass =
     item.status === "active"
-      ? "bg-emerald-500/15 text-emerald-700 ring-1 ring-emerald-500/25 dark:bg-emerald-500/20 dark:text-emerald-300"
+      ? "bg-primary/15 text-emerald-700 ring-1 ring-primary/25 dark:bg-primary/20 dark:text-emerald-300"
       : "bg-amber-500/15 text-amber-800 ring-1 ring-amber-500/25 dark:bg-amber-500/20 dark:text-amber-200";
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.12),0_8px_16px_-8px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(8,43,28,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-[#082b1c]/8 to-transparent blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(5, 138, 197,0.12),0_8px_16px_-8px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(5, 138, 197,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/8 to-transparent blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
       <div className="pointer-events-none absolute -bottom-6 -left-6 h-24 w-24 rounded-full bg-primary/5 blur-xl" />
 
       <div className="relative flex items-start gap-4">
@@ -94,7 +94,7 @@ export function StudentCardItem({ item }: { item: StudentItem }) {
 
       <Link
         href={`/etudiants/${item.id}`}
-        className="group/btn mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#082b1c]/30"
+        className="group/btn mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-primary/30"
       >
         Voir le détail
         <Icon
@@ -156,7 +156,7 @@ export function StudentCardCreate({ defaultCycle }: StudentCardCreateProps) {
         </p>
         <button
           type="submit"
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] py-3 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/20 transition duration-300 hover:scale-[1.01] hover:shadow-xl md:col-span-2"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition duration-300 hover:scale-[1.01] hover:shadow-xl md:col-span-2"
         >
           <Icon icon="solar:add-circle-bold" className="h-5 w-5" />
           Créer l&apos;étudiant

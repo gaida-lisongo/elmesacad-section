@@ -476,12 +476,12 @@ export default function SectionProgrammeParcoursClient({
                 type="button"
                 onClick={() => void createBulk()}
                 disabled={busy === "create" || csvRows.length === 0}
-                className="mt-2 rounded bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                className="mt-2 rounded bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
               >
                 Importer ({csvRows.length})
               </button>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                <div className="h-full bg-emerald-500 transition-all" style={{ width: `${progress}%` }} />
+                <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
               </div>
             </div>
           )}
@@ -509,7 +509,7 @@ export default function SectionProgrammeParcoursClient({
               setSearch(e.target.value);
             }}
             placeholder="Recherche par matricule ou nom..."
-            className="min-w-[14rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            className="min-w-[14rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           />
           <button
             type="button"
@@ -536,7 +536,7 @@ export default function SectionProgrammeParcoursClient({
                 type="button"
                 onClick={() => void patchBulk()}
                 disabled={busy === "patch" || selectedIds.length === 0}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
               >
                 Appliquer statut ({selectedIds.length})
               </button>
@@ -567,7 +567,7 @@ export default function SectionProgrammeParcoursClient({
                   key={row.id}
                   className={`w-full rounded-2xl border p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 ${
                     selected
-                      ? "border-emerald-400 dark:border-emerald-500"
+                      ? "border-primary dark:border-primary"
                       : statusCardTone(row.status)
                   }`}
                 >
@@ -795,7 +795,7 @@ export default function SectionProgrammeParcoursClient({
                 type="button"
                 onClick={() => void saveEdit()}
                 disabled={busy === "save" || busy === "photo"}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
               >
                 {busy === "save" ? "Enregistrement..." : "Enregistrer"}
               </button>

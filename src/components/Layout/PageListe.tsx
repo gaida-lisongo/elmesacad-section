@@ -69,7 +69,7 @@ export function PageListe({
                     value={searchValue}
                     onChange={(e) => onSearchChange(e.target.value)}
                     placeholder={placeholder}
-                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-midnight_text shadow-sm placeholder:text-gray-400 focus:border-[#082b1c] focus:outline-none focus:ring-1 focus:ring-[#082b1c] dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-[#5ec998] dark:focus:ring-[#5ec998]"
+                    className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-midnight_text shadow-sm placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-gray-600 dark:bg-gray-900 dark:text-white dark:placeholder:text-gray-500 dark:focus:border-primary dark:focus:ring-primary"
                     autoComplete="off"
                   />
                 </label>

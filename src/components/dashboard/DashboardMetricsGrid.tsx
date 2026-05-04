@@ -16,12 +16,12 @@ export function DashboardMetricsGrid({ metrics }: { metrics: DashboardMetric[] }
           <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
             {metric.title}
           </p>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-midnight_text transition group-hover:text-sky-700 dark:text-white dark:group-hover:text-sky-300">
+          <p className="mt-2 text-2xl font-bold tabular-nums text-midnight_text transition group-hover:text-primary dark:text-white dark:group-hover:text-primary">
             {metric.value}
           </p>
           <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100/80 dark:bg-gray-800">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-400 transition-all duration-700 ease-out dark:from-sky-400 dark:to-secondary"
+              className="h-full rounded-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-700 ease-out dark:from-primary dark:to-secondary"
               style={{ width: `${Math.min(100, Math.max(0, metric.progress))}%` }}
             />
           </div>

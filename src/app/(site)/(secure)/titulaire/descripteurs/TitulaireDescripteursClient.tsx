@@ -216,7 +216,7 @@ export default function TitulaireDescripteursClient({ initialData }: Props) {
             <button
               type="button"
               onClick={() => openEditor(item.keyName)}
-              className="mt-3 rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+              className="mt-3 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
             >
               Éditer
             </button>
@@ -246,7 +246,7 @@ export default function TitulaireDescripteursClient({ initialData }: Props) {
                   <button
                     type="button"
                     onClick={addSection}
-                    className="rounded-md bg-[#082b1c] px-2 py-1 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                    className="rounded-md bg-primary px-2 py-1 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
                   >
                     Ajouter
                   </button>
@@ -255,7 +255,7 @@ export default function TitulaireDescripteursClient({ initialData }: Props) {
                   {selectedSections.map((s, idx) => (
                     <div
                       key={`${editingKey}-${idx}`}
-                      className={`rounded-md border p-2 ${selectedSectionIndex === idx ? "border-[#082b1c]" : "border-gray-200 dark:border-gray-700"}`}
+                      className={`rounded-md border p-2 ${selectedSectionIndex === idx ? "border-primary" : "border-gray-200 dark:border-gray-700"}`}
                     >
                       <button
                         type="button"
@@ -340,7 +340,7 @@ export default function TitulaireDescripteursClient({ initialData }: Props) {
                 type="button"
                 onClick={() => void saveEditor()}
                 disabled={saving}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
               >
                 {saving ? "Enregistrement..." : "Enregistrer"}
               </button>

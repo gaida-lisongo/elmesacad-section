@@ -165,7 +165,7 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
               type="button"
               disabled={!lecon.trim() || !jour.trim() || !heureDebut || !heureFin || !dateSeance || !salle.trim()}
               onClick={() => setCreateStep(2)}
-              className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
             >
               Suivant : Description
             </button>
@@ -228,7 +228,7 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
               <button
                 type="button"
                 onClick={() => setDescriptionSections((prev) => [...prev, { title: "", contenu: "" }])}
-                className="rounded-md border border-[#082b1c] px-3 py-2 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+                className="rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
               >
                 Ajouter une section
               </button>
@@ -241,7 +241,7 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
               </button>
               <button
                 type="submit"
-                className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
               >
                 Valider la création
               </button>
@@ -339,7 +339,7 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
                     },
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                  className="inline-flex rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
                 >
                   Feuille de présences
                 </Link>
@@ -361,7 +361,7 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
                       chargeLabel: activeCharge?.label ?? "",
                     });
                   }}
-                  className="inline-flex rounded-md border border-[#082b1c] px-3 py-2 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+                  className="inline-flex rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
                 >
                   Générer QR
                 </button>
@@ -414,14 +414,14 @@ export default function TitulairePresencesClient({ chargeTabs }: Props) {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="rounded-md border border-[#082b1c] px-3 py-2 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+                className="rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
               >
                 Imprimer la fiche
               </button>
               <button
                 type="button"
                 onClick={() => setQrSheet(null)}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white dark:bg-primary dark:text-gray-900"
               >
                 Fermer
               </button>

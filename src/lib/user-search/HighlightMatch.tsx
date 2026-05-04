@@ -27,7 +27,7 @@ export function HighlightMatch({ text, query, className = "" }: HighlightMatchPr
           return (
             <mark
               key={`m-${i}-${part}`}
-              className={`rounded-sm bg-[#082b1c]/15 px-0.5 font-semibold text-inherit dark:bg-[#082b1c]/35 ${className}`.trim()}
+              className={`rounded-sm bg-primary/15 px-0.5 font-semibold text-inherit dark:bg-primary/35 ${className}`.trim()}
             >
               {part}
             </mark>

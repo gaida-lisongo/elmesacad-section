@@ -441,14 +441,14 @@ export default function QcmResolutionClient({
               <button
                 type="button"
                 onClick={() => void ensureCommande()}
-                className="rounded-md border border-[#082b1c] px-3 py-2 text-xs font-semibold text-[#082b1c]"
+                className="rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary"
               >
                 Vérifier commande existante
               </button>
               <button
                 type="button"
                 onClick={() => void onStartPayment()}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white"
               >
                 Payer maintenant
               </button>
@@ -464,7 +464,7 @@ export default function QcmResolutionClient({
               <button
                 type="button"
                 onClick={() => void onCheckPayment()}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-xs font-semibold text-white"
+                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white"
               >
                 Vérifier le paiement
               </button>
@@ -525,7 +525,7 @@ export default function QcmResolutionClient({
               !activity ||
               commande?.status !== "paid"
             }
-            className="w-full rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
           >
             {busy ? "Soumission..." : "Soumettre ma résolution QCM"}
           </button>

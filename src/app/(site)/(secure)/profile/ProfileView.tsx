@@ -189,7 +189,7 @@ export function ProfileView() {
   if (!isHydrated) {
     return (
       <div className="flex min-h-[200px] items-center justify-center">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#082b1c] border-t-transparent" />
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -208,7 +208,7 @@ export function ProfileView() {
   if (loading || !profile) {
     return (
       <div className="flex min-h-[240px] items-center justify-center">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-[#082b1c] border-t-transparent" />
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
@@ -217,17 +217,17 @@ export function ProfileView() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start">
         <div className="relative">
-          <div className="relative h-28 w-28 overflow-hidden rounded-2xl ring-4 ring-[#082b1c]/20">
+          <div className="relative h-28 w-28 overflow-hidden rounded-2xl ring-4 ring-primary/20">
             <Image src={photo || "/images/user.jpg"} alt="" width={112} height={112} className="h-28 w-28 object-cover" />
           </div>
-          <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 text-xs font-medium text-[#082b1c] hover:underline dark:text-emerald-400">
+          <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 text-xs font-medium text-primary hover:underline dark:text-primary">
             <Icon icon="solar:camera-bold" className="h-4 w-4" />
             {uploading ? "Envoi…" : "Changer la photo"}
             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={onPhoto} disabled={uploading} />
           </label>
         </div>
         <div className="min-w-0 flex-1 text-center sm:text-left">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#082b1c]">{user.accountLabel}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{user.accountLabel}</p>
           <h1 className="text-2xl font-bold text-midnight_text dark:text-white">{name || profile.name}</h1>
           <div className="mt-3 space-y-1 text-left text-sm">
             <p className="flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ export function ProfileView() {
             onClick={() => setTab(t.id)}
             className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition ${
               tab === t.id
-                ? "bg-white text-[#082b1c] shadow dark:bg-gray-700 dark:text-white"
+                ? "bg-white text-primary shadow dark:bg-gray-700 dark:text-white"
                 : "text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
             }`}
           >
@@ -309,7 +309,7 @@ export function ProfileView() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-lg bg-[#082b1c] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-darkprimary disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer l’identité"}
           </button>
@@ -361,7 +361,7 @@ export function ProfileView() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-lg bg-[#082b1c] py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-white transition hover:bg-darkprimary disabled:opacity-60"
           >
             {saving ? "Enregistrement…" : "Enregistrer les informations"}
           </button>

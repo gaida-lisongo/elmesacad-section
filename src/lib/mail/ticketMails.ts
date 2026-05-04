@@ -2,8 +2,8 @@ import { sendMail } from "@/lib/mail/Mail";
 import { buildTicketChatUrl } from "@/lib/ticket/buildTicketPublicUrl";
 
 const BRAND = "Endeavor";
-const primary = "#2cdd9b";
-const secondary = "#1dc8cd";
+const primary = "#058AC5";
+const secondary = "#E76067";
 const text = "#263238";
 const muted = "#6b7280";
 const border = "#e5e7eb";

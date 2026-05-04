@@ -10,7 +10,7 @@ import { HighlightMatch } from "@/lib/user-search/HighlightMatch";
 import { userDatabaseSearchInputShellClass } from "@/components/secure/UserDatabaseSearch";
 
 const listboxPanelClass =
-  "absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(8,43,28,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60";
+  "absolute z-50 mt-2 max-h-80 w-full overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(5, 138, 197,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60";
 
 export type SemestreCatalogSearchProps = {
   sectionId: string;
@@ -163,7 +163,7 @@ export function SemestreCatalogSearch({
   return (
     <div ref={rootRef} className={`relative w-full ${className}`.trim()}>
       <div className={userDatabaseSearchInputShellClass}>
-        <Icon icon="solar:magnifer-bold-duotone" className="h-5 w-5 shrink-0 text-[#082b1c]/70 dark:text-emerald-400/80" />
+        <Icon icon="solar:magnifer-bold-duotone" className="h-5 w-5 shrink-0 text-primary/70 dark:text-primary/80" />
         <input
           ref={inputRef}
           id={inputId}
@@ -188,7 +188,7 @@ export function SemestreCatalogSearch({
         />
         {loading ? (
           <span
-            className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400"
+            className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary/30 border-t-primary dark:border-primary/20 dark:border-t-primary"
             role="status"
             aria-label="Chargement"
           />
@@ -200,7 +200,7 @@ export function SemestreCatalogSearch({
           {loading && !items.length ? (
             <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center justify-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary dark:border-primary/20 dark:border-t-primary" />
                 Recherche en cours…
               </span>
             </p>
@@ -234,12 +234,12 @@ export function SemestreCatalogSearch({
                 onClick={() => selectItem(item)}
                 className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
                   active
-                    ? "bg-[#082b1c]/8 ring-1 ring-[#082b1c]/15 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+                    ? "bg-primary/8 ring-1 ring-primary/15 dark:bg-primary/10 dark:ring-primary/20"
                     : "hover:bg-gray-50 dark:hover:bg-gray-800/80"
                 }`}
               >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#082b1c]/10 ring-2 ring-white shadow-md dark:bg-emerald-500/15 dark:ring-gray-800">
-                  <Icon icon="solar:calendar-bold-duotone" className="h-6 w-6 text-[#082b1c] dark:text-emerald-300" />
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-2 ring-white shadow-md dark:bg-primary/15 dark:ring-gray-800">
+                  <Icon icon="solar:calendar-bold-duotone" className="h-6 w-6 text-primary dark:text-emerald-300" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
@@ -247,7 +247,7 @@ export function SemestreCatalogSearch({
                       <HighlightMatch text={item.designation} query={queryForHighlight} />
                     </p>
                     {creditsLabel ? (
-                      <span className="shrink-0 rounded-full bg-[#082b1c]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#082b1c] dark:bg-emerald-500/20 dark:text-emerald-200">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary dark:bg-primary/20 dark:text-emerald-200">
                         {creditsLabel}
                       </span>
                     ) : null}

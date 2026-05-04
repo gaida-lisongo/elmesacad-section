@@ -3,7 +3,7 @@
 import { Icon } from "@iconify/react";
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
+  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
 
 export type TitleContentBlock = {
   id: string;
@@ -121,7 +121,7 @@ export function TitleContentBlocksEditor({
         type="button"
         disabled={disabled}
         onClick={addBlock}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#082b1c]/25 bg-[#082b1c]/5 py-3 text-sm font-semibold text-[#082b1c] transition hover:border-[#082b1c]/40 hover:bg-[#082b1c]/10 dark:border-emerald-500/30 dark:text-emerald-200 dark:hover:bg-emerald-500/10"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/25 bg-primary/5 py-3 text-sm font-semibold text-primary transition hover:border-primary/40 hover:bg-primary/10 dark:border-primary/30 dark:text-emerald-200 dark:hover:bg-primary/10"
       >
         <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
         {addLabel}

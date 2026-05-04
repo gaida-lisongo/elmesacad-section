@@ -228,7 +228,7 @@ export function DataTable<T extends { id: string }>(props: DataTableProps<T>) {
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
-            className="min-w-[12rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#082b1c] dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            className="min-w-[12rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           />
         ) : null}
         {filterSlot}

@@ -89,7 +89,7 @@ export default function TitulaireNotesManagerClient({ initialData }: Props) {
                 type="button"
                 onClick={() => void openFicheForYear(item)}
                 disabled={!activeMatiere || loadingAnneeId === item.id}
-                className="rounded-md bg-[#082b1c] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
               >
                 {loadingAnneeId === item.id ? "Chargement..." : "Fiche de cotation"}
               </button>
@@ -108,7 +108,7 @@ export default function TitulaireNotesManagerClient({ initialData }: Props) {
               <button
                 type="button"
                 onClick={() => setShowNoStudentModal(false)}
-                className="rounded-md bg-[#082b1c] px-3 py-2 text-sm font-semibold text-white dark:bg-[#5ec998] dark:text-gray-900"
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
               >
                 Fermer
               </button>

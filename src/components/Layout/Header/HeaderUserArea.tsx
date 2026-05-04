@@ -25,7 +25,7 @@ export function HeaderUserArea({ onNavigate, classNameLink, compact }: Props) {
         onClick={onNavigate}
         className={
           classNameLink ??
-          `inline-flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-white py-1 pl-1 pr-2 shadow-sm transition hover:border-[#082b1c]/30 dark:border-gray-600 dark:bg-gray-800 sm:pl-1.5 sm:pr-3 ${
+          `inline-flex min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-full border border-gray-200 bg-white py-1 pl-1 pr-2 shadow-sm transition hover:border-primary/30 dark:border-gray-600 dark:bg-gray-800 sm:pl-1.5 sm:pr-3 ${
             compact ? "max-w-[10rem] sm:max-w-[12rem]" : "max-w-[16rem] sm:max-w-[20rem]"
           }`
         }

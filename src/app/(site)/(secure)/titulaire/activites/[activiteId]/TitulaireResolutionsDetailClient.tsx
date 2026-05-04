@@ -91,7 +91,7 @@ export default function TitulaireResolutionsDetailClient({ activiteId, activite,
         <button
           type="button"
           onClick={() => void onExportExcel()}
-          className="rounded-md border border-[#082b1c] px-3 py-2 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+          className="rounded-md border border-primary px-3 py-2 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
         >
           Exporter Excel (.xlsx)
         </button>
@@ -139,7 +139,7 @@ export default function TitulaireResolutionsDetailClient({ activiteId, activite,
                       type="button"
                       onClick={() => void onSaveNote(r)}
                       disabled={savingId === r.id}
-                      className="rounded-md bg-[#082b1c] px-3 py-1 text-xs font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+                      className="rounded-md bg-primary px-3 py-1 text-xs font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
                     >
                       {savingId === r.id ? "..." : "Ajuster"}
                     </button>

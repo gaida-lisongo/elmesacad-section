@@ -97,8 +97,8 @@ export function resolveDesignationForItem(
 
 export function SectionAuthorizationCardItem({ item }: { item: SectionAuthorizationItem }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.12),0_8px_16px_-8px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(8,43,28,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-[#082b1c]/8 to-transparent blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
+    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(5, 138, 197,0.12),0_8px_16px_-8px_rgba(0,0,0,0.08)] ring-1 ring-gray-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(5, 138, 197,0.18),0_4px_12px_-4px_rgba(0,0,0,0.08)] dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/8 to-transparent blur-2xl transition-opacity duration-500 group-hover:opacity-100" />
       <div className="relative flex items-start gap-4">
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl shadow-md ring-2 ring-white dark:ring-gray-800">
           <Image
@@ -114,7 +114,7 @@ export function SectionAuthorizationCardItem({ item }: { item: SectionAuthorizat
             <h3 className="truncate text-base font-bold tracking-tight text-midnight_text dark:text-white">
               {item.agentName}
             </h3>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#082b1c]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#082b1c] dark:bg-emerald-500/15 dark:text-emerald-300">
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary dark:bg-primary/15 dark:text-emerald-300">
               <Icon icon="solar:shield-keyhole-bold-duotone" className="h-3.5 w-3.5" />
               {item.contextLabel}
             </span>
@@ -186,7 +186,7 @@ export function SectionAuthorizationCardCreate({
             <select
               value={juryKind}
               onChange={(event) => setJuryKind(event.target.value as JuryKind)}
-              className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white"
+              className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition-all duration-200 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white"
             >
               <option value="cours">Jury de cours</option>
               <option value="recherche">Jury de recherche</option>
@@ -200,8 +200,8 @@ export function SectionAuthorizationCardCreate({
         </div>
 
         {selectedAgent ? (
-          <div className="rounded-xl border border-[#082b1c]/20 bg-[#082b1c]/5 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#082b1c] dark:text-emerald-300">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary dark:text-emerald-300">
               Agent sélectionné
             </p>
             <div className="mt-2 flex items-start gap-3">
@@ -232,7 +232,7 @@ export function SectionAuthorizationCardCreate({
         <button
           type="submit"
           disabled={!selectedAgent}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] py-3 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/20 transition duration-300 hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition duration-300 hover:scale-[1.01] hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Icon icon="solar:add-circle-bold" className="h-5 w-5" />
           Attribuer l&apos;autorisation

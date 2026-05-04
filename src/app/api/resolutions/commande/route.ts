@@ -45,6 +45,19 @@ const LINE_BY_PRODUIT: Partial<Record<CommandeProduit, string>> = {
   recours: "RECOURS",
 };
 
+/** Lignes `ressource.categorie` valides (marketplace + activités) quand `produit` est absent ou incohérent. */
+const KNOWN_RESOURCE_CATEGORIES = new Set([
+  "QCM",
+  "TP",
+  "SUJET",
+  "STAGE",
+  "VALIDATION",
+  "RELEVE",
+  "LABO",
+  "SESSION",
+  "RECOURS",
+]);
+
 function resolveRessourceCategorie(body: BaseBody): string | null {
   const produit = isCommandeProduit(body.produit) ? body.produit : null;
   const rawCat = normalizeString(body.categorie).toUpperCase();
@@ -61,6 +74,7 @@ function resolveRessourceCategorie(body: BaseBody): string | null {
   }
 
   if (rawCat === "QCM" || rawCat === "TP") return rawCat;
+  if (KNOWN_RESOURCE_CATEGORIES.has(rawCat)) return rawCat;
 
   return null;
 }
@@ -206,6 +220,7 @@ export async function POST(request: Request) {
       const phoneNumber = normalizeString(body.phoneNumber);
       const reference = normalizeString(body.reference);
       if (!phoneNumber || !reference) {
+        console.warn("[marketplace-pay] pay refusé (champs requis)", { hasPhone: Boolean(phoneNumber), hasRef: Boolean(reference) });
         return NextResponse.json({ success: false, message: "phoneNumber et reference requis." }, { status: 400 });
       }
       const email = normalizeString(body.email).toLowerCase();
@@ -214,7 +229,35 @@ export async function POST(request: Request) {
       const amount = Number(body.amount ?? 0);
       const currency = body.currency === "CDF" ? "CDF" : "USD";
       if (!email || !matricule || !reference || !categorie || amount <= 0) {
-        return NextResponse.json({ success: false, message: "Paramètres paiement invalides." }, { status: 400 });
+        console.warn(
+          "[marketplace-pay] pay refusé — validation locale (PAS encore service paiement)",
+          JSON.stringify({
+            hasEmail: Boolean(email),
+            hasMatricule: Boolean(matricule),
+            hasReference: Boolean(reference),
+            categorieResolue: categorie,
+            amount,
+            bodyCategorie: body.categorie,
+            bodyProduit: body.produit,
+          })
+        );
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Paramètres paiement invalides.",
+            hint: !categorie
+              ? "Catégorie ressource non reconnue (vérifiez categorie + produit, ex. RELEVE + releve)."
+              : amount <= 0
+                ? "Montant invalide."
+                : undefined,
+            received: {
+              categorie: body.categorie,
+              produit: body.produit,
+              amount: body.amount,
+            },
+          },
+          { status: 400 }
+        );
       }
 
       const produit: CommandeProduit = isCommandeProduit(body.produit)
@@ -225,6 +268,15 @@ export async function POST(request: Request) {
       let collect: { message?: string };
       let transaction: CommandePaymentTransaction;
       try {
+        console.info(
+          "[marketplace-pay] appel collectMobileMoneyForCommande → PAYMENT_SERVICE (FlexPay / proxy)",
+          JSON.stringify({
+            amount,
+            currency,
+            reference,
+            phoneDigits: phoneNumber.replace(/\D/g, "").length,
+          })
+        );
         const out = await collectMobileMoneyForCommande({
           amount,
           currency,
@@ -233,9 +285,25 @@ export async function POST(request: Request) {
         });
         collect = { message: out.response.message };
         transaction = out.transaction;
+        console.info(
+          "[marketplace-pay] collect OK — réponse fournisseur acceptée, création / mise à jour commande",
+          JSON.stringify({
+            providerMessage: out.response.message,
+            orderNumber: out.transaction.orderNumber ?? null,
+          })
+        );
       } catch (e) {
+        const msg = e instanceof Error ? e.message : "Paiement refusé.";
+        console.error(
+          "[marketplace-pay] ÉCHEC côté service de paiement (PAYMENT_SERVICE) ou réseau vers lui",
+          JSON.stringify({
+            error: msg,
+            name: e instanceof Error ? e.name : "unknown",
+            hint: "Vérifier PAYMENT_SERVICE, auth token, logs [PAYMENT_SERVICE] ci-dessus dans la même requête.",
+          })
+        );
         return NextResponse.json(
-          { success: false, message: e instanceof Error ? e.message : "Paiement refusé." },
+          { success: false, message: msg },
           { status: 400 }
         );
       }

@@ -219,7 +219,7 @@ export default function TitulairePresenceDetailClient({
           type="button"
           onClick={() => void onExportExcel()}
           disabled={exporting || emptyRoster}
-          className="rounded-md border border-[#082b1c] px-4 py-2 text-sm font-semibold text-[#082b1c] disabled:opacity-50 dark:border-[#5ec998] dark:text-[#5ec998]"
+          className="rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary disabled:opacity-50 dark:border-primary dark:text-primary"
         >
           {exporting ? "Export…" : "Exporter Excel (.xlsx)"}
         </button>
@@ -227,7 +227,7 @@ export default function TitulairePresenceDetailClient({
           type="button"
           onClick={() => void onSave()}
           disabled={saving || emptyRoster}
-          className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-[#5ec998] dark:text-gray-900"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-primary dark:text-gray-900"
         >
           {saving ? "Enregistrement..." : "Enregistrer les statuts"}
         </button>

@@ -11,7 +11,7 @@ import {
 } from "@/components/TitleContentBlocksEditor";
 
 const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-[#082b1c]/40 focus:outline-none focus:ring-2 focus:ring-[#082b1c]/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
+  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
 
 const steps = [
   { id: 1, label: "Infos" },
@@ -42,8 +42,8 @@ export function SectionCardItem({ item }: { item: SectionListItem }) {
   }, [item.id]);
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(8,43,28,0.12)] ring-1 ring-gray-200/80 transition duration-300 ease-out hover:-translate-y-0.5 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-[#082b1c]/8 to-transparent blur-2xl" />
+    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-white to-gray-50/90 p-5 shadow-[0_4px_24px_-4px_rgba(5, 138, 197,0.12)] ring-1 ring-gray-200/80 transition duration-300 ease-out hover:-translate-y-0.5 dark:from-gray-900 dark:via-gray-900 dark:to-gray-950 dark:ring-gray-700/80">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br from-primary/8 to-transparent blur-2xl" />
 
       <div className="relative flex items-start gap-4">
         <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl bg-gray-100 shadow-md ring-2 ring-white dark:bg-gray-800 dark:ring-gray-800">
@@ -66,7 +66,7 @@ export function SectionCardItem({ item }: { item: SectionListItem }) {
             </p>
           )}
         </div>
-        <span className="shrink-0 rounded-full bg-[#082b1c]/10 px-2.5 py-1 text-[11px] font-semibold text-[#082b1c] dark:bg-emerald-500/15 dark:text-emerald-300">
+        <span className="shrink-0 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary dark:bg-primary/15 dark:text-emerald-300">
           {item.cycle}
         </span>
       </div>
@@ -88,7 +88,7 @@ export function SectionCardItem({ item }: { item: SectionListItem }) {
                 }}
                 className={`max-w-full shrink-0 truncate rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
                   i === descIdx
-                    ? "bg-[#082b1c] text-white"
+                    ? "bg-primary text-white"
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 }`}
                 title={b.title}
@@ -107,7 +107,7 @@ export function SectionCardItem({ item }: { item: SectionListItem }) {
 
       <Link
         href={`/sections/${item.slug}`}
-        className="group/btn mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#082b1c]/25 transition duration-300 hover:scale-[1.02]"
+        className="group/btn mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition duration-300 hover:scale-[1.02]"
       >
         Voir le détail
         <Icon icon="solar:arrow-right-linear" className="h-4 w-4 transition group-hover/btn:translate-x-0.5" />
@@ -213,7 +213,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
             <div
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 step >= s.id
-                  ? "bg-[#082b1c] text-white"
+                  ? "bg-primary text-white"
                   : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
               }`}
             >
@@ -221,7 +221,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
             </div>
             <span
               className={`hidden text-xs font-semibold sm:inline ${
-                step === s.id ? "text-[#082b1c] dark:text-emerald-300" : "text-gray-500"
+                step === s.id ? "text-primary dark:text-emerald-300" : "text-gray-500"
               }`}
             >
               {s.label}
@@ -229,7 +229,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
             {i < steps.length - 1 && (
               <div
                 className={`mx-1 hidden h-px min-w-[12px] flex-1 sm:block ${
-                  step > s.id ? "bg-[#082b1c]/40" : "bg-gray-200 dark:bg-gray-700"
+                  step > s.id ? "bg-primary/40" : "bg-gray-200 dark:bg-gray-700"
                 }`}
               />
             )}
@@ -285,7 +285,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
               <button
                 type="button"
                 onClick={(e) => goNext(e.currentTarget.closest("form") as HTMLFormElement)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#082b1c] px-5 py-2.5 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Suivant
                 <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
@@ -320,7 +320,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
               <button
                 type="button"
                 onClick={(e) => goNext(e.currentTarget.closest("form") as HTMLFormElement)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#082b1c] px-5 py-2.5 text-sm font-semibold text-white"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Suivant
                 <Icon icon="solar:arrow-right-linear" className="h-4 w-4" />
@@ -365,7 +365,7 @@ export function SectionCardCreate({ defaultCycle }: SectionCardCreateProps) {
               <button
                 type="submit"
                 disabled={!logo || uploading}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#082b1c] to-[#0d4a2f] px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-darkprimary px-5 py-2.5 text-sm font-semibold text-white shadow-md disabled:opacity-50"
               >
                 <Icon icon="solar:check-circle-bold" className="h-5 w-5" />
                 Créer la section

@@ -16,7 +16,7 @@ export function DashboardRechargesArticle({
 }) {
   return (
     <article
-      className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/20 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/10 dark:hover:shadow-sky-950/20 lg:col-span-3"
+      className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-primary/5 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-primary/10 dark:hover:shadow-primary/10 lg:col-span-3"
       style={{ animationDelay: "200ms" }}
     >
       <h2 className="text-sm font-semibold text-midnight_text dark:text-white">Recharges</h2>

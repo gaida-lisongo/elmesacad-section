@@ -44,8 +44,7 @@ export default function SectionCourseSearchView({ section, query, courses, onBac
   };
 
   const openCourseDetail = (course: EtudesCourseSearchItem) => {
-    saveCourseInSession(course);
-    router.push(`/cours/${course.id}`);
+    router.push(`/charge_horaire/${course.id}`);
   };
 
   return (

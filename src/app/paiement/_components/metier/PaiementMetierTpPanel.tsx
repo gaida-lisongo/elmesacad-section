@@ -245,7 +245,7 @@ export default function PaiementMetierTpPanel({ commande, commandeId }: Props) {
 
       {message && !workflowDone ? (
         <p className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-          <Icon icon="solar:check-circle-bold" className="mt-0.5 shrink-0 text-lg text-emerald-600 dark:text-emerald-400" aria-hidden />
+          <Icon icon="solar:check-circle-bold" className="mt-0.5 shrink-0 text-lg text-emerald-600 dark:text-primary" aria-hidden />
           {message}
         </p>
       ) : null}
@@ -260,7 +260,7 @@ export default function PaiementMetierTpPanel({ commande, commandeId }: Props) {
       {workflowDone || message ? (
         <div className="mt-6 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/90 to-white p-6 shadow-sm dark:border-emerald-900/50 dark:from-emerald-950/25 dark:to-darklight">
           <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-emerald-700 dark:text-emerald-300">
               <Icon icon="solar:diploma-bold" className="text-2xl" aria-hidden />
             </div>
             <div>
@@ -362,7 +362,7 @@ export default function PaiementMetierTpPanel({ commande, commandeId }: Props) {
           <button
             type="submit"
             disabled={busy || loadingActivity}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#082b1c] py-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-40 dark:bg-[#5ec998] dark:text-gray-900"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:pointer-events-none disabled:opacity-40 dark:bg-primary dark:text-gray-900"
             aria-label="Soumettre le TP"
           >
             {busy ? (

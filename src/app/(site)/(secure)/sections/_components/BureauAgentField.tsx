@@ -43,7 +43,7 @@ export function BureauAgentField({ name, label, value, onChange, disabled = fals
       <label className="text-xs font-medium text-gray-600 dark:text-gray-400">{label}</label>
       {name ? <input type="hidden" name={name} value={value?.id ?? ""} readOnly /> : null}
       {value && (
-        <div className="flex items-start justify-between gap-2 rounded-xl border border-[#082b1c]/15 bg-[#082b1c]/5 px-3 py-2.5 dark:border-emerald-500/20 dark:bg-emerald-500/5">
+        <div className="flex items-start justify-between gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2.5 dark:border-primary/20 dark:bg-primary/5">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-midnight_text dark:text-white">{value.name}</p>
             {value.email && (

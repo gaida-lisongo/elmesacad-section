@@ -13,7 +13,7 @@ const defaultPhoto = "/images/user.jpg";
 
 /** Conteneur du champ (même apparence que la recherche agents / étudiants) — réutilisable pour d’autres catalogues. */
 export const userDatabaseSearchInputShellClass =
-  "peer flex w-full items-center gap-2 rounded-2xl border border-gray-200/90 bg-gradient-to-r from-white to-gray-50/90 px-3 py-2.5 shadow-sm transition-all duration-200 focus-within:border-[#082b1c]/35 focus-within:ring-2 focus-within:ring-[#082b1c]/12 dark:from-gray-900 dark:to-gray-900/95 dark:border-gray-600";
+  "peer flex w-full items-center gap-2 rounded-2xl border border-gray-200/90 bg-gradient-to-r from-white to-gray-50/90 px-3 py-2.5 shadow-sm transition-all duration-200 focus-within:border-primary/35 focus-within:ring-2 focus-within:ring-primary/12 dark:from-gray-900 dark:to-gray-900/95 dark:border-gray-600";
 
 const inputShellClass = userDatabaseSearchInputShellClass;
 
@@ -265,14 +265,14 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
   const showMinCharHint = open && query.trim().length < minQueryLength;
 
   const listboxShellClass =
-    "max-h-80 overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(8,43,28,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60";
+    "max-h-80 overflow-y-auto rounded-2xl border border-gray-200/90 bg-white/95 p-1.5 shadow-[0_20px_50px_-12px_rgba(5, 138, 197,0.2)] ring-1 ring-gray-200/50 backdrop-blur-sm dark:border-gray-600 dark:bg-gray-900/98 dark:ring-gray-700/60";
 
   const listboxBody = (
     <>
       {loading && !items.length ? (
         <p className="px-3 py-6 text-center text-sm text-gray-500 dark:text-gray-400">
           <span className="inline-flex items-center justify-center gap-2">
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400" />
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary dark:border-primary/20 dark:border-t-primary" />
             Recherche en cours…
           </span>
         </p>
@@ -306,7 +306,7 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
             onClick={() => selectItem(item)}
             className={`flex w-full items-center gap-3 rounded-xl px-2 py-2.5 text-left transition-colors ${
               active
-                ? "bg-[#082b1c]/8 ring-1 ring-[#082b1c]/15 dark:bg-emerald-500/10 dark:ring-emerald-500/20"
+                ? "bg-primary/8 ring-1 ring-primary/15 dark:bg-primary/10 dark:ring-primary/20"
                 : "hover:bg-gray-50 dark:hover:bg-gray-800/80"
             }`}
           >
@@ -317,7 +317,7 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
                   <HighlightMatch text={item.name} query={queryForHighlight} />
                 </p>
                 {showContextBadge && context ? (
-                  <span className="shrink-0 rounded-full bg-[#082b1c]/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#082b1c] dark:bg-emerald-500/20 dark:text-emerald-200">
+                  <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary dark:bg-primary/20 dark:text-emerald-200">
                     {context}
                   </span>
                 ) : null}
@@ -345,7 +345,7 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
   return (
     <div ref={rootRef} className={`relative w-full ${className}`.trim()}>
       <div className={inputShellClass}>
-        <Icon icon="solar:magnifer-bold-duotone" className="h-5 w-5 shrink-0 text-[#082b1c]/70 dark:text-emerald-400/80" />
+        <Icon icon="solar:magnifer-bold-duotone" className="h-5 w-5 shrink-0 text-primary/70 dark:text-primary/80" />
         <input
           ref={inputRef}
           id={inputId}
@@ -371,7 +371,7 @@ export function UserDatabaseSearch(props: UserDatabaseSearchProps) {
         />
         {loading ? (
           <span
-            className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#082b1c]/30 border-t-[#082b1c] dark:border-emerald-500/20 dark:border-t-emerald-400"
+            className="inline-block h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-primary/30 border-t-primary dark:border-primary/20 dark:border-t-primary"
             role="status"
             aria-label="Chargement"
           />

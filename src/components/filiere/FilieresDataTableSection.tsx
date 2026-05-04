@@ -276,7 +276,7 @@ export default function FilieresDataTableSection() {
       <button
         type="button"
         onClick={addDescSection}
-        className="inline-flex items-center gap-1 rounded-md border border-[#082b1c] px-3 py-1.5 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+        className="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
       >
         + Ajouter une section
       </button>
@@ -523,7 +523,7 @@ export default function FilieresDataTableSection() {
                 id…{d.semestreId.slice(-6)}
               </span>
             ) : (
-              <span className="text-[10px] font-medium text-[#082b1c] dark:text-[#5ec998]">Nouveau</span>
+              <span className="text-[10px] font-medium text-primary dark:text-primary">Nouveau</span>
             )}
             <button
               type="button"
@@ -540,7 +540,7 @@ export default function FilieresDataTableSection() {
       <button
         type="button"
         onClick={addEditSemestreDraft}
-        className="inline-flex items-center gap-1 rounded-md border border-[#082b1c] px-3 py-1.5 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+        className="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
       >
         + Ajouter un semestre
       </button>
@@ -593,7 +593,7 @@ export default function FilieresDataTableSection() {
         cell: (row) => (
           <Link
             href={`/filiere/${encodeURIComponent(row.slug)}`}
-            className="font-medium text-[#082b1c] underline-offset-2 hover:underline dark:text-[#5ec998]"
+            className="font-medium text-primary underline-offset-2 hover:underline dark:text-primary"
           >
             {row.designation}
           </Link>
@@ -695,7 +695,7 @@ export default function FilieresDataTableSection() {
                     onClick={() => setEditTab("filiere")}
                     className={`rounded-t-md border border-b-0 px-4 py-2 text-sm font-semibold transition ${
                       editTab === "filiere"
-                        ? "border-gray-300 bg-white text-[#082b1c] dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                        ? "border-gray-300 bg-white text-primary dark:border-gray-600 dark:bg-gray-900 dark:text-white"
                         : "border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
                   >
@@ -708,7 +708,7 @@ export default function FilieresDataTableSection() {
                     onClick={() => setEditTab("semestres")}
                     className={`rounded-t-md border border-b-0 px-4 py-2 text-sm font-semibold transition ${
                       editTab === "semestres"
-                        ? "border-gray-300 bg-white text-[#082b1c] dark:border-gray-600 dark:bg-gray-900 dark:text-white"
+                        ? "border-gray-300 bg-white text-primary dark:border-gray-600 dark:bg-gray-900 dark:text-white"
                         : "border-transparent text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                     }`}
                   >
@@ -809,7 +809,7 @@ export default function FilieresDataTableSection() {
                 <button
                   type="button"
                   onClick={addSemestreDraft}
-                  className="inline-flex items-center gap-1 rounded-md border border-[#082b1c] px-3 py-1.5 text-xs font-semibold text-[#082b1c] dark:border-[#5ec998] dark:text-[#5ec998]"
+                  className="inline-flex items-center gap-1 rounded-md border border-primary px-3 py-1.5 text-xs font-semibold text-primary dark:border-primary dark:text-primary"
                 >
                   + Ajouter un semestre
                 </button>
@@ -830,7 +830,7 @@ export default function FilieresDataTableSection() {
                   type="button"
                   disabled={saving || !formDesignation.trim()}
                   onClick={() => void submitEdit()}
-                  className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {saving ? "Enregistrement…" : "Enregistrer"}
                 </button>
@@ -849,7 +849,7 @@ export default function FilieresDataTableSection() {
                   type="button"
                   disabled={saving || !formDesignation.trim()}
                   onClick={() => void submitCreateStep1()}
-                  className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {saving ? "Création…" : "Suivant : semestres"}
                 </button>
@@ -868,7 +868,7 @@ export default function FilieresDataTableSection() {
                   type="button"
                   disabled={saving}
                   onClick={() => void submitCreateStep2()}
-                  className="rounded-md bg-[#082b1c] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
                 >
                   {saving ? "Enregistrement…" : "Terminer"}
                 </button>

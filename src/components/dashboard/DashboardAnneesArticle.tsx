@@ -21,7 +21,7 @@ export function DashboardAnneesArticle({
 
   return (
     <article
-      className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-sky-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-sky-950/20 dark:hover:shadow-sky-950/20 lg:col-span-2"
+      className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-primary/5 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-primary/10 dark:hover:shadow-primary/10 lg:col-span-2"
       style={{ animationDelay: "260ms" }}
     >
       {anneesMode === "crud" ? (
@@ -41,7 +41,7 @@ export function DashboardAnneesArticle({
               {whiteList.slice(0, 12).map((w, wi) => (
                 <li
                   key={w.slug}
-                  className="flex animate-dashboard-in items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 text-sm transition hover:border-sky-200/50 dark:border-gray-800 dark:bg-gray-800/50"
+                  className="flex animate-dashboard-in items-center justify-between gap-2 rounded-lg border border-gray-100 bg-gray-50/80 px-3 py-2 text-sm transition hover:border-primary/30 dark:border-gray-800 dark:bg-gray-800/50"
                   style={{ animationDelay: `${wi * 40}ms` }}
                 >
                   <button

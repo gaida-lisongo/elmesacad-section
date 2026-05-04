@@ -113,6 +113,23 @@ function mergeBranding(primary: PaiementSectionBranding, fallback: PaiementSecti
   };
 }
 
+/** Branding section fusionné (produit SSR + métadonnées commande). */
+export function mergePaiementBrandingFromContext(ctx: BuildDocumentBulletinContext): PaiementSectionBranding {
+  const { commande, produitDetail } = ctx;
+  const detailRecord =
+    produitDetail && typeof produitDetail === "object" && !Array.isArray(produitDetail)
+      ? (produitDetail as Record<string, unknown>)
+      : null;
+  const metaRecord =
+    commande.ressource?.metadata &&
+    typeof commande.ressource.metadata === "object" &&
+    !Array.isArray(commande.ressource.metadata)
+      ? (commande.ressource.metadata as Record<string, unknown>)
+      : null;
+  const brandingFromDetail = detailRecord ? brandingFromResourceRecord(detailRecord) : emptyBranding();
+  const brandingFromCommande = metaRecord ? brandingFromResourceRecord(metaRecord) : emptyBranding();
+  return mergeBranding(brandingFromDetail, brandingFromCommande);
+}
 
 /**
  * Transforme le snapshot consolidé (`onGenerateDocument`) vers le format attendu par le moteur de document bulletin.
@@ -165,9 +182,7 @@ export function buildDocumentBulletinPayload(
       ? (commande.ressource.metadata as Record<string, unknown>)
       : null;
 
-  const brandingFromDetail = detailRecord ? brandingFromResourceRecord(detailRecord) : emptyBranding();
-  const brandingFromCommande = metaRecord ? brandingFromResourceRecord(metaRecord) : emptyBranding();
-  const brandingMerged = mergeBranding(brandingFromDetail, brandingFromCommande);
+  const brandingMerged = mergePaiementBrandingFromContext(ctx);
 
   const resProduit =
     trimOrEmpty(detailRecord?.designation as string | undefined) ||
