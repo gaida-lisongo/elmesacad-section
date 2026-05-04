@@ -11,6 +11,7 @@ import PaiementMetierQcmPanel from "@/app/paiement/_components/metier/PaiementMe
 import PaiementMetierTpPanel from "@/app/paiement/_components/metier/PaiementMetierTpPanel";
 import PaiementMetierRelevePanel from "@/app/paiement/_components/metier/PaiementMetierRelevePanel";
 import PaiementMetierFicheValidationPanel from "@/app/paiement/_components/metier/PaiementMetierFicheValidationPanel";
+import PaiementMetierSessionPanel from "@/app/paiement/_components/metier/PaiementMetierSessionPanel";
 
 type Props = {
   commande: PaiementCommandeClientPayload;
@@ -157,6 +158,8 @@ function MetierBody({ commande, commandeId, produitDetail, etudiant, busy, onRec
       return <PaiementMetierRelevePanel {...panelProps} />;
     case "fiche-validation":
       return <PaiementMetierFicheValidationPanel {...panelProps} />;
+    case "session":
+      return <PaiementMetierSessionPanel {...panelProps} />;
     default:
       return (
         <p className="text-sm text-slate-600 dark:text-slate-300">

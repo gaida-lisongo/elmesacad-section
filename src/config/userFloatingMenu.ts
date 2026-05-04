@@ -36,6 +36,7 @@ export const userFloatingMenu: {
       { item: "Agents", path: "/agents" },
       { item: "Etudiants", path: "/etudiants" },
       { item: "Sections", path: "/sections" },
+      { item: "Laboratoires", path: "/dashboard/laboratoires" },
       { item: "Tickets", path: "/tickets" },
     ],
     titulaire: [

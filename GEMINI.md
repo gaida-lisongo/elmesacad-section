@@ -100,6 +100,7 @@ Base URL relative : `/api` (via `fetchEtudiantApi`)
 ### 3. Icônes & Éléments Visuels
 - **Standard** : Utiliser `@iconify/react` avec le jeu d'icônes `solar:` (ex: `solar:user-bold`).
 - **Animations** : Utiliser les classes d'animation définies dans `globals.css` (`animate-dashboard-in`, `metrics-item-fade`) pour les nouveaux éléments UI.
+- **Dates** : Utiliser exclusivement l'utilitaire `src/utils/formatDate.ts` pour parser et afficher les dates en français (`formatNaturalDate`, `formatShortDate`, `formatStandardDate`).
 
 ### 4. Proactivité de Refactoring
 - Lors de l'édition d'un fichier, si tu identifies des composants qui ne respectent pas la charte graphique (couleurs, espacements, ombres), propose ou effectue leur refactorisation vers le standard actuel.

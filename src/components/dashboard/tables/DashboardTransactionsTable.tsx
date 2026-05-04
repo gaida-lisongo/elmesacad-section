@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
 import type { RechargeExportPeriod } from "@/lib/recharges/exportPeriodRange";
 import { useDebouncedValue } from "@/components/dashboard/tables/useDebouncedValue";
+import { formatStandardDate } from "@/utils/formatDate";
 
 type RechargeRow = {
   id: string;
@@ -193,7 +194,7 @@ export function TransactionsPanel() {
                     {r.amount} {r.currency}
                   </td>
                   <td className="px-2 py-1.5">{r.status}</td>
-                  <td className="px-2 py-1.5">{new Date(r.createdAt).toLocaleDateString()}</td>
+                  <td className="px-2 py-1.5">{formatStandardDate(r.createdAt)}</td>
                 </tr>
               ))
             )}

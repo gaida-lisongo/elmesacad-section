@@ -38,8 +38,8 @@ const VARIANT_COPY: Record<
     short: "Votre inscription travaux pratiques est transmise.",
   },
   session: {
-    title: "Session",
-    short: "Votre commande de session est enregistrée.",
+    title: "Enrôlement — session d'examen",
+    short: "Votre commande de session est enregistrée. Les matières concernées sont listées ci-dessous.",
   },
   recours: {
     title: "Recours",

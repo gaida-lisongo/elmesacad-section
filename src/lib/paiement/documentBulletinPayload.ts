@@ -131,6 +131,44 @@ export function mergePaiementBrandingFromContext(ctx: BuildDocumentBulletinConte
   return mergeBranding(brandingFromDetail, brandingFromCommande);
 }
 
+/** Bloc `ressource` (produit / catégorie / référence + branding) pour les PDF marketplace (bulletin, macaron, …). */
+export function buildPaiementRessourceBlockForDocument(ctx: BuildDocumentBulletinContext): {
+  produit: string;
+  categorie: string;
+  reference: string;
+  branding: PaiementSectionBranding;
+} {
+  const { commande } = ctx;
+  const detailRecord =
+    ctx.produitDetail && typeof ctx.produitDetail === "object" && !Array.isArray(ctx.produitDetail)
+      ? (ctx.produitDetail as Record<string, unknown>)
+      : null;
+  const metaRecord =
+    commande.ressource?.metadata &&
+    typeof commande.ressource.metadata === "object" &&
+    !Array.isArray(commande.ressource.metadata)
+      ? (commande.ressource.metadata as Record<string, unknown>)
+      : null;
+  const branding = mergePaiementBrandingFromContext(ctx);
+  const resProduit =
+    trimOrEmpty(detailRecord?.designation as string | undefined) ||
+    trimOrEmpty(commande.ressource?.produit) ||
+    "—";
+  const resCategorie =
+    trimOrEmpty(detailRecord?.categorie as string | undefined) || trimOrEmpty(commande.ressource?.categorie) || "—";
+  const resReference =
+    trimOrEmpty(detailRecord?.reference as string | undefined) ||
+    trimOrEmpty(commande.ressource?.reference) ||
+    trimOrEmpty(metaRecord?.reference as string | undefined) ||
+    "—";
+  return {
+    produit: resProduit,
+    categorie: resCategorie,
+    reference: resReference,
+    branding,
+  };
+}
+
 /**
  * Transforme le snapshot consolidé (`onGenerateDocument`) vers le format attendu par le moteur de document bulletin.
  */
@@ -174,34 +212,7 @@ export function buildDocumentBulletinPayload(
   const ressource = trimOrEmpty(commande.ressource?.produit) || "—";
   const detail = trimOrEmpty(commande.ressource?.categorie) || trimOrEmpty(commande.ressource?.reference) || "—";
 
-  const detailRecord = produitDetail && typeof produitDetail === "object" && !Array.isArray(produitDetail)
-    ? (produitDetail as Record<string, unknown>)
-    : null;
-  const metaRecord =
-    commande.ressource?.metadata && typeof commande.ressource.metadata === "object" && !Array.isArray(commande.ressource.metadata)
-      ? (commande.ressource.metadata as Record<string, unknown>)
-      : null;
-
-  const brandingMerged = mergePaiementBrandingFromContext(ctx);
-
-  const resProduit =
-    trimOrEmpty(detailRecord?.designation as string | undefined) ||
-    trimOrEmpty(commande.ressource?.produit) ||
-    "—";
-  const resCategorie =
-    trimOrEmpty(detailRecord?.categorie as string | undefined) || trimOrEmpty(commande.ressource?.categorie) || "—";
-  const resReference =
-    trimOrEmpty(detailRecord?.reference as string | undefined) ||
-    trimOrEmpty(commande.ressource?.reference) ||
-    trimOrEmpty(metaRecord?.reference as string | undefined) ||
-    "—";
-
-  const ressourceBlock: DocumentBulletinPayload["ressource"] = {
-    produit: resProduit,
-    categorie: resCategorie,
-    reference: resReference,
-    branding: brandingMerged,
-  };
+  const ressourceBlock = buildPaiementRessourceBlockForDocument(ctx);
 
   return {
     notes,

@@ -3,23 +3,13 @@ import ClientIcon from "@/components/Common/ClientIcon";
 import type { ProductPageModel } from "@/lib/product/loadProductPageData";
 import { formatProductPrice } from "@/lib/product/formatProductPrice";
 import ProductPurchaseBar from "@/components/product/ProductPurchaseBar";
+import { formatNaturalDate } from "@/utils/formatDate";
 
 type Props = {
   model: ProductPageModel;
   categoryLabel: string;
   categoriePath: string;
 };
-
-function formatNaturalDate(value: string): string {
-  if (!value) return "Non définie";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export default function ProductMarketplaceView({ model, categoryLabel, categoriePath }: Props) {
   const isActivity = model.kind === "activity";
@@ -163,15 +153,25 @@ export default function ProductMarketplaceView({ model, categoryLabel, categorie
               <div className="space-y-4">
                 <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Points forts</h3>
                 <ul className="grid gap-3 sm:grid-cols-2">
-                  {highlights.map((h) => (
-                    <li
-                      key={h}
-                      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-gray-900/50 dark:text-slate-300"
-                    >
-                      <ClientIcon icon="solar:check-circle-bold-duotone" className="h-5 w-5 text-primary" />
-                      {h}
-                    </li>
-                  ))}
+                  {highlights.map((h) => {
+                    const isDate = h.toLowerCase().includes("date limite") || h.toLowerCase().includes("échéance");
+                    let displayValue = h;
+                    
+                    if (isDate && h.includes(":")) {
+                      const [label, datePart] = h.split(":");
+                      displayValue = `${label} : ${formatNaturalDate(datePart.trim())}`;
+                    }
+
+                    return (
+                      <li
+                        key={h}
+                        className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-gray-900/50 dark:text-slate-300"
+                      >
+                        <ClientIcon icon="solar:check-circle-bold-duotone" className="h-5 w-5 text-primary" />
+                        {displayValue}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
 

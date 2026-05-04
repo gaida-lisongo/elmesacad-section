@@ -63,19 +63,30 @@ const Header: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
-    const loadHeaderSections = async () => {
+    const loadHeaderData = async () => {
       try {
-        const res = await fetch("/api/public/header-sections", { cache: "no-store" });
-        const payload = (await res.json().catch(() => ({ data: [] }))) as { data?: HeaderSectionItem[] };
+        const [secRes, labRes] = await Promise.all([
+          fetch("/api/public/header-sections", { cache: "no-store" }),
+          fetch("/api/public/header-laboratoires", { cache: "no-store" }),
+        ]);
+
+        const [secPayload, labPayload] = await Promise.all([
+          secRes.json().catch(() => ({ data: [] })),
+          labRes.json().catch(() => ({ data: [] })),
+        ]);
+
         if (!mounted) return;
-        const sections = Array.isArray(payload.data) ? payload.data : [];
-        setHeaderItems(buildHeaderData(sections));
+
+        const sections = Array.isArray(secPayload.data) ? secPayload.data : [];
+        const laboratoires = Array.isArray(labPayload.data) ? labPayload.data : [];
+
+        setHeaderItems(buildHeaderData(sections, laboratoires));
       } catch {
         if (!mounted) return;
-        setHeaderItems(buildHeaderData([]));
+        setHeaderItems(buildHeaderData([], []));
       }
     };
-    void loadHeaderSections();
+    void loadHeaderData();
     return () => {
       mounted = false;
     };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import type { TouchEvent } from "react";
 import type { ActivitySlide } from "@/components/Home/marketplaceHome.data";
+import { formatShortDate } from "@/utils/formatDate";
 
 type Props = {
   activitySlides: ActivitySlide[];
@@ -21,9 +22,7 @@ export default function MarketplaceHeroSection({
   onTouchEnd,
 }: Props) {
   const currentSlide = activitySlides[slideIndex];
-  const publishedLabel = currentSlide.publishedAt
-    ? new Date(currentSlide.publishedAt).toLocaleDateString("fr-FR")
-    : "N/A";
+  const publishedLabel = formatShortDate(currentSlide.publishedAt);
 
   return (
     <div

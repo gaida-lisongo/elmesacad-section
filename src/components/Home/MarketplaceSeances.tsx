@@ -3,17 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@iconify/react/dist/iconify.js";
 import type { PublicSeanceCard } from "@/actions/publicSeances";
-
-function formatDate(value: string): string {
-  if (!value) return "Date non definie";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "Date non definie";
-  return d.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatShortDate } from "@/utils/formatDate";
 
 export default function MarketplaceSeances({ seances }: { seances: PublicSeanceCard[] }) {
   return (
@@ -66,7 +56,7 @@ export default function MarketplaceSeances({ seances }: { seances: PublicSeanceC
                   <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                     <p className="flex items-center gap-2">
                       <Icon icon="mdi:calendar-blank-outline" className="text-base text-primary" />
-                      {formatDate(seance.dateSeance)}
+                      {formatShortDate(seance.dateSeance)}
                     </p>
                     <p className="flex items-center gap-2">
                       <Icon icon="mdi:clock-time-four-outline" className="text-base text-primary" />
