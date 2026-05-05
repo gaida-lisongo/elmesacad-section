@@ -166,21 +166,6 @@ export function AccountRegistrationWizard({ onClose, onOpenSignIn }: Props) {
 
   return (
     <div className="flex w-full max-w-4xl flex-col gap-6 text-left md:flex-row md:items-stretch">
-      <div className="relative hidden w-full min-h-[200px] shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-blue-700 md:block md:max-w-[280px]">
-        <Image
-          src={photoSrc}
-          alt=""
-          fill
-          className="object-cover opacity-90"
-          sizes="280px"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        <p className="absolute bottom-4 left-4 right-4 text-sm font-medium text-white drop-shadow">
-          {selected ? selected.name : "Création de compte INBTP"}
-        </p>
-      </div>
-
       <div className="min-w-0 flex-1">
         <div className="mb-4 flex items-center justify-center gap-1 md:justify-start">
           {steps.map((s, i) => (

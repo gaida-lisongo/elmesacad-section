@@ -24,6 +24,8 @@ export function UserFloatingMenuGate() {
     <UserFloatingMenu
       config={{
         account: user.accountLabel,
+        userName: user.name,
+        userPhoto: user.photo,
         menu: getFloatingMenuForUser(user),
       }}
       onLogout={async () => {

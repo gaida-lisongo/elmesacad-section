@@ -25,8 +25,8 @@ export default function RootLayout({
         <AuthDialogProvider>
         <ThemeProvider
           attribute="class"
-          enableSystem={true}
-          defaultTheme="system"
+          enableSystem={false}
+          defaultTheme="light"
         >
           <AuthHydrate />
           <Aoscompo>

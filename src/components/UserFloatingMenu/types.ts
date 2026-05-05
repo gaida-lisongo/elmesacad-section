@@ -12,5 +12,7 @@ export type AdminMenuItem = {
 /** Décrit seul le contenu du menu (les entrées) ; le libellé `account` est injecté à l’exécution. */
 export type UserFloatingConfig = {
   account: string;
+  userName: string;
+  userPhoto?: string;
   menu: AdminMenuItem[];
 };
