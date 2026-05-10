@@ -134,7 +134,7 @@ const ProgrammeEdit = ({
   useEffect(() => {
     if (activeId && editingProgrammeId) {
       setEditDesignation(programmes.find((p) => p._id === editingProgrammeId)?.designation ?? "");
-      setEditCreditsStr(programmes.find((p) => p._id === editingProgrammeId)?.credits?.toString() ?? "180");
+      setEditCreditsStr(programmes.find((p) => p._id === editingProgrammeId)?.credits?.toString() ?? "60");
       setDescriptionBlocs(programmes.find((p) => p._id === editingProgrammeId)?.description ?? []);
     }
   }, [activeId, editingProgrammeId, programmes]);
