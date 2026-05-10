@@ -32,11 +32,13 @@ export function DescriptionBlocsEditor({
   hint,
   items,
   onChange,
+  className="",
 }: {
   label: string;
   hint?: string;
   items: DescriptionBloc[];
   onChange: (next: DescriptionBloc[]) => void;
+  className?: string;
 }) {
   const add = () => onChange([...items, { title: "", contenu: "" }]);
   const remove = (i: number) => onChange(items.filter((_, j) => j !== i));
@@ -45,7 +47,7 @@ export function DescriptionBlocsEditor({
   };
 
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${className}`}>
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
           <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{label}</span>

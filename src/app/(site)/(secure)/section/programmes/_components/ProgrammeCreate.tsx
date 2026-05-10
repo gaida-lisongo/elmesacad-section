@@ -21,7 +21,20 @@ const ProgrammeCreate = ({
   const [step, setStep] = useState(1);
   const [designation, setDesignation] = useState("");
   const [creditsStr, setCreditsStr] = useState("");
-  const [descriptionBlocs, setDescriptionBlocs] = useState<DescriptionItem[]>([]);
+  const [descriptionBlocs, setDescriptionBlocs] = useState<DescriptionItem[]>([
+    {
+        title: "En bref",
+        contenu: ""
+    },
+    {
+        title: "Profile du candidat",
+        contenu: ""
+    },
+    {
+        title: "Adminissibilité",
+        contenu: ""
+    }
+  ]);
   const [draftSemestres, setDraftSemestres] = useState<DraftSemestre[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -169,6 +182,8 @@ const ProgrammeCreate = ({
                 hint="Ajoutez une ou plusieurs rubriques (titre + texte)."
                 items={descriptionBlocs}
                 onChange={setDescriptionBlocs}
+                //Elargir la largeur de l'editor
+                className="w-full"
               />
             </div>
           ) : null}
