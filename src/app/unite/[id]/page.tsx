@@ -1,51 +1,69 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/services/connectedDB";
-import { UniteEnseignementModel } from "@/lib/models/UniteEnseignement";
-
-export const metadata: Metadata = {
-  title: "Detail unite | INBTP Marketplace",
-};
+import { getPublicUniteById } from "@/actions/publicUnites";
+import Breadcrumb from "@/components/Common/Breadcrumb";
+import {
+  UniteHeader,
+  UniteMetrics,
+  UniteRepartition,
+  UniteMatieresAccordion,
+} from "@/components/Unite";
 
 type Props = {
   params: Promise<{ id: string }>;
 };
 
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const unite = await getPublicUniteById(id);
+
+  return {
+    title: `${unite?.code || "UE"} - ${unite?.designation || "Unité d\'enseignement"} | INBTP`,
+    description: unite?.description || "Détails de l'unité d'enseignement",
+  };
+}
+
 export default async function UniteDetailPage({ params }: Props) {
   const { id } = await params;
-  const normalizedId = String(id ?? "").trim();
+  const unite = await getPublicUniteById(id);
 
-  if (!Types.ObjectId.isValid(normalizedId)) notFound();
-
-  await connectDB();
-  const unit = await UniteEnseignementModel.findById(normalizedId)
-    .select("designation code credits matieres description")
-    .lean();
-
-  if (!unit) notFound();
-
-  const coursesCount = Array.isArray(unit.matieres) ? unit.matieres.length : 0;
+  if (!unite) {
+    notFound();
+  }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-darklight">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">{String(unit.code ?? "").trim()}</p>
-        <h1 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
-          {String(unit.designation ?? "Unite")}
-        </h1>
+    <>
+      <Breadcrumb
+        pageName={unite.code}
+        pageDescription={unite.designation}
+        trail={[
+          { label: "Études", href: "/etudes" },
+          { label: "Unités d\'enseignement", href: "/unite" },
+        ]}
+      />
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">Credits</p>
-            <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{Number(unit.credits ?? 0)}</p>
+      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* SECTION PRINCIPALE (2/3) */}
+          <div className="lg:col-span-2">
+            <div className="bg-white dark:bg-darklight rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+              <UniteHeader unite={unite} />
+            </div>
           </div>
-          <div className="rounded-xl border border-slate-200 p-3 dark:border-slate-700">
-            <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-300">Nombre de cours</p>
-            <p className="mt-1 text-lg font-bold text-slate-900 dark:text-white">{coursesCount}</p>
+
+          {/* SECTION SECONDAIRE (1/3) */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Métriques */}
+            <UniteMetrics unite={unite} />
+
+            {/* Répartition */}
+            <UniteRepartition unite={unite} />
+
+            {/* Matières avec accordéons */}
+            <UniteMatieresAccordion matieres={unite.matieres} />
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

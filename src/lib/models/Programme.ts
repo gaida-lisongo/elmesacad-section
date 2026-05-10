@@ -16,6 +16,7 @@ export type ProgrammeDoc = {
   credits: number;
   description: { title: string; contenu: string }[];
   semestres: Types.ObjectId[];
+  faqs: { question: string; reponse: string }[];
   createdAt?: Date;
   updatedAt?: Date;
 };
