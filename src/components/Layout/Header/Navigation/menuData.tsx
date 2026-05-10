@@ -12,8 +12,8 @@ export type HeaderLaboratoireItem = {
 
 const baseHeaderData: HeaderItem[] = [
   { label: "Accueil", href: "/" },
-  { label: "Etudes", href: "/etudes", submenu: [] },
-  { label: "Laboratoires", href: "/laboratoires", submenu: [] },
+  { label: "Etudes", href: "#", submenu: [] },
+  { label: "Laboratoires", href: "#", submenu: [] },
   { label: "Publications", href: "/publications" },
   { label: "Contact", href: "/contact" },
 ];

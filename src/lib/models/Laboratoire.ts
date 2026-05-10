@@ -3,6 +3,7 @@ import mongoose, { Schema, Types, Document } from "mongoose";
 export interface LaboratoireDoc extends Document {
   nom: string;
   slug: string;
+  description: { title: string; contenu: string[] }[];
   techniciens: {
     fonction: "admin" | "moderateur";
     agent: Types.ObjectId;

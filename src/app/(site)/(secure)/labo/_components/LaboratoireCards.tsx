@@ -59,7 +59,7 @@ export function LaboratoireCardItem({
 
           {/* Modifier (Dashboard Detail) */}
           <Link
-            href={`/dashboard/laboratoires/${item.id}`}
+            href={`/labo/${item.id}`}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition hover:bg-primary/10 hover:text-primary dark:bg-gray-800"
             title="Modifier"
           >

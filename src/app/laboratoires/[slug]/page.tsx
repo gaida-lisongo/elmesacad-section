@@ -6,6 +6,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { Icon } from "@iconify/react";
 import EquipmentCard from "@/components/laboratoire/EquipmentCard";
 import Image from "next/image";
+import LaboratoireClient from "./LaboratoireClient";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -131,6 +132,7 @@ export default async function LaboratoirePublicDetailPage({ params }: { params: 
           </div>
         </div>
       </section>
+      <LaboratoireClient />
     </>
   );
 }

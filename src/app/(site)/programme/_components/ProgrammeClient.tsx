@@ -217,7 +217,7 @@ const SemestreItem = ({ sem }: { sem: ISemestre }) => {
                 sem.unites.map((unite) => (
                     <Link 
                     key={unite._id?.toString() || ''}
-                    href={`/unite/${unite.slug}`}
+                    href={`/unite/${unite._id?.toString()}`}
                     className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-sm hover:border-red-500 hover:shadow-sm transition-all group"
                     >
                     <span className="text-sm font-medium text-slate-700 group-hover:text-red-600 transition-colors">

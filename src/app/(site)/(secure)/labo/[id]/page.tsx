@@ -38,8 +38,8 @@ export default async function LaboratoireDetailPage({ params }: { params: Promis
       description={`Visualisation détaillée du laboratoire ${labo.nom}`}
       breadcrumbs={[
         { href: "/dashboard", text: "Dashboard" },
-        { href: "/dashboard/laboratoires", text: "Laboratoires" },
-        { href: `/dashboard/laboratoires/${labo._id}`, text: labo.nom },
+        { href: "/labo", text: "Laboratoires" },
+        { href: `/labo/${labo._id}`, text: labo.nom },
       ]}
       CardDetail={Card}
     />
