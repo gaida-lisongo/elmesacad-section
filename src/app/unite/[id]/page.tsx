@@ -2,12 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getPublicUniteById } from "@/actions/publicUnites";
 import Breadcrumb from "@/components/Common/Breadcrumb";
-import {
-  UniteHeader,
-  UniteMetrics,
-  UniteRepartition,
-  UniteMatieresAccordion,
-} from "@/components/Unite";
+import UniteClient from "./UniteClient";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -31,6 +26,8 @@ export default async function UniteDetailPage({ params }: Props) {
     notFound();
   }
 
+  console.log("UniteDetailPage: unite", unite);
+
   return (
     <>
       <Breadcrumb
@@ -41,29 +38,8 @@ export default async function UniteDetailPage({ params }: Props) {
           { label: "Unités d\'enseignement", href: "/unite" },
         ]}
       />
+      <UniteClient unite={unite} />
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* SECTION PRINCIPALE (2/3) */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-darklight rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-              <UniteHeader unite={unite} />
-            </div>
-          </div>
-
-          {/* SECTION SECONDAIRE (1/3) */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Métriques */}
-            <UniteMetrics unite={unite} />
-
-            {/* Répartition */}
-            <UniteRepartition unite={unite} />
-
-            {/* Matières avec accordéons */}
-            <UniteMatieresAccordion matieres={unite.matieres} />
-          </div>
-        </div>
-      </main>
     </>
   );
 }
