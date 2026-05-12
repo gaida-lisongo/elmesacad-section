@@ -343,19 +343,18 @@ export type SujetCommandeListRow = {
   matricule: string;
   studentEmail: string;
   designation: string;
+  delivered: Boolean;
   createdAt: string;
 };
 
 function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
+  console.log("[commandeRowFromEtudiantApi] raw", raw);
   const o = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
   const id = String(o._id ?? o.id ?? "").trim();
   if (!id) return null;
   const parcours =
-    o.parcours && typeof o.parcours === "object" ? (o.parcours as Record<string, unknown>) : {};
-  const student =
-    parcours.student && typeof parcours.student === "object"
-      ? (parcours.student as Record<string, unknown>)
-      : {};
+    o.parcours && typeof o.parcours === "object" ? (o.parcours as Record<string, unknown>) : (o.parcoursId as Record<string, unknown>);
+  const student = parcours.student && typeof parcours.student === "object" ? (parcours.student as Record<string, unknown>) : (parcours.studentId as Record<string, unknown>);
   const res =
     o.ressource && typeof o.ressource === "object" ? (o.ressource as Record<string, unknown>) : {};
   const created = o.createdAt ?? o.created_at;
@@ -371,6 +370,7 @@ function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
     matricule: String(student.matricule ?? "").trim(),
     studentEmail: String(student.email ?? "").trim(),
     designation: String(res.designation ?? "").trim(),
+    delivered: Boolean(o.delivered ?? false),
     createdAt,
   };
 }
@@ -417,8 +417,11 @@ export async function listStageCommandesForResourceAction(input: {
   const upstream = await fetchEtudiantApi(`/commandes/admin/list?${sp.toString()}`, {
     method: "GET",
   });
+
+
   const rawText = await upstream.text();
   const payload = readJsonPayload(upstream, rawText);
+  console.log("[payload]", payload);
   if (!upstream.ok) {
     throw new Error(pickErrorMessage(payload, "Impossible de charger les commandes pour cette ressource."));
   }
@@ -426,6 +429,7 @@ export async function listStageCommandesForResourceAction(input: {
   const meta = payload.meta && typeof payload.meta === "object" ? (payload.meta as Record<string, unknown>) : {};
   const total = typeof meta.total === "number" ? meta.total : data.length;
   const rows = data.map(commandeRowFromEtudiantApi).filter((x): x is SujetCommandeListRow => x != null);
+  console.log("[rows]", rows);
   return {
     rows,
     total,

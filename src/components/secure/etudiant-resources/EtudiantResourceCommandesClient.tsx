@@ -37,6 +37,7 @@ export default function EtudiantResourceCommandesClient({
   toolbarTitle = "Demandes enregistrées",
   toolbarDescription = "Commandes liées à cette ressource (service étudiant).",
 }: Props) {
+  console.log("initialData", initialData);
   const [rows, setRows] = useState<SujetCommandeListRow[]>(initialData.rows);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
