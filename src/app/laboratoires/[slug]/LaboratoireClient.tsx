@@ -3,71 +3,95 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Icon } from "@iconify/react";
+import LaboHeader from './_components/LaboHeader';
 
-// --- MOCKS ---
-const DEPARTEMENTS = [
-    { title: "Génie Civil", desc: "Recherche sur les structures et les matériaux innovants.", img: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800" },
-    { title: "Thermique & Énergie", desc: "Optimisation des systèmes de refroidissement et thermodynamique.", img: "https://images.unsplash.com/photo-1534224039826-c7a0dee2e671?q=80&w=800" },
-    { title: "Informatique Appliquée", desc: "Intelligence artificielle et systèmes embarqués pour l'industrie.", img: "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800" },
+interface LaboratoireClientProps {
+  canEdit?: boolean;
+  userFonction?: string | null;
+  labo?: any;
+}
+
+// Images par défaut pour les départements
+const DEPARTMENT_IMAGES = [
+    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?q=80&w=800",
+    "https://images.unsplash.com/photo-1534224039826-c7a0dee2e671?q=80&w=800",
+    "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=800",
 ];
 
-const LaboratoireClient = () => {
+const LaboratoireClient = ({ canEdit = false, userFonction, labo }: LaboratoireClientProps) => {
+    // Utiliser les vraies données du labo si disponibles
+    const laboDepartements = labo?.departements || [];
+    
     return (
-        <div className="bg-white text-slate-900 font-sans">
-            
+        <div className="bg-white text-slate-900 font-sans relative">
+
             {/* 1. SECTION HEADER (Hero Post) */}
-            <section className="relative h-[85vh] w-full overflow-hidden">
-                <img 
-                    src="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=2000" 
-                    className="absolute inset-0 h-full w-full object-cover" 
-                    alt="Hero Labo"
-                />
-                <div className="absolute inset-0 bg-black/40" />
-                <div className="relative mx-auto flex h-full max-w-7xl items-center px-6">
-                    <motion.div 
-                        initial={{ x: -100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        className="max-w-2xl bg-black/80 p-8 md:p-12 text-white backdrop-blur-sm"
-                    >
-                        <h1 className="mb-6 text-4xl font-black md:text-6xl uppercase tracking-tighter">
-                            Au cœur de l'innovation technologique
-                        </h1>
-                        <p className="mb-8 text-lg text-gray-300">
-                            Découvrez l'excellence de la recherche appliquée. Nos laboratoires repoussent les limites du génie pour répondre aux enjeux de demain.
-                        </p>
-                        <button className="border-2 border-white px-8 py-3 text-sm font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-all">
-                            Apprenez-en plus
-                        </button>
-                    </motion.div>
-                </div>
-            </section>
+            <LaboHeader 
+                canEdit={canEdit} 
+                labo={labo} 
+                posts={[]}
+                userFonction={userFonction || 'Technicien'}
+                onSavePost={async (data: any) => {
+                    console.log("Creating post", data);
+                }}
+            />
 
             {/* 2. SECTION DEPARTEMENTS (Grid) */}
             <section className="py-20 px-6 max-w-7xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl font-black uppercase tracking-tight italic">Recherche, Création et Innovation</h2>
-                    <div className="h-1 w-12 bg-red-600 mx-auto mt-4" />
-                    <p className="mt-6 text-gray-600 max-w-3xl mx-auto">
-                        Un milieu de recherche par excellence, reconnu pour la transdisciplinarité de ses équipes et l'impact de ses découvertes.
-                    </p>
+                <div className="flex items-center justify-between mb-16">
+                    <div className="text-center md:text-left">
+                        <h2 className="text-3xl font-black uppercase tracking-tight italic">Recherche, Création et Innovation</h2>
+                        <div className="h-1 w-12 bg-red-600 mx-auto md:mx-0 mt-4" />
+                        <p className="mt-6 text-gray-600 max-w-3xl mx-auto md:mx-0">
+                            Un milieu de recherche par excellence, reconnu pour la transdisciplinarité de ses équipes et l'impact de ses découvertes.
+                        </p>
+                    </div>
+                    {canEdit && (
+                        <button className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 transition-all">
+                            <Icon icon="solar:add-circle-bold" className="h-5 w-5" />
+                            <span className="text-sm font-semibold">Ajouter un département</span>
+                        </button>
+                    )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    {DEPARTEMENTS.map((dept, i) => (
-                        <motion.div 
-                            key={i} 
-                            whileHover={{ y: -10 }}
-                            className="bg-white shadow-xl overflow-hidden border border-gray-100"
-                        >
-                            <img src={dept.img} className="h-56 w-full object-cover" alt={dept.title} />
-                            <div className="p-8">
-                                <h3 className="text-xl font-black mb-4">{dept.title}</h3>
-                                <p className="text-gray-600 text-sm mb-6">{dept.desc}</p>
-                                <button className="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-red-600 hover:border-red-600 transition-all">
-                                    Découvrez l'unité
-                                </button>
-                            </div>
-                        </motion.div>
-                    ))}
+                    {(laboDepartements.length > 0 ? laboDepartements : [
+                        { designation: "Génie Civil", description: [{ title: "Recherche", contenu: ["Recherche sur les structures et les matériaux innovants."] }] },
+                        { designation: "Thermique & Énergie", description: [{ title: "Optimisation", contenu: ["Optimisation des systèmes de refroidissement et thermodynamique."] }] },
+                        { designation: "Informatique Appliquée", description: [{ title: "IA", contenu: ["Intelligence artificielle et systèmes embarqués pour l'industrie."] }] },
+                    ]).map((dept: any, i: number) => {
+                        const deptTitle = dept.designation || dept.title || `Département ${i + 1}`;
+                        const deptDesc = dept.description?.[0]?.contenu?.[0] || dept.desc || "Description du département";
+                        const deptImg = dept.image || DEPARTMENT_IMAGES[i % DEPARTMENT_IMAGES.length];
+                        
+                        return (
+                            <motion.div 
+                                key={i} 
+                                whileHover={{ y: -10 }}
+                                className="bg-white shadow-xl overflow-hidden border border-gray-100 group"
+                            >
+                                <div className="relative">
+                                    <img src={deptImg} className="h-56 w-full object-cover" alt={deptTitle} />
+                                    {canEdit && (
+                                        <div className="absolute top-4 right-4 flex gap-2">
+                                            <button className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all">
+                                                <Icon icon="solar:pen-bold" className="h-4 w-4 text-primary" />
+                                            </button>
+                                            <button className="bg-white/80 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all">
+                                                <Icon icon="solar:trash-bin-trash-bold" className="h-4 w-4 text-red-500" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="p-8">
+                                    <h3 className="text-xl font-black mb-4">{deptTitle}</h3>
+                                    <p className="text-gray-600 text-sm mb-6">{deptDesc}</p>
+                                    <button className="text-xs font-bold uppercase tracking-widest border-b-2 border-black pb-1 hover:text-red-600 hover:border-red-600 transition-all">
+                                        Découvrez l'unité
+                                    </button>
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
             </section>
 
