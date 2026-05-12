@@ -343,7 +343,7 @@ export type SujetCommandeListRow = {
   matricule: string;
   studentEmail: string;
   designation: string;
-  delivered: Boolean;
+  delivered?: boolean;
   createdAt: string;
 };
 
