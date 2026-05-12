@@ -15,6 +15,7 @@ import PaiementMetierSessionPanel from "@/app/paiement/_components/metier/Paieme
 import PaiementMetierLaboratoirePanel from "@/app/paiement/_components/metier/PaiementMetierLaboratoirePanel";
 import PaiementMetierSujetPanel from "@/app/paiement/_components/metier/PaiementMetierSujetPanel";
 import PaiementCommandeComplementEtudiant from "@/app/paiement/_components/PaiementCommandeComplementEtudiant";
+import PaiementMetierStagePanel from "./metier/PaiementMetierStagePanel";
 
 type Props = {
   commande: PaiementCommandeClientPayload;
@@ -167,6 +168,8 @@ function MetierBody({ commande, commandeId, produitDetail, etudiant, busy, onRec
       return <PaiementMetierLaboratoirePanel {...panelProps} />;
     case "sujet":
       return <PaiementMetierSujetPanel commande={commande} commandeId={commandeId} busy={busy} onRecheck={onRecheck} />;
+    case "stage":
+      return <PaiementMetierStagePanel {...panelProps} />;
     default:
       return (
         <p className="text-sm text-slate-600 dark:text-slate-300">
