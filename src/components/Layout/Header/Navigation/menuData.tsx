@@ -13,8 +13,8 @@ export type HeaderLaboratoireItem = {
 const baseHeaderData: HeaderItem[] = [
   { label: "Accueil", href: "/" },
   { label: "Etudes", href: "#", submenu: [] },
-  { label: "Laboratoires", href: "#", submenu: [] },
-  { label: "Publications", href: "/publications" },
+  // { label: "Laboratoires", href: "#", submenu: [] },
+  // { label: "Publications", href: "/publications" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -32,15 +32,15 @@ export function buildHeaderData(
         })),
       };
     }
-    if (item.label === "Laboratoires") {
-      return {
-        ...item,
-        submenu: laboratoires.map((labo) => ({
-          label: labo.label,
-          href: `/laboratoires/${labo.slug}`,
-        })),
-      };
-    }
+    // if (item.label === "Laboratoires") {
+    //   return {
+    //     ...item,
+    //     submenu: laboratoires.map((labo) => ({
+    //       label: labo.label,
+    //       href: `/laboratoires/${labo.slug}`,
+    //     })),
+    //   };
+    // }
     return item;
   });
 }
