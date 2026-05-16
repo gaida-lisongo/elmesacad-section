@@ -32,7 +32,6 @@ export async function GET(request: Request) {
             .sort({ createdAt: -1 })
             .skip(safeOffset)
             .limit(safeLimit)
-            .populate("programmes")
             .populate("annee")
             .lean();
 
