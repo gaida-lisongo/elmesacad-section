@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
 import { FraisModel } from "@/lib/models/Frais";
+import { AnneeModel } from "@/lib/models/Annee";
 import { Types } from "mongoose";
 import { slugifyDesignation, buildUniqueSlug } from "@/lib/utils/formationSlug";
 
