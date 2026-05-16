@@ -6,8 +6,8 @@ import Link from "next/link";
 import { Icon } from "@iconify/react";
 
 type CarteItemFraisProps = {
-    frais: Frais;
-    onEdit: (frais: Frais) => void;
+    frais: Frais & { id?: string, _id?: string};
+    onEdit: (frais: Frais & { id: string }) => void;
     onDelete: (id: string) => void;
 };
 
@@ -22,7 +22,7 @@ export default function CarteItemFrais({ frais, onEdit, onDelete }: CarteItemFra
                     method: 'DELETE',
                 });
                 if (response.ok) {
-                    onDelete(frais._id);
+                    onDelete(frais?._id);
                 } else {
                     const error = await response.json();
                     alert(`Erreur: ${error.message}`);
