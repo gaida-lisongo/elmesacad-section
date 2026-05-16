@@ -652,7 +652,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                 CardCreate={() => (
                     <CarteCreateFrais
                         currentAnneeLabel={currentTabLabel}
-                        currentAnneeSlug={activeTab}
+                        currentAnneeId={currentAnneeId}
                     />
                 )}
                 onCreate={async (fd) => {
@@ -714,7 +714,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Montant
+                                        Montant ($)
                                     </label>
                                     <input
                                         type="number"

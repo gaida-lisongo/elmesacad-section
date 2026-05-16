@@ -7,10 +7,10 @@ const inputClass =
 
 type CarteCreateFraisProps = {
     currentAnneeLabel: string;
-    currentAnneeSlug: string;
+    currentAnneeId: string;
 };
 
-export default function CarteCreateFrais({ currentAnneeLabel, currentAnneeSlug }: CarteCreateFraisProps) {
+export default function CarteCreateFrais({ currentAnneeLabel, currentAnneeId }: CarteCreateFraisProps) {
     return (
         <div className="rounded-2xl bg-gradient-to-br from-gray-50/95 to-white p-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.8)] ring-1 ring-gray-200/90 dark:from-gray-900 dark:to-gray-900 dark:ring-gray-700">
             <div className="grid gap-3 rounded-xl bg-white/60 p-4 backdrop-blur-sm dark:bg-gray-900/40 md:grid-cols-2">
@@ -24,8 +24,8 @@ export default function CarteCreateFrais({ currentAnneeLabel, currentAnneeSlug }
                         <Icon icon="solar:calendar-mark-bold-duotone" className="h-5 w-5 text-primary" />
                         <span className="font-semibold text-midnight_text dark:text-white">{currentAnneeLabel}</span>
                     </div>
-                    {/* Hidden input pour envoyer la valeur dans le FormData */}
-                    <input type="hidden" name="annee" value={currentAnneeSlug} />
+                    {/* Hidden input pour envoyer l'ObjectId de l'année dans le FormData */}
+                    <input type="hidden" name="annee" value={currentAnneeId} />
                 </div>
 
                 {/* Désignation */}
@@ -46,7 +46,7 @@ export default function CarteCreateFrais({ currentAnneeLabel, currentAnneeSlug }
                 <div>
                     <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
                         <Icon icon="solar:wallet-money-bold-duotone" className="h-4 w-4 text-primary" />
-                        Montant (FCFA)
+                        Montant ($)
                     </label>
                     <input
                         name="montant"
