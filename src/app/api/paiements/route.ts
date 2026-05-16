@@ -33,10 +33,18 @@ export async function PATCH(request: Request) {
         await connectDB();
         const body = await request.json();
         const newPayments = body.paiements || body.payments;
+        const modalite = body.modalite;
         if (!newPayments?.length) {
             return NextResponse.json({ message: "Aucun paiement à créer" }, { status: 400 });
         }
-        const paiements = await PaiementModel.insertMany(newPayments);
+        if (!modalite?.trim()) {
+            return NextResponse.json({ message: "modalite est requis" }, { status: 400 });
+        }
+        const paymentsWithModalite = newPayments.map((p: Record<string, unknown>) => ({
+            ...p,
+            modalite
+        }));
+        const paiements = await PaiementModel.insertMany(paymentsWithModalite);
         return NextResponse.json({ data: paiements }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ message: "Échec mise à jour", error: (error as Error).message }, { status: 500 });
