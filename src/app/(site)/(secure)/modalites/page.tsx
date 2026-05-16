@@ -72,7 +72,7 @@ export default async function ModalitesPage() {
         JSON.stringify(
             modalites.map((m: any) => ({
                 ...m,
-                id: m._id.toString(), // <-- LA CORRECTION EST ICI : On injecte l'id demandé par le client
+                id: m._id.toString(),
                 paiements: paiements
                     .filter((p: any) => p.modalite.toString() === m._id.toString())
                     .map((p: any) => ({
@@ -83,15 +83,8 @@ export default async function ModalitesPage() {
         )
     );
 
-    const tabs = serializedModalites.map((m) => ({
-        label: `${m.frais?.designation || "Frais"} — ${m.designation}`,
-        value: m.slug,
-        id: m._id,
-    }));
-
     return (
         <ModalitesPaiementsClient
-            initialTabs={tabs}
             initialModalites={serializedModalites}
         />
     );

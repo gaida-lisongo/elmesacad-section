@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from "react";
-import PageManager from "@/components/secure/PageManager";
 import { Icon } from "@iconify/react";
-import Link from "next/link";
 
 interface Paiement {
     id: string;
@@ -31,14 +29,7 @@ interface Modalite {
     paiements: Paiement[];
 }
 
-type TabItem = {
-    label: string;
-    value: string;
-    id: string;
-};
-
 type ModalitesPaiementsClientProps = {
-    initialTabs: TabItem[];
     initialModalites: Modalite[];
 };
 
@@ -57,10 +48,9 @@ const statusClasses: Record<string, string> = {
 };
 
 export default function ModalitesPaiementsClient({
-    initialTabs,
     initialModalites,
 }: ModalitesPaiementsClientProps) {
-    const [activeTab, setActiveTab] = useState(initialTabs[0]?.value ?? "");
+    const [selectedModalite, setSelectedModalite] = useState<Modalite | null>(null);
     const [searchText, setSearchText] = useState("");
     const [items, setItems] = useState<Modalite[]>(initialModalites);
     const [isLoading, setIsLoading] = useState(false);
@@ -73,10 +63,14 @@ export default function ModalitesPaiementsClient({
         status: "pending" as Paiement['status'],
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasFetched, setHasFetched] = useState<Record<string, boolean>>({});
 
-    const currentModalite = items.find((m) => m.slug === activeTab);
+    const currentModalite = selectedModalite;
 
     const fetchPaiements = useCallback(async (modaliteId: string) => {
+        // Éviter les appels multiples pour la même modalité
+        if (hasFetched[modaliteId]) return;
+        
         setIsLoading(true);
         try {
             const response = await fetch(`/api/paiements?modalite=${modaliteId}`);
@@ -89,19 +83,20 @@ export default function ModalitesPaiementsClient({
                             : m
                     )
                 );
+                setHasFetched((prev) => ({ ...prev, [modaliteId]: true }));
             }
         } catch (error) {
             console.error("Erreur chargement paiements:", error);
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [hasFetched]);
 
     useEffect(() => {
-        if (currentModalite) {
+        if (currentModalite && !hasFetched[currentModalite._id]) {
             fetchPaiements(currentModalite._id);
         }
-    }, [activeTab, currentModalite, fetchPaiements]);
+    }, [currentModalite?._id]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -162,6 +157,8 @@ export default function ModalitesPaiementsClient({
 
             if (response.ok) {
                 handleCloseModal();
+                // Réinitialiser le flag pour permettre le rechargement
+                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
                 fetchPaiements(currentModalite._id);
             } else {
                 const errorData = await response.json();
@@ -179,6 +176,8 @@ export default function ModalitesPaiementsClient({
         try {
             const response = await fetch(`/api/paiements?id=${paiementId}`, { method: "DELETE" });
             if (response.ok && currentModalite) {
+                // Réinitialiser le flag pour permettre le rechargement
+                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
                 fetchPaiements(currentModalite._id);
             }
         } catch (error) {
@@ -222,6 +221,8 @@ export default function ModalitesPaiementsClient({
             });
 
             if (response.ok) {
+                // Réinitialiser le flag pour permettre le rechargement
+                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
                 fetchPaiements(currentModalite._id);
             } else {
                 const errorData = await response.json();
@@ -230,241 +231,273 @@ export default function ModalitesPaiementsClient({
         }
     };
 
-    const CardItem = ({ item }: { item: Modalite }) => {
-        const isActive = item.slug === activeTab;
-        return (
-            <div
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                    isActive
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                }`}
-                onClick={() => setActiveTab(item.slug)}
-            >
-                <div className="flex items-start justify-between">
-                    <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-gray-800 truncate">{item.designation}</h3>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            {item.frais?.designation || "Frais"}
-                        </p>
-                    </div>
-                    <span className="text-xs font-medium text-primary whitespace-nowrap ml-2">
-                        {item.montant.toLocaleString("fr-FR")} $
-                    </span>
-                </div>
-                <p className="text-xs text-gray-400 mt-2">
-                    {item.paiements?.length ?? 0} paiement(s)
-                </p>
-            </div>
-        );
-    };
+    // Filtrer les modalités selon la recherche
+    const filteredModalites = searchText
+        ? items.filter((m) =>
+              m.designation.toLowerCase().includes(searchText.toLowerCase()) ||
+              m.frais?.designation?.toLowerCase().includes(searchText.toLowerCase())
+          )
+        : items;
 
-    const PaiementsContent = () => {
-        const paiements = currentModalite?.paiements ?? [];
-        const filtered = searchText
-            ? paiements.filter(
+    // Filtrer les paiements de la modalité sélectionnée
+    const filteredPaiements = currentModalite?.paiements
+        ? searchText
+            ? currentModalite.paiements.filter(
                   (p) =>
                       (p.email?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
                       (p.matricule?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
                       p.reference.toLowerCase().includes(searchText.toLowerCase())
               )
-            : paiements;
+            : currentModalite.paiements
+        : [];
 
-        return (
-            <div className="space-y-4">
-                {currentModalite && (
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    return (
+        <div className="space-y-6">
+            {/* Header avec titre et recherche */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-800">Modalités de paiement</h1>
+                    <p className="text-sm text-gray-500">
+                        {items.length} modalité(s) disponible(s)
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <Icon
+                            icon="mdi:magnify"
+                            width="18"
+                            height="18"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                        />
+                        <input
+                            type="text"
+                            value={searchText}
+                            onChange={(e) => setSearchText(e.target.value)}
+                            placeholder="Rechercher..."
+                            className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none w-full sm:w-64"
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Grille des modalités */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredModalites.map((modalite) => {
+                    const isSelected = selectedModalite?._id === modalite._id;
+                    return (
+                        <div
+                            key={modalite._id}
+                            onClick={() => setSelectedModalite(modalite)}
+                            className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                                isSelected
+                                    ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
+                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm"
+                            }`}
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-sm font-semibold text-gray-800 truncate">{modalite.designation}</h3>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {modalite.frais?.designation || "Frais"}
+                                    </p>
+                                </div>
+                                <span className="text-xs font-medium text-primary whitespace-nowrap ml-2">
+                                    {modalite.montant.toLocaleString("fr-FR")} $
+                                </span>
+                            </div>
+                            <div className="mt-3 flex items-center justify-between">
+                                <span className="text-xs text-gray-400">
+                                    {modalite.paiements?.length ?? 0} paiement(s)
+                                </span>
+                                {isSelected && (
+                                    <Icon icon="mdi:check-circle" width="16" height="16" className="text-primary" />
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* Métrique de la modalité sélectionnée */}
+            {selectedModalite && (
+                <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-6 border border-primary/20">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h2 className="text-lg font-bold text-gray-800">
-                                {currentModalite.designation}
-                            </h2>
-                            <p className="text-xs text-gray-500">
-                                Frais: {currentModalite.frais?.designation} |{" "}
-                                <Link href={`/frais/${currentModalite.frais?.slug}`} className="text-primary hover:underline">
-                                    Voir les modalités
-                                </Link>
+                            <h2 className="text-xl font-bold text-gray-800">{selectedModalite.designation}</h2>
+                            <p className="text-sm text-gray-600 mt-1">
+                                {selectedModalite.description || "Aucune description"}
                             </p>
+                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                                <span>Frais: {selectedModalite.frais?.designation}</span>
+                                <span>Montant: {selectedModalite.montant.toLocaleString("fr-FR")} $</span>
+                            </div>
                         </div>
                         <div className="flex gap-2">
                             <button
                                 onClick={handleOpenCreate}
-                                className="inline-flex items-center px-3 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-darkprimary transition-colors"
+                                className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-darkprimary transition-colors"
                             >
-                                <Icon icon="mdi:plus" width="16" height="16" className="mr-1" />
-                                Ajouter
+                                <Icon icon="mdi:plus" width="16" height="16" className="mr-2" />
+                                Ajouter un paiement
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-32">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                        <Icon icon="mdi:cash-multiple" width="36" height="36" className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-gray-500 text-sm">Aucun paiement pour cette modalité</p>
-                    </div>
-                ) : (
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-gray-50 text-gray-700 uppercase text-xs">
-                                    <tr>
-                                        <th className="px-4 py-3 font-medium">Référence</th>
-                                        <th className="px-4 py-3 font-medium">Email</th>
-                                        <th className="px-4 py-3 font-medium">Matricule</th>
-                                        <th className="px-4 py-3 font-medium">Status</th>
-                                        <th className="px-4 py-3 font-medium text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filtered.map((p) => (
-                                        <tr key={p.id} className="hover:bg-gray-50">
-                                            <td className="px-4 py-3 font-medium text-gray-800">{p.reference}</td>
-                                            <td className="px-4 py-3 text-gray-600">{p.email || "—"}</td>
-                                            <td className="px-4 py-3 text-gray-600">{p.matricule || "—"}</td>
-                                            <td className="px-4 py-3">
-                                                <span
-                                                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                        statusClasses[p.status] || "bg-gray-100 text-gray-700"
-                                                    }`}
-                                                >
-                                                    {statusLabels[p.status] || p.status}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="inline-flex items-center space-x-2">
-                                                    <button
-                                                        onClick={() => handleOpenEdit(p)}
-                                                        className="text-green-600 hover:text-green-800 transition-colors"
-                                                        title="Modifier"
-                                                    >
-                                                        <Icon icon="mdi:pencil" width="16" height="16" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(p.id)}
-                                                        className="text-red-600 hover:text-red-800 transition-colors"
-                                                        title="Supprimer"
-                                                    >
-                                                        <Icon icon="mdi:delete" width="16" height="16" />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+            {/* Grille des paiements (4 par ligne) */}
+            {selectedModalite && (
+                <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        Paiements ({filteredPaiements.length})
+                    </h3>
+                    
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-32">
+                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
                         </div>
-                    </div>
-                )}
-
-                {showModal && (
-                    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
-                        <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-                            <div className="p-6">
-                                <h2 className="text-xl font-bold mb-4 text-gray-800">
-                                    {editingPaiement ? "Modifier le paiement" : "Ajouter un paiement"}
-                                </h2>
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
-                                            placeholder="exemple@email.com"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Matricule</label>
-                                        <input
-                                            type="text"
-                                            name="matricule"
-                                            value={formData.matricule}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
-                                            placeholder="Ex: MAT-2024-001"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Référence</label>
-                                        <input
-                                            type="text"
-                                            name="reference"
-                                            value={formData.reference}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
-                                            required
-                                            placeholder="Ex: PAY-001"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                                        <select
-                                            name="status"
-                                            value={formData.status}
-                                            onChange={handleInputChange}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                    ) : filteredPaiements.length === 0 ? (
+                        <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                            <Icon icon="mdi:cash-multiple" width="48" height="48" className="mx-auto text-gray-300 mb-3" />
+                            <p className="text-gray-500">Aucun paiement pour cette modalité</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredPaiements.map((paiement) => (
+                                <div
+                                    key={paiement.id}
+                                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-semibold text-gray-800 truncate">{paiement.reference}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">{paiement.email || "—"}</p>
+                                        </div>
+                                        <span
+                                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                statusClasses[paiement.status] || "bg-gray-100 text-gray-700"
+                                            }`}
                                         >
-                                            <option value="pending">En attente</option>
-                                            <option value="paid">Payé</option>
-                                            <option value="failed">Échoué</option>
-                                            <option value="completed">Terminé</option>
-                                        </select>
+                                            {statusLabels[paiement.status] || paiement.status}
+                                        </span>
                                     </div>
-                                    <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                                    <div className="space-y-1 text-xs text-gray-500 mb-4">
+                                        <div className="flex items-center gap-2">
+                                            <Icon icon="mdi:identifier" width="14" height="14" />
+                                            <span>{paiement.matricule || "—"}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Icon icon="mdi:calendar" width="14" height="14" />
+                                            <span>
+                                                {new Date(paiement.createdAt).toLocaleDateString("fr-FR")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
                                         <button
-                                            type="button"
-                                            onClick={handleCloseModal}
-                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                            onClick={() => handleOpenEdit(paiement)}
+                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                            title="Modifier"
                                         >
-                                            Annuler
+                                            <Icon icon="mdi:pencil" width="16" height="16" />
                                         </button>
                                         <button
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-darkprimary disabled:opacity-50 transition-colors"
+                                            onClick={() => handleDelete(paiement.id)}
+                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Supprimer"
                                         >
-                                            {isSubmitting
-                                                ? "Enregistrement..."
-                                                : editingPaiement
-                                                ? "Mettre à jour"
-                                                : "Créer"}
+                                            <Icon icon="mdi:delete" width="16" height="16" />
                                         </button>
                                     </div>
-                                </form>
-                            </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Modal d'ajout/édition */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <h2 className="text-xl font-bold mb-4 text-gray-800">
+                                {editingPaiement ? "Modifier le paiement" : "Ajouter un paiement"}
+                            </h2>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                                        placeholder="exemple@email.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Matricule</label>
+                                    <input
+                                        type="text"
+                                        name="matricule"
+                                        value={formData.matricule}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                                        placeholder="Ex: MAT-2024-001"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Référence</label>
+                                    <input
+                                        type="text"
+                                        name="reference"
+                                        value={formData.reference}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                                        required
+                                        placeholder="Ex: PAY-001"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <select
+                                        name="status"
+                                        value={formData.status}
+                                        onChange={handleInputChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary outline-none"
+                                    >
+                                        <option value="pending">En attente</option>
+                                        <option value="paid">Payé</option>
+                                        <option value="failed">Échoué</option>
+                                        <option value="completed">Terminé</option>
+                                    </select>
+                                </div>
+                                <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
+                                    <button
+                                        type="button"
+                                        onClick={handleCloseModal}
+                                        className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                    >
+                                        Annuler
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-darkprimary disabled:opacity-50 transition-colors"
+                                    >
+                                        {isSubmitting
+                                            ? "Enregistrement..."
+                                            : editingPaiement
+                                            ? "Mettre à jour"
+                                            : "Créer"}
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
-                )}
-            </div>
-        );
-    };
-
-    return (
-        <div className="space-y-6">
-            <PageManager
-                title="Gestion des paiements"
-                description="Consultez et gérez les paiements par modalité"
-                tabs={initialTabs}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                items={items}
-                listLayout="grid-1"
-                searchText={searchText}
-                onSearchChange={setSearchText}
-                searchPlaceholder="Rechercher par email, matricule ou référence..."
-                bulkCsvHeaders={["email", "matricule", "reference", "status"]}
-                onBulkCreate={handleBulkCreate}
-                CardItem={CardItem}
-                CardCreate={() => null}
-                onCreate={() => {}}
-            />
-            <PaiementsContent />
+                </div>
+            )}
         </div>
     );
 }
