@@ -47,11 +47,15 @@ export async function POST(request: Request) {
         await connectDB();
         const body = await request.json();
         const { annee, programmes, designation, montant } = body;
-        if (!annee || !programmes?.length || !designation?.trim() || !montant) {
-            return NextResponse.json({ message: "annee, programmes, designation and montant are required" }, { status: 400 });
+        if (!annee || !designation?.trim() || !montant) {
+            return NextResponse.json({ message: "annee, designation and montant are required" }, { status: 400 });
         }
-        const slug = await buildUniqueSlug(FraisModel, designation, { annee, programmes });
-        const frais = await FraisModel.create({ annee, programmes, designation, montant, slug });
+        const slug = await buildUniqueSlug(FraisModel, designation, { annee });
+        const createData: Record<string, unknown> = { annee, designation, montant, slug };
+        if (programmes?.length) {
+            createData.programmes = programmes;
+        }
+        const frais = await FraisModel.create(createData);
         return NextResponse.json({ data: frais }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ message: "Failed to create frais", error: (error as Error).message }, { status: 500 });
@@ -63,10 +67,14 @@ export async function PUT(request: Request) {
         await connectDB();
         const body = await request.json();
         const { id, annee, programmes, designation, montant } = body;
-        if (!id || !programmes?.length || !designation?.trim() || !montant) {
-            return NextResponse.json({ message: "id, programmes, designation and montant are required" }, { status: 400 });
+        if (!id || !designation?.trim() || !montant) {
+            return NextResponse.json({ message: "id, designation and montant are required" }, { status: 400 });
         }
-        const frais = await FraisModel.findByIdAndUpdate(id, { annee, programmes, designation, montant }, { new: true });
+        const updateData: Record<string, unknown> = { annee, designation, montant };
+        if (programmes?.length) {
+            updateData.programmes = programmes;
+        }
+        const frais = await FraisModel.findByIdAndUpdate(id, updateData, { new: true });
         if (!frais) {
             return NextResponse.json({ message: "Frais not found" }, { status: 404 });
         }

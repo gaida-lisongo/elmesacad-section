@@ -6,7 +6,6 @@ export interface Frais {
     designation: string;
     montant: number;
     slug: string;
-    programmes: Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
 }
@@ -38,7 +37,6 @@ const fraisSchema = new Schema<Frais>({
     designation: { type: String, required: true },
     montant: { type: Number, required: true },
     slug: { type: String, required: true },
-    programmes: { type: [Schema.Types.ObjectId], ref: "Programme", required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
 }, { timestamps: true });

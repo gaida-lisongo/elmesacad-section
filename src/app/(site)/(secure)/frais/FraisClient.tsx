@@ -407,10 +407,11 @@
 // }
 'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import PageManager from "@/components/secure/PageManager";
 import { Frais } from "@/lib/models/Frais";
 import CarteItemFrais from "@/components/Frais/CarteItemFrais";
+import CarteCreateFrais from "@/components/Frais/CarteCreateFrais";
 import { Icon } from "@iconify/react";
 
 type FraisClientProps = {
@@ -443,6 +444,12 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
     const itemsPerPage = 12;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    // Label de l'onglet actif pour l'afficher dans le formulaire de création
+    const currentTabLabel = useMemo(
+        () => tabs.find(t => t.value === activeTab)?.label ?? activeTab,
+        [tabs, activeTab]
+    );
 
     // Effet pour le debounce de la recherche (300ms)
     useEffect(() => {
@@ -508,10 +515,11 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
     const handleEdit = (frais: FraisWithId) => {
         setEditingFrais(frais);
+        const rawProgrammes = (frais as any).programmes;
         setFormData({
             annee: activeTab,
-            programmes: Array.isArray(frais.programmes) 
-                ? frais.programmes.map(p => typeof p === 'object' ? (p as any)._id || p : p).join(", ") 
+            programmes: Array.isArray(rawProgrammes)
+                ? rawProgrammes.map((p: any) => typeof p === 'object' ? p._id || p : p).join(", ")
                 : "",
             designation: frais.designation || "",
             montant: frais.montant?.toString() || ""
@@ -532,19 +540,21 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.designation.trim() || !formData.montant || !formData.programmes.trim()) {
+        if (!formData.designation.trim() || !formData.montant) {
             alert("Veuillez remplir tous les champs obligatoires");
             return;
         }
 
         setIsLoading(true);
         try {
-            const body = {
+            const body: Record<string, unknown> = {
                 annee: editingFrais ? formData.annee : activeTab,
-                programmes: formData.programmes.split(",").map(p => p.trim()).filter(Boolean),
                 designation: formData.designation.trim(),
                 montant: parseFloat(formData.montant)
             };
+            if (formData.programmes.trim()) {
+                body.programmes = formData.programmes.split(",").map(p => p.trim()).filter(Boolean);
+            }
 
             const response = editingFrais 
                 ? await fetch(`/api/frais`, {
@@ -631,53 +641,35 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                 title="Gestion des Frais"
                 description="Gérez les frais académiques et leurs modalités"
                 items={items}
-                showCreateButton={false}
                 listLayout="grid-4"
                 CardItem={({ item }) => (
                     <CarteItemFrais frais={item} onEdit={handleEdit} onDelete={handleDelete} />
                 )}
                 CardCreate={() => (
-                    <div className="mt-6">
-                        {/* Barre de recherche unifiée */}
-                        <div className="relative mb-6">
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <Icon icon="mdi:search" width="20" height="20" className="text-gray-400" />
-                            </div>
-                            <input
-                                type="text"
-                                value={searchText}
-                                onChange={handleSearch}
-                                placeholder="Rechercher des frais..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm outline-none"
-                            />
-                        </div>
-
-                        {/* Grille de contenu principale */}
-                        {isLoading ? (
-                            <div className="flex justify-center items-center h-48">
-                                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                            </div>
-                        ) : items.length === 0 ? (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500 text-sm">Aucun frais trouvé</p>
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                    {items.map((frais) => (
-                                        <CarteItemFrais
-                                            key={frais.id}
-                                            frais={frais}
-                                            onEdit={handleEdit}
-                                            onDelete={handleDelete}
-                                        />
-                                    ))}
-                                </div>
-                                {renderPagination()}
-                            </>
-                        )}
-                    </div>
+                    <CarteCreateFrais
+                        currentAnneeLabel={currentTabLabel}
+                        currentAnneeSlug={activeTab}
+                    />
                 )}
+                onCreate={async (fd) => {
+                    const designation = String(fd.get("designation") ?? "").trim();
+                    const montant = String(fd.get("montant") ?? "").trim();
+                    const annee = String(fd.get("annee") ?? activeTab);
+
+                    if (!designation || !montant) return;
+
+                    await fetch("/api/frais", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            annee,
+                            designation,
+                            montant: parseFloat(montant),
+                        }),
+                    });
+
+                    fetchFrais(currentPage, debouncedSearch, activeTab);
+                }}
             />
 
             {/* Modal unique et correctement positionné dans l'arbre DOM */}
@@ -732,7 +724,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Programmes (séparés par des virgules)
+                                        Programmes (séparés par des virgules) — <span className="text-gray-400 font-normal">optionnel</span>
                                     </label>
                                     <textarea
                                         name="programmes"
@@ -740,7 +732,6 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none h-24 resize-none"
                                         placeholder="Ex: Licence Informatique, Master Mathématiques"
-                                        required
                                     />
                                 </div>
                                 <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
