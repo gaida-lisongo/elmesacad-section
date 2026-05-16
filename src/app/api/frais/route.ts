@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
 import { FraisModel } from "@/lib/models/Frais";
 import { AnneeModel } from "@/lib/models/Annee";
+// Force le chargement du modèle Annee dans le registre Mongoose
+void AnneeModel;
 import { Types } from "mongoose";
 import { slugifyDesignation, buildUniqueSlug } from "@/lib/utils/formationSlug";
 
@@ -17,17 +19,18 @@ export async function GET(request: Request) {
         const safeOffset = Number.isFinite(offset) && offset >= 0 ? offset : 0;
         const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 100) : 50;
 
-        const filter =
-            search.length > 0
-                ? {
-                    $or: [
-                        { designation: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
-                        { annee: { $eq: new Types.ObjectId(annee) } },
-                        { slug: { $eq: slug } },
-                        { programmes: { $in: search.split(",").map((x) => x.trim()) } },
-                    ],
-                }
-                : {};
+        const filter: Record<string, any> = {};
+        if (annee) {
+            filter.annee = { $eq: new Types.ObjectId(annee) };
+        }
+        if (slug) {
+            filter.slug = { $eq: slug };
+        }
+        if (search.length > 0) {
+            filter.$or = [
+                { designation: { $regex: search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), $options: "i" } },
+            ];
+        }
 
         const frais = await FraisModel.find(filter)
             .sort({ createdAt: -1 })

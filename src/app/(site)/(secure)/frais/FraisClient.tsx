@@ -466,14 +466,14 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
     }, [searchText]);
 
     // Récupération des données
-    const fetchFrais = useCallback(async (page: number, search: string, tab: string) => {
+    const fetchFrais = useCallback(async (page: number, search: string, anneeId: string) => {
         setIsLoading(true);
         try {
             const params = new URLSearchParams({
                 offset: ((page - 1) * itemsPerPage).toString(),
                 limit: itemsPerPage.toString(),
                 search,
-                annee: tab
+                annee: anneeId
             });
             
             const response = await fetch(`/api/frais?${params}`);
@@ -487,7 +487,6 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
             }));
             
             setItems(fraisWithId);
-            // On privilégie count du backend, sinon fallback sur le total calculé ou la longueur
             setTotalItems(result.total ?? result.count ?? result.data.length);
         } catch (error) {
             console.error("Erreur lors de la récupération des frais:", error);
@@ -499,8 +498,8 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
     // Fetch synchronisé sur le debounce et les changements de page/tab
     useEffect(() => {
-        fetchFrais(currentPage, debouncedSearch, activeTab);
-    }, [currentPage, debouncedSearch, activeTab, fetchFrais]);
+        fetchFrais(currentPage, debouncedSearch, currentAnneeId);
+    }, [currentPage, debouncedSearch, activeTab, currentAnneeId, fetchFrais]);
 
     // Handlers
     const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
