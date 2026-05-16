@@ -20,6 +20,16 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string 
 
         let modalites = await ModaliteModel.find({ frais: frais._id }).lean();
         let paiements = await PaiementModel.find({ modalite: { $in: modalites.map((modalite) => modalite._id) } }).lean();
+        
+        // Créer une map des modalites pour accéder rapidement au montant
+        const modaliteMap = new Map(modalites.map(m => [m._id.toString(), m]));
+        
+        // Calculer le montant total des paiements en utilisant le montant de la modalité associée
+        const amount_paiements = paiements.reduce((acc, paiement) => {
+            const modalite = modaliteMap.get(paiement.modalite.toString());
+            return acc + (modalite?.montant || 0);
+        }, 0);
+        
         return NextResponse.json({ 
             data: {
                 ...frais,
@@ -32,7 +42,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string 
                 total_modalites: modalites.length,
                 amount_modalites: modalites.reduce((acc, modalite) => acc + modalite.montant, 0),
                 total_paiements: paiements.length,
-                amount_paiements: paiements.reduce((acc, paiement) => acc + paiement.montant, 0),
+                amount_paiements: amount_paiements,
                 total_paiements_pending: paiements.filter((paiement) => paiement.status === 'pending').length,
                 total_paiements_paid: paiements.filter((paiement) => paiement.status === 'paid').length,
                 total_paiements_failed: paiements.filter((paiement) => paiement.status === 'failed').length,
