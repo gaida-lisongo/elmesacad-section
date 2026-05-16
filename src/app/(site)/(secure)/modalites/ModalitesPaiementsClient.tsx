@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Icon } from "@iconify/react";
 
 interface Paiement {
@@ -395,25 +395,26 @@ export default function ModalitesPaiementsClient({
         bulkPage * itemsPerPage
     );
 
-    // Filtrer les modalités selon la recherche
-    const filteredModalites = searchText
-        ? items.filter((m) =>
-              m.designation.toLowerCase().includes(searchText.toLowerCase()) ||
-              m.frais?.designation?.toLowerCase().includes(searchText.toLowerCase())
-          )
-        : items;
+    // Filtrer les modalités selon la recherche - useMemo pour forcer la mise à jour
+    const filteredModalites = useMemo(() => {
+        if (!searchText) return items;
+        return items.filter((m) =>
+            m.designation.toLowerCase().includes(searchText.toLowerCase()) ||
+            m.frais?.designation?.toLowerCase().includes(searchText.toLowerCase())
+        );
+    }, [items, searchText]);
 
     // Filtrer les paiements de la modalité sélectionnée
-    const filteredPaiements = currentModalite?.paiements
-        ? searchText
-            ? currentModalite.paiements.filter(
-                  (p) =>
-                      (p.email?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
-                      (p.matricule?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
-                      p.reference.toLowerCase().includes(searchText.toLowerCase())
-              )
-            : currentModalite.paiements
-        : [];
+    const filteredPaiements = useMemo(() => {
+        if (!currentModalite?.paiements) return [];
+        if (!searchText) return currentModalite.paiements;
+        return currentModalite.paiements.filter(
+            (p) =>
+                (p.email?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
+                (p.matricule?.toLowerCase() ?? "").includes(searchText.toLowerCase()) ||
+                p.reference.toLowerCase().includes(searchText.toLowerCase())
+        );
+    }, [currentModalite?.paiements, searchText]);
 
     return (
         <div className="space-y-6">
