@@ -414,8 +414,10 @@ import CarteItemFrais from "@/components/Frais/CarteItemFrais";
 import CarteCreateFrais from "@/components/Frais/CarteCreateFrais";
 import { Icon } from "@iconify/react";
 
+type FraisTab = { label: string; value: string; id: string };
+
 type FraisClientProps = {
-    tabs: { label: string; value: string }[];
+    tabs: FraisTab[];
     initialData: Frais[];
 };
 
@@ -445,11 +447,13 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
     const itemsPerPage = 12;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-    // Label de l'onglet actif pour l'afficher dans le formulaire de création
-    const currentTabLabel = useMemo(
-        () => tabs.find(t => t.value === activeTab)?.label ?? activeTab,
+    // Infos de l'onglet actif (label + ObjectId de l'année)
+    const currentTab = useMemo(
+        () => tabs.find(t => t.value === activeTab),
         [tabs, activeTab]
     );
+    const currentTabLabel = currentTab?.label ?? activeTab;
+    const currentAnneeId = currentTab?.id ?? "";
 
     // Effet pour le debounce de la recherche (300ms)
     useEffect(() => {

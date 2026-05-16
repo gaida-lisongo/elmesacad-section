@@ -28,6 +28,7 @@ export default async function FraisPage() {
     const tabs = annees.map((annee) => ({
         label: annee.designation,
         value: annee.slug,
+        id: annee._id.toString(),
     }));
 
     // Serialize ObjectIds to plain strings for the client component
