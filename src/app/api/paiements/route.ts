@@ -43,7 +43,7 @@ export async function PUT(request: Request) {
         if (!id?.trim() || !email?.trim() || !matricule?.trim() || !modalite?.trim() || !reference?.trim() || !status?.trim()) {
             return NextResponse.json({ message: "id, email et matricule sont requis" }, { status: 400 });
         }
-        const paiement = await PaiementModel.findByIdAndUpdate(id, { email, matricule, modalite, reference, status }, { new: true });
+        const paiement = await PaiementModel.findByIdAndUpdate(id, { email, matricule, modalite, reference, status }, { returnDocument: 'after' });
         if (!paiement) {
             return NextResponse.json({ message: "Paiement introuvable" }, { status: 404 });
         }

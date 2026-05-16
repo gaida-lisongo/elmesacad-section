@@ -240,7 +240,6 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                                 <tr>
                                     <th className="px-4 py-3 font-medium">Désignation</th>
                                     <th className="px-4 py-3 font-medium">Montant</th>
-                                    <th className="px-4 py-3 font-medium">Description</th>
                                     <th className="px-4 py-3 font-medium">Paiements</th>
                                     <th className="px-4 py-3 font-medium text-right">Actions</th>
                                 </tr>
@@ -253,9 +252,6 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                                         </td>
                                         <td className="px-4 py-3 text-gray-700">
                                             {modalite.montant.toLocaleString('fr-FR')} $
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-600 max-w-xs truncate">
-                                            {modalite.description || "—"}
                                         </td>
                                         <td className="px-4 py-3">
                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
