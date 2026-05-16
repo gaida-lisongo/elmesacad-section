@@ -86,7 +86,11 @@ export default function ModalitesPaiementsClient({
     const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
     const itemsPerPage = 10;
 
-    const currentModalite = selectedModalite;
+    // Synchroniser selectedModalite avec les items mis à jour
+    const currentModalite = useMemo(() => {
+        if (!selectedModalite) return null;
+        return items.find(m => m._id === selectedModalite._id) || selectedModalite;
+    }, [items, selectedModalite]);
 
     const fetchPaiements = useCallback(async (modaliteId: string) => {
         // Éviter les appels multiples pour la même modalité
@@ -445,42 +449,36 @@ export default function ModalitesPaiementsClient({
                 </div>
             </div>
 
-            {/* Grille des modalités */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filteredModalites.map((modalite) => {
-                    const isSelected = selectedModalite?._id === modalite._id;
-                    return (
-                        <div
-                            key={modalite._id}
-                            onClick={() => setSelectedModalite(modalite)}
-                            className={`p-4 rounded-xl border cursor-pointer transition-all ${
-                                isSelected
-                                    ? "border-primary bg-primary/5 shadow-md ring-2 ring-primary/20"
-                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm"
-                            }`}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="min-w-0 flex-1">
-                                    <h3 className="text-sm font-semibold text-gray-800 truncate">{modalite.designation}</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        {modalite.frais?.designation || "Frais"}
-                                    </p>
+            {/* Onglets des modalités */}
+            <div className="border-b border-gray-200">
+                <div className="flex flex-wrap gap-1">
+                    {filteredModalites.map((modalite) => {
+                        const isSelected = selectedModalite?._id === modalite._id;
+                        return (
+                            <button
+                                key={modalite._id}
+                                onClick={() => setSelectedModalite(modalite)}
+                                className={`px-4 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
+                                    isSelected
+                                        ? "border-primary text-primary bg-primary/5"
+                                        : "border-transparent text-gray-600 hover:text-gray-800 hover:border-gray-300 hover:bg-gray-50"
+                                }`}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <span className="truncate max-w-[150px]">{modalite.designation}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                        isSelected ? "bg-primary/20 text-primary" : "bg-gray-100 text-gray-500"
+                                    }`}>
+                                        {modalite.paiements?.length ?? 0}
+                                    </span>
                                 </div>
-                                <span className="text-xs font-medium text-primary whitespace-nowrap ml-2">
-                                    {modalite.montant.toLocaleString("fr-FR")} $
-                                </span>
-                            </div>
-                            <div className="mt-3 flex items-center justify-between">
-                                <span className="text-xs text-gray-400">
-                                    {modalite.paiements?.length ?? 0} paiement(s)
-                                </span>
-                                {isSelected && (
-                                    <Icon icon="mdi:check-circle" width="16" height="16" className="text-primary" />
-                                )}
-                            </div>
-                        </div>
-                    );
-                })}
+                                <div className={`text-xs mt-0.5 text-left ${isSelected ? "text-primary/70" : "text-gray-400"}`}>
+                                    {modalite.montant.toLocaleString("fr-FR")} $ • {modalite.frais?.designation || "Frais"}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* Métrique de la modalité sélectionnée */}
@@ -517,13 +515,13 @@ export default function ModalitesPaiementsClient({
                 </div>
             )}
 
-            {/* Grille des paiements (4 par ligne) */}
+            {/* Tableau des paiements */}
             {selectedModalite && (
                 <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">
                         Paiements ({filteredPaiements.length})
                     </h3>
-                    
+
                     {isLoading ? (
                         <div className="flex justify-center items-center h-32">
                             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
@@ -534,55 +532,89 @@ export default function ModalitesPaiementsClient({
                             <p className="text-gray-500">Aucun paiement pour cette modalité</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            {filteredPaiements.map((paiement) => (
-                                <div
-                                    key={paiement.id}
-                                    className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow"
-                                >
-                                    <div className="flex items-start justify-between mb-3">
-                                        <div className="min-w-0 flex-1">
-                                            <p className="text-sm font-semibold text-gray-800 truncate">{paiement.reference}</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">{paiement.email || "—"}</p>
-                                        </div>
-                                        <span
-                                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                                statusClasses[paiement.status] || "bg-gray-100 text-gray-700"
-                                            }`}
-                                        >
-                                            {statusLabels[paiement.status] || paiement.status}
-                                        </span>
-                                    </div>
-                                    <div className="space-y-1 text-xs text-gray-500 mb-4">
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="mdi:identifier" width="14" height="14" />
-                                            <span>{paiement.matricule || "—"}</span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <Icon icon="mdi:calendar" width="14" height="14" />
-                                            <span>
-                                                {new Date(paiement.createdAt).toLocaleDateString("fr-FR")}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-                                        <button
-                                            onClick={() => handleOpenEdit(paiement)}
-                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                            title="Modifier"
-                                        >
-                                            <Icon icon="mdi:pencil" width="16" height="16" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(paiement.id)}
-                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="Supprimer"
-                                        >
-                                            <Icon icon="mdi:delete" width="16" height="16" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
+                        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Référence
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Matricule
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Email
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Statut
+                                            </th>
+                                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Date
+                                            </th>
+                                            <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                Actions
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-100">
+                                        {filteredPaiements.map((paiement) => (
+                                            <tr
+                                                key={paiement.id}
+                                                className="hover:bg-gray-50 transition-colors"
+                                            >
+                                                <td className="px-4 py-3">
+                                                    <span className="text-sm font-medium text-gray-900">
+                                                        {paiement.reference}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="text-sm text-gray-600">
+                                                        {paiement.matricule || "—"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="text-sm text-gray-600">
+                                                        {paiement.email || "—"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                            statusClasses[paiement.status] || "bg-gray-100 text-gray-700"
+                                                        }`}
+                                                    >
+                                                        {statusLabels[paiement.status] || paiement.status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="text-sm text-gray-500">
+                                                        {new Date(paiement.createdAt).toLocaleDateString("fr-FR")}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <button
+                                                            onClick={() => handleOpenEdit(paiement)}
+                                                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                                            title="Modifier"
+                                                        >
+                                                            <Icon icon="mdi:pencil" width="16" height="16" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDelete(paiement.id)}
+                                                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                            title="Supprimer"
+                                                        >
+                                                            <Icon icon="mdi:delete" width="16" height="16" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>

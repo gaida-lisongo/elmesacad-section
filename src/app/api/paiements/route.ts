@@ -32,7 +32,7 @@ export async function PATCH(request: Request) {
     try {
         await connectDB();
         const body = await request.json();
-        const newPayments = body.payments;
+        const newPayments = body.paiements || body.payments;
         if (!newPayments?.length) {
             return NextResponse.json({ message: "Aucun paiement à créer" }, { status: 400 });
         }
