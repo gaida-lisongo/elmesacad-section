@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Frais } from "@/lib/models/Frais";
+import { Types } from "mongoose";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 
 type CarteItemFraisProps = {
-    frais: Frais & { id?: string, _id?: string};
+    frais: Frais & { id?: string; _id?: string | Types.ObjectId };
     onEdit: (frais: Frais & { id: string }) => void;
     onDelete: (id: string) => void;
 };
