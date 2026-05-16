@@ -23,7 +23,7 @@ export default function CarteItemFrais({ frais, onEdit, onDelete }: CarteItemFra
                     method: 'DELETE',
                 });
                 if (response.ok) {
-                    onDelete(frais?._id);
+                    onDelete(frais?._id?.toString());
                 } else {
                     const error = await response.json();
                     alert(`Erreur: ${error.message}`);
@@ -55,7 +55,7 @@ export default function CarteItemFrais({ frais, onEdit, onDelete }: CarteItemFra
                             <Icon icon="mdi:eye" width="16" height="16" />
                         </Link>
                         <button 
-                            onClick={() => onEdit(frais)}
+                            onClick={() => onEdit({ ...frais, id: frais.id ?? frais._id?.toString() ?? '' })}
                             className="text-green-600 hover:text-green-800 transition-colors"
                             title="Modifier"
                         >
