@@ -21,7 +21,6 @@ export default async function FraisPage() {
 
     const frais = await FraisModel.find({ annee: annees[0]._id })
         .sort({ createdAt: -1 })
-        .populate("programmes")
         .populate("annee")
         .lean();
 
