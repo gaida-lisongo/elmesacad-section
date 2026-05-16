@@ -227,6 +227,7 @@ export default function AgentDetailCard({
                 <option value="organisateur">organisateur</option>
                 <option value="gestionnaire">gestionnaire</option>
                 <option value="titulaire">titulaire</option>
+                <option value="coge">comité de gestion</option>
               </select>
             </div>
             <div className="md:col-span-2">
