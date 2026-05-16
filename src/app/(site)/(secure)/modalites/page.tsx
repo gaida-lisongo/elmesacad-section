@@ -3,10 +3,10 @@ import { connectDB } from "@/lib/services/connectedDB";
 import { ModaliteModel, PaiementModel } from "@/lib/models/Frais";
 import { AnneeModel } from "@/lib/models/Annee";
 import { FraisModel } from "@/lib/models/Frais";
+import ModalitesPaiementsClient from "./ModalitesPaiementsClient";
 // Force le chargement des modèles dépendants dans le registre Mongoose
 void AnneeModel;
 void FraisModel;
-import ModalitesPaiementsClient from "./ModalitesPaiementsClient";
 
 export const dynamic = "force-dynamic";
 
@@ -35,8 +35,10 @@ type PaiementDoc = {
     updatedAt: string;
 };
 
+// On ajoute 'id' dans le type pour correspondre parfaitement aux attentes du composant Client
 type ModaliteWithPaiements = ModaliteDoc & {
-    paiements: PaiementDoc[];
+    id: string; 
+    paiements: (PaiementDoc & { id: string })[];
 };
 
 export default async function ModalitesPage() {
@@ -70,6 +72,7 @@ export default async function ModalitesPage() {
         JSON.stringify(
             modalites.map((m: any) => ({
                 ...m,
+                id: m._id.toString(), // <-- LA CORRECTION EST ICI : On injecte l'id demandé par le client
                 paiements: paiements
                     .filter((p: any) => p.modalite.toString() === m._id.toString())
                     .map((p: any) => ({
