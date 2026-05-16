@@ -8,11 +8,19 @@ export async function POST(request: Request) {
         await connectDB();
         const body = await request.json();
         const { email, matricule, modalite, reference, status } = body;
-        if (!email?.trim() || !matricule?.trim() || !modalite?.trim() || !reference?.trim() || !status?.trim()) {
-            return NextResponse.json({ message: "email et matricule sont requis" }, { status: 400 });
+        
+        // Validation: matricule, modalite, reference et status sont requis, email est optionnel
+        if (!matricule?.trim() || !modalite?.trim() || !reference?.trim() || !status?.trim()) {
+            return NextResponse.json({ message: "matricule, modalite, reference et status sont requis" }, { status: 400 });
         }
 
-        const paiement = await PaiementModel.create({ email, matricule, modalite, reference, status });
+        const paiementData: Record<string, unknown> = { matricule, modalite, reference, status };
+        // N'ajouter l'email que s'il est fourni
+        if (email?.trim()) {
+            paiementData.email = email.trim().toLowerCase();
+        }
+
+        const paiement = await PaiementModel.create(paiementData);
         return NextResponse.json({ data: paiement }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ message: "Échec création", error: (error as Error).message }, { status: 500 });

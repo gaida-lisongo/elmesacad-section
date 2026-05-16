@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 
 interface Paiement {
@@ -47,6 +47,14 @@ const statusClasses: Record<string, string> = {
     completed: "bg-blue-100 text-blue-800",
 };
 
+// Types pour le bulk
+interface BulkItem {
+    id: string;
+    matricule: string;
+    reference: string;
+    status: Paiement['status'];
+}
+
 export default function ModalitesPaiementsClient({
     initialModalites,
 }: ModalitesPaiementsClientProps) {
@@ -55,6 +63,7 @@ export default function ModalitesPaiementsClient({
     const [items, setItems] = useState<Modalite[]>(initialModalites);
     const [isLoading, setIsLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [showBulkModal, setShowBulkModal] = useState(false);
     const [editingPaiement, setEditingPaiement] = useState<Paiement | null>(null);
     const [formData, setFormData] = useState({
         email: "",
@@ -63,13 +72,25 @@ export default function ModalitesPaiementsClient({
         status: "pending" as Paiement['status'],
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [hasFetched, setHasFetched] = useState<Record<string, boolean>>({});
+    const fetchedRef = useRef<Set<string>>(new Set());
+
+    // États pour le bulk
+    const [bulkStep, setBulkStep] = useState<1 | 2 | 3>(1);
+    const [csvContent, setCsvContent] = useState("");
+    const [separator, setSeparator] = useState(",");
+    const [detectedHeaders, setDetectedHeaders] = useState<string[]>([]);
+    const [bulkItems, setBulkItems] = useState<BulkItem[]>([]);
+    const [bulkStatus, setBulkStatus] = useState<Paiement['status']>("pending");
+    const [bulkPage, setBulkPage] = useState(1);
+    const [bulkProgress, setBulkProgress] = useState(0);
+    const [isBulkSubmitting, setIsBulkSubmitting] = useState(false);
+    const itemsPerPage = 10;
 
     const currentModalite = selectedModalite;
 
     const fetchPaiements = useCallback(async (modaliteId: string) => {
         // Éviter les appels multiples pour la même modalité
-        if (hasFetched[modaliteId]) return;
+        if (fetchedRef.current.has(modaliteId)) return;
         
         setIsLoading(true);
         try {
@@ -83,20 +104,43 @@ export default function ModalitesPaiementsClient({
                             : m
                     )
                 );
-                setHasFetched((prev) => ({ ...prev, [modaliteId]: true }));
+                fetchedRef.current.add(modaliteId);
             }
         } catch (error) {
             console.error("Erreur chargement paiements:", error);
         } finally {
             setIsLoading(false);
         }
-    }, [hasFetched]);
+    }, []);
+
+    // Rafraîchir les paiements (forcer le rechargement)
+    const refreshPaiements = useCallback(async (modaliteId: string) => {
+        setIsLoading(true);
+        try {
+            const response = await fetch(`/api/paiements?modalite=${modaliteId}`);
+            if (response.ok) {
+                const result = await response.json();
+                setItems((prev) =>
+                    prev.map((m) =>
+                        m._id === modaliteId
+                            ? { ...m, paiements: result.data ?? [] }
+                            : m
+                    )
+                );
+                fetchedRef.current.add(modaliteId);
+            }
+        } catch (error) {
+            console.error("Erreur chargement paiements:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        if (currentModalite && !hasFetched[currentModalite._id]) {
+        if (currentModalite && !fetchedRef.current.has(currentModalite._id)) {
             fetchPaiements(currentModalite._id);
         }
-    }, [currentModalite?._id]);
+    }, [currentModalite?._id, fetchPaiements]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -135,13 +179,16 @@ export default function ModalitesPaiementsClient({
 
         setIsSubmitting(true);
         try {
-            const body = {
+            const body: Record<string, unknown> = {
                 modalite: currentModalite._id,
-                email: formData.email.trim().toLowerCase(),
                 matricule: formData.matricule.trim(),
                 reference: formData.reference.trim(),
                 status: formData.status,
             };
+            // Email optionnel - ne l'ajouter que s'il est fourni
+            if (formData.email.trim()) {
+                body.email = formData.email.trim().toLowerCase();
+            }
 
             const response = editingPaiement
                 ? await fetch("/api/paiements", {
@@ -157,9 +204,8 @@ export default function ModalitesPaiementsClient({
 
             if (response.ok) {
                 handleCloseModal();
-                // Réinitialiser le flag pour permettre le rechargement
-                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
-                fetchPaiements(currentModalite._id);
+                // Rafraîchir immédiatement les paiements pour une UX fluide
+                await refreshPaiements(currentModalite._id);
             } else {
                 const errorData = await response.json();
                 alert(`Erreur: ${errorData.message || "Échec"}`);
@@ -176,60 +222,178 @@ export default function ModalitesPaiementsClient({
         try {
             const response = await fetch(`/api/paiements?id=${paiementId}`, { method: "DELETE" });
             if (response.ok && currentModalite) {
-                // Réinitialiser le flag pour permettre le rechargement
-                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
-                fetchPaiements(currentModalite._id);
+                // Rafraîchir immédiatement les paiements pour une UX fluide
+                await refreshPaiements(currentModalite._id);
             }
         } catch (error) {
             alert("Erreur suppression");
         }
     };
 
-    const handleBulkCreate = async (rawText: string, onProgress?: (progress: number) => void) => {
-        if (!currentModalite) return;
-        const lines = rawText
-            .split("\n")
-            .map((l) => l.trim())
-            .filter(Boolean);
-
-        const total = lines.length || 1;
-        let done = 0;
-        const payments: { email: string; matricule: string; reference: string; status: string }[] = [];
-
-        for (const line of lines) {
-            const [email, matricule, reference, status] = line.split(",").map((p) => p.trim());
-            if (!reference) {
-                done += 1;
-                onProgress?.(Math.round((done / total) * 100));
-                continue;
-            }
-            payments.push({
-                email: email || "",
-                matricule: matricule || "",
-                reference,
-                status: status || "pending",
-            });
-            done += 1;
-            onProgress?.(Math.round((done / total) * 100));
-        }
-
-        if (payments.length > 0) {
-            const response = await fetch("/api/paiements", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ modalite: currentModalite._id, paiements: payments }),
-            });
-
-            if (response.ok) {
-                // Réinitialiser le flag pour permettre le rechargement
-                setHasFetched((prev) => ({ ...prev, [currentModalite._id]: false }));
-                fetchPaiements(currentModalite._id);
-            } else {
-                const errorData = await response.json();
-                alert(`Erreur bulk: ${errorData.message || "Échec"}`);
-            }
-        }
+    // Fonctions pour le bulk
+    const handleOpenBulkModal = () => {
+        setBulkStep(1);
+        setCsvContent("");
+        setSeparator(",");
+        setDetectedHeaders([]);
+        setBulkItems([]);
+        setBulkStatus("pending");
+        setBulkPage(1);
+        setBulkProgress(0);
+        setShowBulkModal(true);
     };
+
+    const handleCloseBulkModal = () => {
+        setShowBulkModal(false);
+        setBulkStep(1);
+        setCsvContent("");
+        setBulkItems([]);
+    };
+
+    const downloadCsvTemplate = () => {
+        const csv = "matricule,reference\nMAT-001,REF-001\nMAT-002,REF-002";
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "modele_paiements.csv";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleCsvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            setCsvContent(content);
+            detectHeaders(content);
+        };
+        reader.readAsText(file);
+    };
+
+    const detectHeaders = (content: string) => {
+        const lines = content.split("\n").filter((l) => l.trim());
+        if (lines.length === 0) return;
+
+        const firstLine = lines[0];
+        // Détecter automatiquement le séparateur
+        const separators = [",", ";", "\t", "|"];
+        let bestSep = ",";
+        let maxCols = 0;
+
+        for (const sep of separators) {
+            const cols = firstLine.split(sep).length;
+            if (cols > maxCols) {
+                maxCols = cols;
+                bestSep = sep;
+            }
+        }
+
+        setSeparator(bestSep);
+        const headers = firstLine.split(bestSep).map((h) => h.trim());
+        setDetectedHeaders(headers);
+    };
+
+    const parseCsvToItems = () => {
+        const lines = csvContent.split("\n").filter((l) => l.trim());
+        if (lines.length < 2) {
+            alert("Le fichier CSV doit contenir au moins une ligne d'en-tête et une ligne de données");
+            return;
+        }
+
+        const dataLines = lines.slice(1); // Skip header
+        const parsed: BulkItem[] = [];
+
+        dataLines.forEach((line, index) => {
+            const cols = line.split(separator).map((c) => c.trim());
+            const matriculeIndex = detectedHeaders.findIndex((h) =>
+                h.toLowerCase().includes("matricule")
+            );
+            const refIndex = detectedHeaders.findIndex((h) =>
+                h.toLowerCase().includes("reference") || h.toLowerCase().includes("ref")
+            );
+
+            const matricule = matriculeIndex >= 0 ? cols[matriculeIndex] || "" : cols[0] || "";
+            const reference = refIndex >= 0 ? cols[refIndex] || "" : cols[1] || "";
+
+            if (reference) {
+                parsed.push({
+                    id: `temp-${index}`,
+                    matricule,
+                    reference,
+                    status: bulkStatus,
+                });
+            }
+        });
+
+        setBulkItems(parsed);
+        setBulkStep(2);
+        setBulkPage(1);
+    };
+
+    const removeBulkItem = (id: string) => {
+        setBulkItems((prev) => prev.filter((item) => item.id !== id));
+    };
+
+    const submitBulkPaiements = async () => {
+        if (!currentModalite || bulkItems.length === 0) return;
+
+        setIsBulkSubmitting(true);
+        setBulkStep(3);
+
+        const total = bulkItems.length;
+        const batchSize = 50;
+        const batches = Math.ceil(total / batchSize);
+
+        for (let i = 0; i < batches; i++) {
+            const batch = bulkItems.slice(i * batchSize, (i + 1) * batchSize);
+            const payments = batch.map((item) => ({
+                matricule: item.matricule,
+                reference: item.reference,
+                status: item.status,
+            }));
+
+            try {
+                const response = await fetch("/api/paiements", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        modalite: currentModalite._id,
+                        paiements: payments,
+                    }),
+                });
+
+                if (!response.ok) {
+                    console.error("Erreur batch", i);
+                }
+            } catch (error) {
+                console.error("Erreur réseau batch", i, error);
+            }
+
+            const progress = Math.round(((i + 1) / batches) * 100);
+            setBulkProgress(progress);
+        }
+
+        // Rafraîchir les paiements
+        await refreshPaiements(currentModalite._id);
+        setIsBulkSubmitting(false);
+
+        // Fermer après un court délai
+        setTimeout(() => {
+            handleCloseBulkModal();
+        }, 1000);
+    };
+
+    const totalBulkPages = Math.ceil(bulkItems.length / itemsPerPage);
+    const paginatedBulkItems = bulkItems.slice(
+        (bulkPage - 1) * itemsPerPage,
+        bulkPage * itemsPerPage
+    );
 
     // Filtrer les modalités selon la recherche
     const filteredModalites = searchText
@@ -338,7 +502,14 @@ export default function ModalitesPaiementsClient({
                                 className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-darkprimary transition-colors"
                             >
                                 <Icon icon="mdi:plus" width="16" height="16" className="mr-2" />
-                                Ajouter un paiement
+                                Ajouter
+                            </button>
+                            <button
+                                onClick={handleOpenBulkModal}
+                                className="inline-flex items-center px-4 py-2 bg-white border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/5 transition-colors"
+                            >
+                                <Icon icon="mdi:file-upload" width="16" height="16" className="mr-2" />
+                                Import CSV
                             </button>
                         </div>
                     </div>
@@ -426,7 +597,9 @@ export default function ModalitesPaiementsClient({
                             </h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Email <span className="text-gray-400">(optionnel)</span>
+                                    </label>
                                     <input
                                         type="email"
                                         name="email"
@@ -448,7 +621,7 @@ export default function ModalitesPaiementsClient({
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Référence</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Référence *</label>
                                     <input
                                         type="text"
                                         name="reference"
@@ -494,6 +667,287 @@ export default function ModalitesPaiementsClient({
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Bulk Import */}
+            {showBulkModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            {/* Header avec étapes */}
+                            <div className="mb-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Import en masse de paiements</h2>
+                                <div className="flex items-center gap-2">
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${bulkStep === 1 ? "bg-primary text-white" : bulkStep > 1 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                                        <Icon icon="mdi:upload" width="18" height="18" />
+                                        <span className="text-sm font-medium">1. Upload</span>
+                                    </div>
+                                    <div className="w-8 h-0.5 bg-gray-200" />
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${bulkStep === 2 ? "bg-primary text-white" : bulkStep > 2 ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                                        <Icon icon="mdi:table-eye" width="18" height="18" />
+                                        <span className="text-sm font-medium">2. Prévisualisation</span>
+                                    </div>
+                                    <div className="w-8 h-0.5 bg-gray-200" />
+                                    <div className={`flex items-center gap-2 px-4 py-2 rounded-lg ${bulkStep === 3 ? "bg-primary text-white" : "bg-gray-100 text-gray-500"}`}>
+                                        <Icon icon="mdi:loading" width="18" height="18" className={bulkStep === 3 ? "animate-spin" : ""} />
+                                        <span className="text-sm font-medium">3. Chargement</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Étape 1: Upload */}
+                            {bulkStep === 1 && (
+                                <div className="space-y-6">
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div className="flex items-start gap-3">
+                                            <Icon icon="mdi:information" width="20" height="20" className="text-blue-600 mt-0.5" />
+                                            <div>
+                                                <p className="text-sm text-blue-800 font-medium">Format attendu</p>
+                                                <p className="text-sm text-blue-600 mt-1">
+                                                    Le fichier CSV doit contenir les colonnes : <code className="bg-blue-100 px-1 rounded">matricule</code> et <code className="bg-blue-100 px-1 rounded">reference</code>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-center">
+                                        <button
+                                            onClick={downloadCsvTemplate}
+                                            className="inline-flex items-center px-4 py-2 text-primary hover:bg-primary/5 rounded-lg text-sm font-medium transition-colors"
+                                        >
+                                            <Icon icon="mdi:download" width="18" height="18" className="mr-2" />
+                                            Télécharger le modèle CSV
+                                        </button>
+                                    </div>
+
+                                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-primary/50 transition-colors">
+                                        <Icon icon="mdi:file-upload-outline" width="48" height="48" className="mx-auto text-gray-400 mb-4" />
+                                        <p className="text-gray-600 mb-4">Glissez-déposez votre fichier CSV ou cliquez pour parcourir</p>
+                                        <input
+                                            type="file"
+                                            accept=".csv,.txt"
+                                            onChange={handleCsvUpload}
+                                            className="hidden"
+                                            id="csv-upload"
+                                        />
+                                        <label
+                                            htmlFor="csv-upload"
+                                            className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-darkprimary cursor-pointer transition-colors"
+                                        >
+                                            <Icon icon="mdi:folder-open" width="18" height="18" className="mr-2" />
+                                            Choisir un fichier
+                                        </label>
+                                    </div>
+
+                                    {csvContent && (
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <span className="text-sm font-medium text-gray-700">Séparateur détecté:</span>
+                                                <select
+                                                    value={separator}
+                                                    onChange={(e) => {
+                                                        setSeparator(e.target.value);
+                                                        detectHeaders(csvContent);
+                                                    }}
+                                                    className="px-3 py-1 border border-gray-300 rounded text-sm"
+                                                >
+                                                    <option value=",">Virgule (,)</option>
+                                                    <option value=";">Point-virgule (;)</option>
+                                                    <option value="\t">Tabulation</option>
+                                                    <option value="|">Pipe (|)</option>
+                                                </select>
+                                            </div>
+                                            {detectedHeaders.length > 0 && (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {detectedHeaders.map((header, idx) => (
+                                                        <span key={idx} className="px-2 py-1 bg-white border border-gray-200 rounded text-xs text-gray-600">
+                                                            {header}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                {csvContent.split("\n").filter((l) => l.trim()).length - 1} ligne(s) de données détectée(s)
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                        <button
+                                            onClick={handleCloseBulkModal}
+                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            Annuler
+                                        </button>
+                                        <button
+                                            onClick={parseCsvToItems}
+                                            disabled={!csvContent || detectedHeaders.length === 0}
+                                            className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-darkprimary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            Continuer
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Étape 2: Prévisualisation */}
+                            {bulkStep === 2 && (
+                                <div className="space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-gray-600">
+                                                <span className="font-medium">{bulkItems.length}</span> paiement(s) à importer
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <label className="text-sm text-gray-600">Status par défaut:</label>
+                                            <select
+                                                value={bulkStatus}
+                                                onChange={(e) => {
+                                                    const newStatus = e.target.value as Paiement['status'];
+                                                    setBulkStatus(newStatus);
+                                                    setBulkItems((prev) =>
+                                                        prev.map((item) => ({ ...item, status: newStatus }))
+                                                    );
+                                                }}
+                                                className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                                            >
+                                                <option value="pending">En attente</option>
+                                                <option value="paid">Payé</option>
+                                                <option value="failed">Échoué</option>
+                                                <option value="completed">Terminé</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {bulkItems.length > 0 && (
+                                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Matricule</th>
+                                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Référence</th>
+                                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Action</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-200">
+                                                    {paginatedBulkItems.map((item, idx) => (
+                                                        <tr key={item.id} className="hover:bg-gray-50">
+                                                            <td className="px-4 py-3 text-gray-500">
+                                                                {(bulkPage - 1) * itemsPerPage + idx + 1}
+                                                            </td>
+                                                            <td className="px-4 py-3 font-medium text-gray-800">{item.matricule || "—"}</td>
+                                                            <td className="px-4 py-3 text-gray-600">{item.reference}</td>
+                                                            <td className="px-4 py-3">
+                                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusClasses[item.status]}`}>
+                                                                    {statusLabels[item.status]}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <button
+                                                                    onClick={() => removeBulkItem(item.id)}
+                                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                                    title="Supprimer"
+                                                                >
+                                                                    <Icon icon="mdi:delete" width="16" height="16" />
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+
+                                            {/* Pagination */}
+                                            {totalBulkPages > 1 && (
+                                                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
+                                                    <p className="text-sm text-gray-600">
+                                                        Page {bulkPage} sur {totalBulkPages}
+                                                    </p>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setBulkPage((p) => Math.max(1, p - 1))}
+                                                            disabled={bulkPage === 1}
+                                                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-white transition-colors"
+                                                        >
+                                                            Précédent
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setBulkPage((p) => Math.min(totalBulkPages, p + 1))}
+                                                            disabled={bulkPage === totalBulkPages}
+                                                            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:opacity-50 hover:bg-white transition-colors"
+                                                        >
+                                                            Suivant
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                                        <button
+                                            onClick={() => setBulkStep(1)}
+                                            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            Retour
+                                        </button>
+                                        <button
+                                            onClick={submitBulkPaiements}
+                                            disabled={bulkItems.length === 0 || isBulkSubmitting}
+                                            className="px-4 py-2 bg-primary text-white rounded-md text-sm font-medium hover:bg-darkprimary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            {isBulkSubmitting ? "Traitement..." : `Importer ${bulkItems.length} paiement(s)`}
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Étape 3: Chargement */}
+                            {bulkStep === 3 && (
+                                <div className="py-12 text-center">
+                                    <div className="mb-6">
+                                        <div className="relative w-32 h-32 mx-auto">
+                                            <svg className="w-32 h-32 transform -rotate-90">
+                                                <circle
+                                                    cx="64"
+                                                    cy="64"
+                                                    r="56"
+                                                    stroke="currentColor"
+                                                    strokeWidth="8"
+                                                    fill="none"
+                                                    className="text-gray-200"
+                                                />
+                                                <circle
+                                                    cx="64"
+                                                    cy="64"
+                                                    r="56"
+                                                    stroke="currentColor"
+                                                    strokeWidth="8"
+                                                    fill="none"
+                                                    strokeDasharray={`${2 * Math.PI * 56}`}
+                                                    strokeDashoffset={`${2 * Math.PI * 56 * (1 - bulkProgress / 100)}`}
+                                                    className="text-primary transition-all duration-300"
+                                                    strokeLinecap="round"
+                                                />
+                                            </svg>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="text-2xl font-bold text-gray-800">{bulkProgress}%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                        Importation en cours...
+                                    </h3>
+                                    <p className="text-gray-500">
+                                        Veuillez patienter pendant le traitement des paiements
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
