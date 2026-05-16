@@ -39,6 +39,11 @@ export const userFloatingMenu: {
       { item: "Laboratoires", path: "/labo" },
       { item: "Tickets", path: "/tickets" },
     ],
+    coge: [
+      { item: "Dashboard", path: "/dashboard" },
+      { item: "Gestion des Frais", path: "/frais" },
+      { item: "Gestion des Modalités", path: "/modalites" },
+    ],
     titulaire: [
       { item: "Tableau de bord", path: "/dashboard" },
       { item: "Descripteurs", path: "/titulaire/descripteurs"},
