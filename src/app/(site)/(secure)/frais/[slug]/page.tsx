@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { connectDB } from "@/lib/services/connectedDB";
 import { FraisModel } from "@/lib/models/Frais";
+import { AnneeModel } from "@/lib/models/Annee";
+// Force le chargement du modèle Annee dans le registre Mongoose
+void AnneeModel;
 import ModalitesClient from "@/app/(site)/(secure)/frais/[slug]/ModalitesClient";
 
 export const dynamic = "force-dynamic";

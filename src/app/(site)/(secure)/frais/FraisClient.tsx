@@ -518,12 +518,9 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
     const handleEdit = (frais: FraisWithId) => {
         setEditingFrais(frais);
-        const rawProgrammes = (frais as any).programmes;
         setFormData({
-            annee: activeTab,
-            programmes: Array.isArray(rawProgrammes)
-                ? rawProgrammes.map((p: any) => typeof p === 'object' ? p._id || p : p).join(", ")
-                : "",
+            annee: currentAnneeId,
+            programmes: "",
             designation: frais.designation || "",
             montant: frais.montant?.toString() || ""
         });
@@ -551,13 +548,10 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
         setIsLoading(true);
         try {
             const body: Record<string, unknown> = {
-                annee: editingFrais ? formData.annee : activeTab,
+                annee: editingFrais ? formData.annee : currentAnneeId,
                 designation: formData.designation.trim(),
                 montant: parseFloat(formData.montant)
             };
-            if (formData.programmes.trim()) {
-                body.programmes = formData.programmes.split(",").map(p => p.trim()).filter(Boolean);
-            }
 
             const response = editingFrais 
                 ? await fetch(`/api/frais`, {
@@ -573,7 +567,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
 
             if (response.ok) {
                 handleCloseModal();
-                fetchFrais(currentPage, debouncedSearch, activeTab);
+                fetchFrais(currentPage, debouncedSearch, currentAnneeId);
             } else {
                 const errorData = await response.json();
                 alert(`Erreur: ${errorData.message || "Erreur lors de la sauvegarde"}`);
@@ -644,7 +638,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                 title="Gestion des Frais"
                 description="Gérez les frais académiques et leurs modalités"
                 items={items}
-                listLayout="grid-4"
+                listLayout="grid-1"
                 CardItem={({ item }) => (
                     <CarteItemFrais frais={item} onEdit={handleEdit} onDelete={handleDelete} />
                 )}
@@ -657,7 +651,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                 onCreate={async (fd) => {
                     const designation = String(fd.get("designation") ?? "").trim();
                     const montant = String(fd.get("montant") ?? "").trim();
-                    const annee = String(fd.get("annee") ?? activeTab);
+                    const annee = String(fd.get("annee") ?? currentAnneeId);
 
                     if (!designation || !montant) return;
 
@@ -671,7 +665,7 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                         }),
                     });
 
-                    fetchFrais(currentPage, debouncedSearch, activeTab);
+                    fetchFrais(currentPage, debouncedSearch, currentAnneeId);
                 }}
             />
 
@@ -723,18 +717,6 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
                                         required
                                         min="0"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Programmes (séparés par des virgules) — <span className="text-gray-400 font-normal">optionnel</span>
-                                    </label>
-                                    <textarea
-                                        name="programmes"
-                                        value={formData.programmes}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none h-24 resize-none"
-                                        placeholder="Ex: Licence Informatique, Master Mathématiques"
                                     />
                                 </div>
                                 <div className="mt-6 flex justify-end space-x-3 pt-4 border-t border-gray-100">
