@@ -26,7 +26,7 @@ global.mongooseCache = cached;
 export const connectDB = async (): Promise<typeof mongoose> => {
     const uri = process.env.MONGODB_URI;
     if (!uri) {
-        throw new Error("MONGODB_URI is not configured.");
+        throw new Error("MONGODB_URI is not configured. Please check your .env.local file and ensure it contains a valid MongoDB connection string.");
     }
 
     if (cached.conn) {
@@ -51,7 +51,12 @@ export const connectDB = async (): Promise<typeof mongoose> => {
                 cached.promise = null;
                 cached.conn = null;
                 const msg = err instanceof Error ? err.message : String(err);
-                console.error("[connectDB] MongoDB:", msg);
+                console.error("[connectDB] MongoDB connection failed:", msg);
+                console.error("[connectDB] Please check:");
+                console.error("  1. MongoDB URI in .env.local is correct");
+                console.error("  2. Network connectivity to MongoDB Atlas");
+                console.error("  3. IP whitelist in MongoDB Atlas settings");
+                console.error("  4. Database user credentials");
                 throw err;
             });
         cached.promise = attempt;

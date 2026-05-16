@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:db": "npx ts-node src/lib/services/testMongoConnection.ts"
   },
   "dependencies": {
     "@iconify/icons-ion": "^1.2.10",

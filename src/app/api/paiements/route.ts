@@ -71,7 +71,7 @@ export async function DELETE(request: Request) {
     }
 }
 
-export async function GET(_: Request) {
+export async function GET(request: Request) {
     try {
         console.log('[FETCHING LIST PAIEMENTS]');
         await connectDB();

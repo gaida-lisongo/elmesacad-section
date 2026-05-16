@@ -99,8 +99,8 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
         if (!designation?.trim() || !montant) {
             return NextResponse.json({ message: "designation et montant sont requis" }, { status: 400 });
         }
-        const slug = await buildUniqueSlug(ModaliteModel, designation, { frais: frais._id });
-        const modalite = await ModaliteModel.create({ frais: frais._id, designation, montant, slug, description });
+        const modalite_slug = await buildUniqueSlug(ModaliteModel, designation, { frais: frais._id });
+        const modalite = await ModaliteModel.create({ frais: frais._id, designation, montant, slug: modalite_slug, description });
         return NextResponse.json({ data: modalite }, { status: 201 });
     } catch (error) {
         return NextResponse.json({ message: "Échec création", error: (error as Error).message }, { status: 500 });
@@ -124,8 +124,8 @@ export async function PUT(request: Request, context: { params: Promise<{ slug: s
         if (!designation?.trim() || !montant) {
             return NextResponse.json({ message: "designation et montant sont requis" }, { status: 400 });
         }
-        const modalite = await ModaliteModel.findByIdAndUpdate(modalite._id, { designation, montant, description }, { new: true });
-        return NextResponse.json({ data: modalite }, { status: 200 });
+        const modaliteUpdated = await ModaliteModel.findByIdAndUpdate(modalite._id, { designation, montant, description }, { new: true });
+        return NextResponse.json({ data: modaliteUpdated }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ message: "Échec mise à jour", error: (error as Error).message }, { status: 500 });
     }
