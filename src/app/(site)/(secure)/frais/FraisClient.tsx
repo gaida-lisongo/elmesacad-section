@@ -680,20 +680,6 @@ export default function FraisClient({ tabs, initialData }: FraisClientProps) {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Année académique
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="annee"
-                                        value={editingFrais ? formData.annee : activeTab}
-                                        onChange={handleInputChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600 cursor-not-allowed"
-                                        required
-                                        disabled
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Désignation
                                     </label>
                                     <input

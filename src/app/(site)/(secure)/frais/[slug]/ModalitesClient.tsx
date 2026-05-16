@@ -181,7 +181,7 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                     <div>
                         <h1 className="text-2xl font-bold text-gray-800">{frais.designation}</h1>
                         <p className="text-sm text-gray-600 mt-1">
-                            Année: {frais.annee?.designation || "Non spécifiée"} | Montant total: {frais.montant.toLocaleString('fr-FR')} FCFA
+                            Année: {frais.annee?.designation || "Non spécifiée"} | Montant total: {frais.montant.toLocaleString('fr-FR')} $
                         </p>
                     </div>
                     <button
@@ -203,7 +203,7 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                     </div>
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                         <p className="text-xs text-gray-500 uppercase">Montant modalités</p>
-                        <p className="text-xl font-bold text-gray-800">{metrics.amount_modalites.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xl font-bold text-gray-800">{metrics.amount_modalites.toLocaleString('fr-FR')} $</p>
                     </div>
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                         <p className="text-xs text-gray-500 uppercase">Paiements</p>
@@ -211,7 +211,7 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                     </div>
                     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
                         <p className="text-xs text-gray-500 uppercase">Montant payé</p>
-                        <p className="text-xl font-bold text-green-600">{metrics.amount_paiements.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xl font-bold text-green-600">{metrics.amount_paiements.toLocaleString('fr-FR')} $</p>
                     </div>
                 </div>
             )}
@@ -252,7 +252,7 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                                             {modalite.designation}
                                         </td>
                                         <td className="px-4 py-3 text-gray-700">
-                                            {modalite.montant.toLocaleString('fr-FR')} FCFA
+                                            {modalite.montant.toLocaleString('fr-FR')} $
                                         </td>
                                         <td className="px-4 py-3 text-gray-600 max-w-xs truncate">
                                             {modalite.description || "—"}
@@ -313,7 +313,7 @@ export default function ModalitesClient({ frais }: ModalitesClientProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Montant (FCFA)
+                                        Montant ($)
                                     </label>
                                     <input
                                         type="number"

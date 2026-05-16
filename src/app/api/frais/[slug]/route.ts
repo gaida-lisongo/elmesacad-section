@@ -13,7 +13,7 @@ export async function GET(_: Request, context: { params: Promise<{ slug: string 
         if (!slug?.trim()) {
             return NextResponse.json({ message: "slug manquant" }, { status: 400 });
         }
-        const frais = await FraisModel.findOne({ slug: slug.trim() }).populate("programmes").populate("annee").lean();
+        const frais = await FraisModel.findOne({ slug: slug.trim() }).populate("annee").lean();
         if (!frais) {
             return NextResponse.json({ message: "Frais introuvable" }, { status: 404 });
         }
@@ -90,7 +90,7 @@ export async function POST(request: Request, context: { params: Promise<{ slug: 
         if (!slug?.trim()) {
             return NextResponse.json({ message: "slug manquant" }, { status: 400 });
         }
-        const frais = await FraisModel.findOne({ slug: slug.trim() }).populate("programmes").populate("annee").lean();
+        const frais = await FraisModel.findOne({ slug: slug.trim() }).populate("annee").lean();
         if (!frais) {
             return NextResponse.json({ message: "Frais introuvable" }, { status: 404 });
         }
