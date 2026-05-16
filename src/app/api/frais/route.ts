@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/services/connectedDB";
-import { FraisModel } from "@/lib/models/Frais";
+import { FraisModel, ModaliteModel } from "@/lib/models/Frais";
 import { AnneeModel } from "@/lib/models/Annee";
 // Force le chargement du modèle Annee dans le registre Mongoose
 void AnneeModel;
@@ -39,7 +39,24 @@ export async function GET(request: Request) {
             .populate("annee")
             .lean();
 
-        return NextResponse.json({ data: frais }, { status: 200 });
+        // Récupérer le nombre de modalités pour chaque frais
+        const fraisIds = frais.map(f => f._id.toString());
+        const modalitesCounts = await ModaliteModel.aggregate([
+            { $match: { frais: { $in: fraisIds.map(id => new Types.ObjectId(id)) } } },
+            { $group: { _id: "$frais", count: { $sum: 1 } } }
+        ]);
+
+        const countMap = new Map<string, number>();
+        for (const mc of modalitesCounts) {
+            countMap.set(mc._id.toString(), mc.count);
+        }
+
+        const fraisWithModalitesCount = frais.map(f => ({
+            ...f,
+            modalitesCount: countMap.get(f._id.toString()) ?? 0
+        }));
+
+        return NextResponse.json({ data: fraisWithModalitesCount }, { status: 200 });
     } catch (error) {
         return NextResponse.json({ message: "Failed to fetch frais", error: (error as Error).message }, { status: 500 });
     }

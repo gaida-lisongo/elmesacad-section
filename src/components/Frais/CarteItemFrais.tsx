@@ -77,7 +77,7 @@ export default function CarteItemFrais({ frais, onEdit, onDelete }: CarteItemFra
                         <span className="font-medium">Montant:</span> {frais.montant.toLocaleString('fr-FR')} FCFA
                     </p>
                     <p className="text-sm text-gray-700 mt-1">
-                        <span className="font-medium">Programmes:</span> {Array.isArray((frais as any).programmes) ? (frais as any).programmes.length : 0} programmes
+                        <span className="font-medium">Modalités:</span> {(frais as any).modalitesCount ?? 0} modalité(s)
                     </p>
                 </div>
             </div>
