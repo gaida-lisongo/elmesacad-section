@@ -94,7 +94,7 @@ export async function PUT(request: Request) {
         if (programmes?.length) {
             updateData.programmes = programmes;
         }
-        const frais = await FraisModel.findByIdAndUpdate(id, updateData, { new: true });
+        const frais = await FraisModel.findByIdAndUpdate(id, updateData, { returnDocument: 'after' });
         if (!frais) {
             return NextResponse.json({ message: "Frais not found" }, { status: 404 });
         }
