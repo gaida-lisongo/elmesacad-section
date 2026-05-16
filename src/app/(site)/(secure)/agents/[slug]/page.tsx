@@ -58,7 +58,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ sl
       title={`Detail agent: ${agent.name}`}
       description="Visualiser et editer les informations de l'agent"
       breadcrumbs={[
-        { href: "/", text: "Home" },
+        { href: "/", text: "Acceuil" },
         { href: "/agents", text: "Agents" },
         { href: `/agents/${agent.id}`, text: agent.name },
       ]}

@@ -37,6 +37,11 @@ const AUTHORIZATION_BY_ROLE: Record<string, AuthorizationItem[]> = {
     { designation: "Assistant", code: "ASS" },
     { designation: "Jury", code: "JR" },
   ],
+  coge: [
+    { designation: "Directeur Général", code: "DG" },
+    { designation: "Administrateur du Budget", code: "AB" },
+    // { designation: "Secrétaire", code: "SEC" },
+  ],
 };
 
 const inputClass =

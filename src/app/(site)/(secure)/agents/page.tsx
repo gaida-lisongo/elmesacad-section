@@ -9,6 +9,7 @@ const roleTabs = [
   { label: "Organisateur", value: "organisateur" },
   { label: "Gestionnaire", value: "gestionnaire" },
   { label: "Titulaire", value: "titulaire" },
+  { label: "Comité de Gestion", value: "coge" },
 ];
 
 type AgentsApiResponse = {
@@ -16,7 +17,7 @@ type AgentsApiResponse = {
 };
 
 export default function AgentsPage() {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("admin");
   const [searchText, setSearchText] = useState("");
   const [items, setItems] = useState<AgentItem[]>([]);
 
@@ -41,7 +42,7 @@ export default function AgentsPage() {
   }, [fetchAgents]);
 
   const currentRole = useMemo(
-    () => (activeTab === "all" ? "organisateur" : activeTab),
+    () => (activeTab === "admin" ? "admin" : activeTab),
     [activeTab]
   );
 
