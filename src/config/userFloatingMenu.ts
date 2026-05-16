@@ -40,7 +40,7 @@ export const userFloatingMenu: {
       { item: "Tickets", path: "/tickets" },
     ],
     coge: [
-      { item: "Dashboard", path: "/dashboard" },
+      { item: "Dashboard", path: "/coge" },
       { item: "Gestion des Frais", path: "/frais" },
       { item: "Gestion des Modalités", path: "/modalites" },
     ],
