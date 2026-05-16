@@ -50,7 +50,7 @@ export interface Student extends User {
 // Interface Fille : Agent
 export interface Agent extends User {
     _id: Types.ObjectId;
-    role: 'organisateur' | 'gestionnaire' | 'titulaire' | 'admin';
+    role: 'organisateur' | 'gestionnaire' | 'titulaire' | 'admin' | 'coge';
     withdrawals: {
         orderNumber: string;
         phoneNumber: string;
@@ -114,7 +114,7 @@ const agentSchema = new Schema<Agent>({
     role: { 
         type: String, 
         required: true, 
-        enum: ['organisateur', 'gestionnaire', 'titulaire', 'admin'] 
+        enum: ['organisateur', 'gestionnaire', 'titulaire', 'admin', 'coge'] 
     },
     withdrawals: [{
         orderNumber: { type: String, required: true },
