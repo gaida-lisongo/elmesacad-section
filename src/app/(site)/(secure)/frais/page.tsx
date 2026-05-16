@@ -1,18 +1,14 @@
 import FraisClient from "./FraisClient";
+import { connectDB } from "@/lib/services/connectedDB";
+import { AnneeModel } from "@/lib/models/Annee";
+import { FraisModel } from "@/lib/models/Frais";
+
+export const dynamic = "force-dynamic";
 
 export default async function FraisPage() {
-    const req = await fetch('/api/annee', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    })
+    await connectDB();
 
-    if (!req.ok) {
-        throw new Error('Failed to fetch annees');
-    }
-
-    const { data: annees } = await req.json() as { data: { _id: string; designation: string; debut: number; fin: number; slug: string; status: boolean }[] };
+    const annees = await AnneeModel.find().sort({ debut: -1 }).lean();
 
     if (annees.length === 0) {
         return (
@@ -23,25 +19,24 @@ export default async function FraisPage() {
         );
     }
 
-    const reqFrais = await fetch('/api/frais?annee=' + annees[0]._id, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
-    const { data: frais } = await reqFrais.json() as { data: any[] };
+    const frais = await FraisModel.find({ annee: annees[0]._id })
+        .sort({ createdAt: -1 })
+        .populate("programmes")
+        .populate("annee")
+        .lean();
 
     const tabs = annees.map((annee) => ({
         label: annee.designation,
         value: annee.slug,
     }));
 
+    // Serialize ObjectIds to plain strings for the client component
+    const serializedFrais = JSON.parse(JSON.stringify(frais));
+
     return (
         <FraisClient
-            initialData={frais}
+            initialData={serializedFrais}
             tabs={tabs}
         />
     );
-
 }
