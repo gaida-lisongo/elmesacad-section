@@ -68,7 +68,7 @@ export default async function ReleveResourceCommandesPage({ params }: PageProps)
       backLabel="Relevés de cotes"
       initialData={initialData}
       initialError={initialError}
-      toolbarDescription="Demandes liées à ce relevé de cotes (commandes de type « resultat », service étudiant)."
+      toolbarDescription="Définissez les frais à payer pour ce relevé de cotes. Les étudiants devront payer ces frais pour accéder à la ressource."
     />
   );
 }

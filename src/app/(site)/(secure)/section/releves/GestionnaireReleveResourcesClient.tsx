@@ -304,8 +304,8 @@ export default function GestionnaireReleveResourcesClient({
                       href={`/section/releves/releves/${r.id}`}
                       className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-800/80 dark:hover:bg-gray-800"
                     >
-                      <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
-                      Demandes
+                      <Icon icon="solar:wallet-money-bold-duotone" className="h-4 w-4 text-primary" />
+                      Frais à payer
                     </Link>
                     <button
                       type="button"

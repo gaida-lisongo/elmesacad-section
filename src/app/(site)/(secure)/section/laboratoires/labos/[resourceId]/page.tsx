@@ -68,7 +68,7 @@ export default async function LaboResourceCommandesPage({ params }: PageProps) {
       backLabel="Laboratoires"
       initialData={initialData}
       initialError={initialError}
-      toolbarDescription="Liste des commandes liées à ce bon de laboratoire (service étudiant — type labo)."
+      toolbarDescription="Définissez les frais à payer pour ce bon de laboratoire. Les étudiants devront payer ces frais pour accéder à la ressource."
     />
   );
 }
