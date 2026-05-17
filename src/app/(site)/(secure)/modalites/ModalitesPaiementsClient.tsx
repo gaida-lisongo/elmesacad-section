@@ -609,7 +609,7 @@ export default function ModalitesPaiementsClient({
                                                             <Icon icon="mdi:pencil" width="16" height="16" />
                                                         </button>
                                                         <button
-                                                            onClick={() => handleDelete(paiement.id)}
+                                                            onClick={() => handleDelete(paiement._id)}
                                                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                             title="Supprimer"
                                                         >
