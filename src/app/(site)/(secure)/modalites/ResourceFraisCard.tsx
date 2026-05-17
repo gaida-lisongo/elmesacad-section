@@ -206,13 +206,6 @@ export default function ResourceFraisCard({
             <Icon icon="solar:eye-bold-duotone" className="h-4 w-4 text-primary" />
             Vérifier paiement
           </Link>
-          <Link
-            href={`/section/${getSectionPath(resourceType)}/${getResourcePath(resourceType)}/${item.id}`}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary dark:bg-primary/20"
-          >
-            <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
-            Frais à payer
-          </Link>
           <button
             type="button"
             onClick={() => onDelete?.(item)}

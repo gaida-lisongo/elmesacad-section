@@ -295,7 +295,7 @@ export default function GestionnaireSessionResourcesClient({
 
                   <div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-gray-800">
                     <Link
-                      href={`/section/enrollements/sessions/${r.id}`}
+                      href={`/demandes/sessions/${r.id}`}
                       className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-800/80 dark:hover:bg-gray-800"
                     >
                       <Icon icon="solar:wallet-money-bold-duotone" className="h-4 w-4 text-primary" />
