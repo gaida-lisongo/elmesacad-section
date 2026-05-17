@@ -72,6 +72,12 @@ export const userFloatingMenu: {
       { item: "Fiches de validation", path: "/section/fiches-validation" },
       { item: "Relevés de cotes", path: "/section/releves" },
       { item: "Laboratoires", path: "/section/laboratoires" },
+      { item: "Demandes", path: "#", subMenu: [
+        { item: "Sessions", path: "/demandes/sessions" },
+        { item: "Validations", path: "/demandes/validations" },
+        { item: "Relevés", path: "/demandes/releves" },
+        { item: "Laboratoires", path: "/demandes/laboratoires" },
+      ]},
     ],
   },
   agentFallback: [

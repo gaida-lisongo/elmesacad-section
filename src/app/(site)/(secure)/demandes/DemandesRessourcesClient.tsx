@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { Icon } from "@iconify/react";
+import { generateDemandesRapportAction, type RapportResult } from "@/actions/demandesRapportActions";
 
 type ResourceWithDemandes = {
   id: string;
@@ -60,20 +62,47 @@ const TYPE_CONFIG = {
   },
 };
 
+const PERIOD_LABELS: Record<string, string> = {
+  daily: "Journalier",
+  monthly: "Mensuel",
+  semester: "Semestriel",
+  annual: "Annuel",
+};
+
 function isPublicationActive(status: string): boolean {
   const st = (status || "").toLowerCase();
   return st === "active" || st === "published" || st === "disponible";
 }
 
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default function DemandesRessourcesClient({
   type,
   typeLabel,
+  sectionSlug,
   sectionDesignation,
   resources,
   initialError,
   detailPath,
 }: Props) {
   const [searchText, setSearchText] = useState("");
+  const [showRapportPanel, setShowRapportPanel] = useState(false);
+  const [rapportPeriod, setRapportPeriod] = useState<string>("monthly");
+  const [rapportResult, setRapportResult] = useState<RapportResult | null>(null);
+  const [rapportError, setRapportError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const config = TYPE_CONFIG[type];
 
   const filteredResources = resources.filter((r) =>
@@ -83,6 +112,51 @@ export default function DemandesRessourcesClient({
   const totalDemandes = resources.reduce((sum, r) => sum + r.demandesCount, 0);
   const totalPaid = resources.reduce((sum, r) => sum + r.demandesPaid, 0);
   const totalPending = resources.reduce((sum, r) => sum + r.demandesPending, 0);
+
+  const handleGenerateRapport = () => {
+    if (resources.length === 0) {
+      setRapportError("Aucune ressource disponible pour générer un rapport.");
+      return;
+    }
+    setRapportError(null);
+    setRapportResult(null);
+    startTransition(async () => {
+      try {
+        const result = await generateDemandesRapportAction({
+          type,
+          period: rapportPeriod as "daily" | "monthly" | "semester" | "annual",
+          resourceIds: resources.map((r) => r.id),
+          sectionSlug,
+          typeLabel,
+        });
+        setRapportResult(result);
+      } catch (e) {
+        setRapportError((e as Error).message);
+      }
+    });
+  };
+
+  const handleDownloadCsv = () => {
+    if (!rapportResult || rapportResult.rows.length === 0) return;
+    const headers = ["Ressource", "Matricule", "Email", "Paiement", "Référence", "N° Commande", "Date"];
+    const rows = rapportResult.rows.map((r) => [
+      r.ressourceDesignation,
+      r.matricule,
+      r.studentEmail,
+      r.payment,
+      r.reference,
+      r.orderNumber,
+      r.date,
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((c) => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `demandes-${type}-${rapportPeriod}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -156,6 +230,169 @@ export default function DemandesRessourcesClient({
           <p className="text-sm text-gray-600 dark:text-gray-400">En attente</p>
           <p className="text-2xl font-bold text-amber-700">{totalPending}</p>
         </div>
+      </div>
+
+      {/* Rapport Section */}
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <button
+          type="button"
+          onClick={() => setShowRapportPanel(!showRapportPanel)}
+          className="flex w-full items-center justify-between px-5 py-4 text-left"
+        >
+          <div className="flex items-center gap-3">
+            <Icon icon="solar:chart-square-bold-duotone" className="h-6 w-6 text-primary" />
+            <div>
+              <h3 className="font-bold text-midnight_text dark:text-white">Rapport des demandes</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Générer un rapport périodique des demandes (Journalier, Mensuel, Semestriel, Annuel)
+              </p>
+            </div>
+          </div>
+          <Icon
+            icon={showRapportPanel ? "solar:alt-arrow-up-bold-duotone" : "solar:alt-arrow-down-bold-duotone"}
+            className="h-5 w-5 text-gray-400"
+          />
+        </button>
+
+        {showRapportPanel && (
+          <div className="border-t border-gray-100 px-5 py-4 dark:border-gray-700">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-wrap gap-2">
+                {(["daily", "monthly", "semester", "annual"] as const).map((period) => (
+                  <button
+                    key={period}
+                    type="button"
+                    onClick={() => setRapportPeriod(period)}
+                    className={`rounded-xl border px-4 py-2 text-sm font-semibold transition ${
+                      rapportPeriod === period
+                        ? "border-primary bg-primary text-white shadow-sm"
+                        : "border-gray-200 bg-white text-gray-700 hover:border-primary/40 hover:bg-primary/5 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+                    }`}
+                  >
+                    {PERIOD_LABELS[period]}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={handleGenerateRapport}
+                disabled={pending}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-darkprimary disabled:opacity-50"
+              >
+                {pending ? (
+                  <Icon icon="svg-spinners:ring-resize" className="h-5 w-5" />
+                ) : (
+                  <Icon icon="solar:document-text-bold-duotone" className="h-5 w-5" />
+                )}
+                {pending ? "Génération..." : "Générer le rapport"}
+              </button>
+            </div>
+
+            {/* Rapport Error */}
+            {rapportError ? (
+              <div className="mt-4 flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
+                <p>{rapportError}</p>
+              </div>
+            ) : null}
+
+            {/* Rapport Result */}
+            {rapportResult ? (
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-3 sm:grid-cols-4">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50/80 p-3 text-center dark:border-gray-600 dark:bg-gray-800/60">
+                    <p className="text-lg font-bold text-midnight_text dark:text-white">{rapportResult.totalCommandes}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Total</p>
+                  </div>
+                  <div className="rounded-xl border border-green-200 bg-green-50/80 p-3 text-center dark:border-green-900/40 dark:bg-green-900/10">
+                    <p className="text-lg font-bold text-green-700">{rapportResult.totalPaid}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-green-600">Payées</p>
+                  </div>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-center dark:border-amber-900/40 dark:bg-amber-900/10">
+                    <p className="text-lg font-bold text-amber-700">{rapportResult.totalPending}</p>
+                    <p className="text-[10px] uppercase tracking-wide text-amber-600">En attente</p>
+                  </div>
+                  <div className="rounded-xl border border-primary/20 bg-primary/[0.05] p-3 text-center dark:border-primary/30">
+                    <p className="text-lg font-bold capitalize text-primary">
+                      {PERIOD_LABELS[rapportResult.period] || rapportResult.period}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-gray-500">Période</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Généré le {formatDate(rapportResult.generatedAt)} — {rapportResult.rows.length} ligne(s)
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleDownloadCsv}
+                    disabled={rapportResult.rows.length === 0}
+                    className="inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/[0.07] px-4 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15 disabled:opacity-40"
+                  >
+                    <Icon icon="solar:export-bold-duotone" className="h-4 w-4" />
+                    Télécharger CSV
+                  </button>
+                </div>
+
+                {rapportResult.rows.length > 0 ? (
+                  <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700">
+                    <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">Ressource</th>
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">Matricule</th>
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">Email</th>
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">Paiement</th>
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">N° Commande</th>
+                          <th className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-400">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rapportResult.rows.map((row, i) => (
+                          <tr
+                            key={i}
+                            className="border-b border-gray-100 transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50"
+                          >
+                            <td className="max-w-[10rem] truncate px-3 py-2 font-medium text-midnight_text dark:text-white">
+                              {row.ressourceDesignation}
+                            </td>
+                            <td className="px-3 py-2 font-mono text-gray-600 dark:text-gray-400">{row.matricule}</td>
+                            <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{row.studentEmail}</td>
+                            <td className="px-3 py-2">
+                              <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                                  row.payment?.toLowerCase() === "success" ||
+                                  row.payment?.toLowerCase() === "paid" ||
+                                  row.payment?.toLowerCase() === "completed"
+                                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                                    : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                                }`}
+                              >
+                                {row.payment}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 font-mono text-gray-600 dark:text-gray-400">
+                              {row.orderNumber || row.reference?.slice(-8)}
+                            </td>
+                            <td className="px-3 py-2 text-gray-500 dark:text-gray-500">
+                              {formatDate(row.date)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50/50 py-8 text-center dark:border-gray-600 dark:bg-gray-900/40">
+                    <Icon icon="solar:document-text-bold-duotone" className="mb-2 h-10 w-10 text-gray-400" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Aucune demande trouvée pour cette période.</p>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
 
       {/* Search */}
