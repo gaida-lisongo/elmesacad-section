@@ -55,11 +55,11 @@ export async function PUT(request: Request) {
     try {
         await connectDB();
         const body = await request.json();
-        const { id, email, matricule, modalite, reference, status } = body;
-        if (!id?.trim() || !email?.trim() || !matricule?.trim() || !modalite?.trim() || !reference?.trim() || !status?.trim()) {
-            return NextResponse.json({ message: "id, email et matricule sont requis" }, { status: 400 });
+        const { id, email, matricule, reference, status } = body;
+        if (!id?.trim() || !matricule?.trim() || !reference?.trim() || !status?.trim()) {
+            return NextResponse.json({ message: "id, matricule, reference et status sont requis" }, { status: 400 });
         }
-        const paiement = await PaiementModel.findByIdAndUpdate(id, { email, matricule, modalite, reference, status }, { returnDocument: 'after' });
+        const paiement = await PaiementModel.findByIdAndUpdate(id, { email, matricule, reference, status }, { returnDocument: 'after' });
         if (!paiement) {
             return NextResponse.json({ message: "Paiement introuvable" }, { status: 404 });
         }

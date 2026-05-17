@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { Icon } from "@iconify/react";
+import { b } from "framer-motion/m";
 
 interface Paiement {
     id: string;
@@ -198,7 +199,13 @@ export default function ModalitesPaiementsClient({
                 ? await fetch("/api/paiements", {
                       method: "PUT",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ id: editingPaiement.id, status: formData.status }),
+                      body: JSON.stringify({ 
+                        id: editingPaiement.id,
+                        email: body.email,
+                        matricule: body.matricule,
+                        reference: body.reference,
+                        status: formData.status 
+                    }),
                   })
                 : await fetch("/api/paiements", {
                       method: "POST",
