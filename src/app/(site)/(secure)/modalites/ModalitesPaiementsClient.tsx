@@ -582,7 +582,7 @@ export default function ModalitesPaiementsClient({
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className="text-sm text-gray-600">
-                                                        {paiement.email || "—"}
+                                                        {paiement.email || `${paiement._id || "—"}`}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
