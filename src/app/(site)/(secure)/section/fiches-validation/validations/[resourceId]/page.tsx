@@ -68,7 +68,7 @@ export default async function ValidationResourceCommandesPage({ params }: PagePr
       backLabel="Fiches de validation"
       initialData={initialData}
       initialError={initialError}
-      toolbarDescription="Définissez les frais à payer pour cette fiche de validation. Les étudiants devront payer ces frais pour accéder à la ressource."
+      toolbarDescription="Demandes liées à cette fiche de validation (commandes de type « resultat » / crédits, service étudiant)."
     />
   );
 }

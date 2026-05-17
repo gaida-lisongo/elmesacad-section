@@ -68,7 +68,7 @@ export default async function SessionResourceCommandesPage({ params }: PageProps
       backLabel="Enrollements"
       initialData={initialData}
       initialError={initialError}
-      toolbarDescription="Définissez les frais à payer pour cette session d'enrôlement. Les étudiants devront payer ces frais pour accéder à la ressource."
+      toolbarDescription="Demandes liées à cette session (commandes de type « session », service étudiant)."
     />
   );
 }

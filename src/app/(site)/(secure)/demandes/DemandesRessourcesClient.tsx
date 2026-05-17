@@ -197,7 +197,7 @@ export default function DemandesRessourcesClient({
             return (
               <Link
                 key={r.id}
-                href={`${detailPath}/${r.id}`}
+                href={`/demandes/${type === "labo" ? "laboratoires" : `${type}s`}/${r.id}`}
                 className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white p-5 shadow-md transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900"
               >
                 {/* Header */}
