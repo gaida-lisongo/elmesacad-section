@@ -200,7 +200,7 @@ export default function ModalitesPaiementsClient({
                       method: "PUT",
                       headers: { "Content-Type": "application/json" },
                       body: JSON.stringify({ 
-                        id: editingPaiement.id,
+                        id: editingPaiement._id,
                         email: body.email,
                         matricule: body.matricule,
                         reference: body.reference,
@@ -582,7 +582,7 @@ export default function ModalitesPaiementsClient({
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <span className="text-sm text-gray-600">
-                                                        {paiement.email || `${paiement._id || "—"}`}
+                                                        {paiement.email || "—"}
                                                     </span>
                                                 </td>
                                                 <td className="px-4 py-3">
