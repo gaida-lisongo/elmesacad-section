@@ -21,7 +21,7 @@ interface DashboardPageProps {
 }
 
 export default function DashboardPage({ initialData, children }: DashboardPageProps) {
-  const { metrics = [], chartData = [], whiteList = [] } = initialData;
+  const { metrics = [], chartData = [], whiteList = { categorie: '', list: [] } } = initialData;
 
   // Extraction de la première série de graphiques transmise si elle existe
   const mainChart = chartData[0];
