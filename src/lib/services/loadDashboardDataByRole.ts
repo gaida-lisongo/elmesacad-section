@@ -9,6 +9,30 @@ import type {
   DashboardTableData,
   DashboardWhiteListItem,
 } from "@/lib/dashboard/types";
+export interface Metric {
+  title: string;
+  value: string | number;
+  unit?: string;
+  proportion: number;
+  iconName: string;   // Le slug de l'icône (ex: "ion:eye-outline")
+  iconColor: string;  // Le nom de la couleur (ex: "emerald")
+}
+
+export interface ChartSerie {
+  x: string[];
+  y: number[];
+  y2?: number[]; // Optionnel, pour les graphiques combinés
+  z: { slug: string; title: string };
+}
+
+export type WhiteListItem = {
+  title: string;
+  description: string;
+  value: string;
+  proportion: number;
+  icon: any;
+  url?: string;
+}
 
 type Bundle = {
   metrics: DashboardMetric[];
@@ -92,6 +116,46 @@ const emptyTable: DashboardTableData = {
   rows: [],
 };
 
+async function generateSectionMetrics(role: Exclude<DashboardRole, "admin" | "student">, section: string): Promise<Metric[]> {
+  try {
+
+    await connectDB();
+
+    switch (role) {
+      case "titulaire":
+        return [
+          { title: "TP & activités", value: "—", proportion: 0, iconName: "ion:document-text-outline", iconColor: "blue" },
+          { title: "QCM", value: "—", proportion: 0, iconName: "ion:checkbox-outline", iconColor: "violet" },
+          { title: "Notes", value: "—", proportion: 0, iconName: "ion:star-outline", iconColor: "amber" },
+        ];
+      case "organisateur":
+        return [
+          { title: "Programmes", value: "—", proportion: 0, iconName: "ion:calendar-outline", iconColor: "indigo" },
+          { title: "Sessions jury", value: "—", proportion: 0, iconName: "ion:ribbon-outline", iconColor: "rose" },
+          { title: "Archives", value: "—", proportion: 0, iconName: "ion:archive-outline", iconColor: "slate" },
+        ];
+      case "gestionnaire":
+        //Fetch all enrollements
+        //Fetch all validation fiches
+        //Fetch all relevés
+        //Fetch all laboratory
+
+
+        return [
+          { title: "Enrollements", value: "—", proportion: 0, iconName: "ion:person-add-outline", iconColor: "emerald" },
+          { title: "Fiches de validation", value: "—", proportion: 0, iconName: "ion:id-card-outline", iconColor: "sky" },
+          { title: "Relevés", value: "—", proportion: 0, iconName: "ion:receipt-outline", iconColor: "orange" },
+        ];
+      default:
+        return [];
+    }
+    
+  } catch (error) {
+    console.error("Error generating metrics:", error);
+    return [];
+  }
+}
+
 /**
  * Données initiales du tableau de bord selon le rôle (SSR).
  * - `admin` : agrégations complètes.
@@ -114,6 +178,17 @@ export async function loadDashboardDataByRole(role: DashboardRole): Promise<Bund
       whiteList: [],
     };
   }
+
+  if(role === "organisateur") {
+  }
+
+  if (role === "gestionnaire") {
+    
+  }
+
+  if(role === "titulaire") {
+  }
+
 
   if (role === "titulaire" || role === "organisateur" || role === "gestionnaire") {
     await connectDB();
