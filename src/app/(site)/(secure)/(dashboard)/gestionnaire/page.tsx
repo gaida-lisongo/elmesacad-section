@@ -125,19 +125,19 @@ export default async function GestionnaireDashboardPage() {
       z: { slug: 'bar', title: 'Aperçu global des activités' }
     };
 
-    const whiteListRessources : {categorie: string, list: WhiteListItem[]}[] = categories.map(cat => ({
-      categorie: cat.title,
-      list: cat.rows.map(row => ({
+    const whiteListRessources : {categorie: string, list: WhiteListItem[]} = {
+      categorie: "Modalités de Paiement",
+      list: categories.map((cat: any) => ({
         // WhiteListItem requires a `title` property; use designation or fallback
-        title: row.designation || `${cat.title} item`,
-        label: row.designation,
-        description: row.status || "N/A",
-        value: (row.amount ? row.amount.toLocaleString() : "0") + (row?.currency ? ` ${row.currency}` : ""),
-        proportion: row.amount ? Math.round((row.amount / (cat.amount || 1)) * 10000) / 100 : 0, 
+        title: `${cat.title}`.toUpperCase(),
+        label: `${cat.title}`.toUpperCase(),
+        description: `Ressource(s) ${cat.total}`,
+        value: `${cat.amount} USD`,
+        proportion: cat.total ? Math.round((cat.total / (totalResources || 1)) * 10000) / 100 : 0, 
         icon: cat.icon,
-        url: `/modalites/${cat?.title}/${row.id}` 
+        url: `/modalites/${cat?.title}` 
       }))
-    }));
+    };
 
     // 8. Rendu final vers le composant de gestion
     return (

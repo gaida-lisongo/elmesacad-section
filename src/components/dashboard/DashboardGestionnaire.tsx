@@ -11,7 +11,7 @@ interface DashboardGestionnaireProps {
   metrics: Metric[]; 
   categories: string[];
   chartData: ChartSerie;
-  whiteList: { categorie: string; list: WhiteListItem[] }[];
+  whiteList: { categorie: string; list: WhiteListItem[] };
   tableData: {
     categories: { slug: string; designation: string; }[];
     rows: any[];

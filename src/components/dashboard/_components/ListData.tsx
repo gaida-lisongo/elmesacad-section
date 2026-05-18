@@ -6,20 +6,20 @@ import { Icon } from '@iconify/react';
 import { WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
 
 interface ListDataProps {
-  items: { categorie: string; list: WhiteListItem[] }[];
+  items: { categorie: string; list: WhiteListItem[] };
 }
 
 export const ListData: React.FC<ListDataProps> = ({ items }) => {
   // 1. Initialiser avec la première catégorie disponible ou une chaîne vide
-  const [currentCategory, setCurrentCategory] = useState<string>(items[0]?.categorie || '');
+  const [currentCategory, setCurrentCategory] = useState<string>(items?.categorie || '');
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 2. Récupérer toutes les catégories uniques disponibles pour le dropdown
-  const categoriesList = items.map(item => item.categorie);
+  const categoriesList = items?.list ?? [];
 
   // 3. Trouver la liste des items liés uniquement à la catégorie courante
-  const currentCategoryData = items.find(
+  const currentCategoryData = [items].find(
     (group) => group.categorie.toLowerCase() === currentCategory.toLowerCase()
   );
   
@@ -68,17 +68,17 @@ export const ListData: React.FC<ListDataProps> = ({ items }) => {
               <button
                 key={idx}
                 onClick={() => {
-                  setCurrentCategory(cat);
+                  setCurrentCategory(cat?.title || '');
                   setIsDropdownOpen(false);
                 }}
                 className={`w-full text-left px-4 py-2 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
-                  cat.toLowerCase() === currentCategory.toLowerCase()
+                  cat?.title?.toLowerCase() === currentCategory.toLowerCase()
                     ? 'text-indigo-600 bg-indigo-50/50'
                     : 'text-slate-600 hover:bg-slate-50'
                 }`}
               >
-                <span className="capitalize">{cat}</span>
-                {cat.toLowerCase() === currentCategory.toLowerCase() && (
+                <span className="capitalize">{cat?.title || cat?.title}</span>
+                {cat?.title?.toLowerCase() === currentCategory.toLowerCase() && (
                   <Icon icon="mdi:check" className="w-3.5 h-3.5 text-indigo-600" />
                 )}
               </button>
@@ -90,7 +90,7 @@ export const ListData: React.FC<ListDataProps> = ({ items }) => {
       {/* Liste filtrée dynamique */}
       <div className="divide-y divide-slate-50 max-h-[400px] overflow-y-auto pr-1 scrollbar-thin">
         {displayedList.length > 0 ? (
-          displayedList.map((item, index) => {
+          displayedList.map((item: WhiteListItem, index: number) => {
             const isPositive = item.proportion >= 0;
             
             // Conteneur de l'élément de liste (Rend le clic optionnel si une URL est fournie)

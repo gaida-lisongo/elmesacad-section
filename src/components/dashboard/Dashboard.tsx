@@ -14,7 +14,7 @@ interface DashboardPageProps {
   initialData: {
     metrics: Metric[];
     chartData: ChartSerie[];
-    whiteList: {categorie: string, list: WhiteListItem[]}[];
+    whiteList: {categorie: string, list: WhiteListItem[]};
     categories: string[]; // Nouvelles catégories pour filtrer les données de la whitelist ou des graphiques
   };
   children?: ReactNode; // Permet d'injecter dynamiquement la table (TableData) configurée par le rôle parent
