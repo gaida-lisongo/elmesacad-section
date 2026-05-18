@@ -16,7 +16,7 @@ export const userFloatingMenu: {
   agentFallback: AdminMenuItem[];
 } = {
   student: [
-    { item: "Tableau de bord", path: "/dashboard" },
+    { item: "Tableau de bord", path: "/student" },
     { item: "Macarons", path: "student/macarons" },
     { item: "Documents", path: "#", subMenu: [
       { item: "Relevés de cotes", path: "/student/releves" },
@@ -32,7 +32,7 @@ export const userFloatingMenu: {
   ],
   agent: {
     admin: [
-      { item: "Dashboard", path: "/dashboard" },
+      { item: "Dashboard", path: "/admin" },
       { item: "Agents", path: "/agents" },
       { item: "Etudiants", path: "/etudiants" },
       { item: "Sections", path: "/sections" },
@@ -45,39 +45,37 @@ export const userFloatingMenu: {
       { item: "Gestion des Modalités", path: "/modalites" },
     ],
     titulaire: [
-      { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Tableau de bord", path: "/titulaire" },
       { item: "Descripteurs", path: "/titulaire/descripteurs"},
       { item: "Présences", path: "/titulaire/presences"},
-      { item: "Activités", path: "#", subMenu: [
+      { item: "Transactions", path: "#", subMenu: [
         { item: "TP", path: "/titulaire/tp" },
         { item: "QCM", path: "/titulaire/qcm" },
       ]},
       { item: "Notes", path: "/titulaire/notes" },
     ],
     organisateur: [
-      { item: "Tableau de bord", path: "/dashboard" },
+      { item: "Tableau de bord", path: "/organisateur" },
       { item: "Programmes", path: "/section/programmes" },
       { item: "Ressources sujets (recherche)", path: "/section/recherche/ressources-sujets" },
       { item: "Ressources stages (recherche)", path: "/section/recherche/ressources-stages" },
-      { item: "Activités", path: "#", subMenu: [
+      { item: "Transactions", path: "#", subMenu: [
         { item: "TP", path: "/section/tp" },
-        { item: "QCM", path: "/section/qcm" }
-      ]},
-      { item: "Autorisations", path: "/section/autorisations" },
-      { item: "Archivage", path: "/section/archivage" },
-    ],
-    gestionnaire: [
-      { item: "Tableau de bord", path: "/dashboard" },
-      { item: "Enrollements", path: "/section/enrollements" },
-      { item: "Fiches de validation", path: "/section/fiches-validation" },
-      { item: "Relevés de cotes", path: "/section/releves" },
-      { item: "Laboratoires", path: "/section/laboratoires" },
-      { item: "Demandes", path: "#", subMenu: [
+        { item: "QCM", path: "/section/qcm" },
         { item: "Sessions", path: "/demandes/sessions" },
         { item: "Validations", path: "/demandes/validations" },
         { item: "Relevés", path: "/demandes/releves" },
         { item: "Laboratoires", path: "/demandes/laboratoires" },
       ]},
+      { item: "Autorisations", path: "/section/autorisations" },
+      { item: "Archivage", path: "/section/archivage" },
+    ],
+    gestionnaire: [
+      { item: "Tableau de bord", path: "/gestionnaire" },
+      { item: "Enrollements", path: "/section/enrollements" },
+      { item: "Fiches de validation", path: "/section/fiches-validation" },
+      { item: "Relevés de cotes", path: "/section/releves" },
+      { item: "Laboratoires", path: "/section/laboratoires" },
     ],
   },
   agentFallback: [
