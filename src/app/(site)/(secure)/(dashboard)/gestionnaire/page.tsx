@@ -6,7 +6,7 @@ import DashboardGestionnaire from "@/components/dashboard/DashboardGestionnaire"
 import { getSessionPayload } from "@/lib/auth/sessionServer";
 import { connectDB } from "@/lib/services/connectedDB";
 import UserManager, { AgentWithAuthorizations } from "@/lib/services/UserManager";
-import { ChartSerie, loadDashboardDataByRole, Metric } from "@/lib/services/loadDashboardDataByRole";
+import { ChartSerie, loadDashboardDataByRole, Metric, WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
 import { resolveDashboardUi } from "@/lib/dashboard/resolveDashboardUi";
 import { resolveGestionnaireScope } from "@/lib/section/resolveGestionnaireScope";
 
@@ -18,8 +18,6 @@ import { listGestionnaireSessionResourcesAction } from "@/actions/gestionnaireSe
 import { listGestionnaireValidationResourcesAction } from "@/actions/gestionnaireValidationResources";
 import { listGestionnaireReleveResourcesAction } from "@/actions/gestionnaireReleveResources";
 import { listGestionnaireLaboResourcesAction } from "@/actions/gestionnaireLaboResources";
-import { WhiteListItem } from "@/components/secure/PageDashboard";
-import { ca } from "date-fns/locale";
 import { AnneeModel } from "@/lib/models/Annee";
 import { ProgrammeModel } from "@/lib/models/Programme";
 
@@ -50,12 +48,23 @@ export default async function GestionnaireDashboardPage() {
       );
     }
 
-    // 3. Récupération des ressources en parallèle
-    const [sessionsData, validationsData, relevesData, laboratoiresData] = await Promise.all([
+    // 3. Récupération des ressources et des programmes de la section en parallèle
+    // OPTIMISATION : On lance la récupération des programmes en même temps pour gagner en performance
+    
+    // Si votre scope possède l'ID de la section (ex: scope.sectionId ou scope.id), utilisez-le.
+    // Sinon, on cherche par rapport au champ `section` s'il est indexé ou via une requête appropriée.
+    const queryFilter = scope.sectionId 
+      ? { section: scope.sectionId } 
+      : {} // Adaptez selon ce que renvoie votre resolveGestionnaireScope
+
+    const [sessionsData, validationsData, relevesData, laboratoiresData, annees, programmes] = await Promise.all([
       listGestionnaireSessionResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
       listGestionnaireValidationResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
       listGestionnaireReleveResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
-      listGestionnaireLaboResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" })
+      listGestionnaireLaboResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+      AnneeModel.find({}).lean(),
+      // Correction du filtrage Mongoose :
+      ProgrammeModel.find(queryFilter).populate('section').lean()
     ]);
 
     // Calcul des totaux et conservation des références de lignes (rows) pour le graphique
@@ -113,70 +122,44 @@ export default async function GestionnaireDashboardPage() {
       };
     });
 
-    // 5. Structure de Données Globale pour le Graphique Comparatif (Axe X = Les 4 Catégories)
-    // Utile pour afficher un BarChart récapitulatif global (Nombre total vs Volumes d'activités/amounts)
+    // 5. Structure de Données Globale pour le Graphique Comparatif
     const resourceOverviewChart: ChartSerie = {
-      x: categories.map(cat => cat.title.charAt(0).toUpperCase() + cat.title.slice(1)), // ['Sessions', 'Validations', 'Relevés', 'Laboratoires']
-      y: categories.map(cat => cat.total),                                             // Quantité totale par type
-      y2: categories.map(cat => cat.amount),                                           // Volume financier ou d'activité cumulé
+      x: categories.map(cat => cat.title.charAt(0).toUpperCase() + cat.title.slice(1)), 
+      y: categories.map(cat => cat.total),                                             
+      y2: categories.map(cat => cat.amount),                                           
       z: { slug: 'bar', title: 'Aperçu global des activités' }
     };
 
     const whiteListRessources : {categorie: string, list: WhiteListItem[]}[] = categories.map(cat => ({
       categorie: cat.title,
       list: cat.rows.map(row => ({
+        // WhiteListItem requires a `title` property; use designation or fallback
+        title: row.designation || `${cat.title} item`,
         label: row.designation,
         description: row.status || "N/A",
         value: (row.amount ? row.amount.toLocaleString() : "0") + (row?.currency ? ` ${row.currency}` : ""),
-        proportion: row.amount ? Math.round((row.amount / (cat.amount || 1)) * 10000) / 100 : 0, // Proportion par rapport au total de la catégorie
+        proportion: row.amount ? Math.round((row.amount / (cat.amount || 1)) * 10000) / 100 : 0, 
         icon: cat.icon,
-        url: `/section/modalites/${cat?.title}/${row.id}` // Exemple d'URL, à adapter selon votre routing et les détails disponibles dans `row`
+        url: `/section/modalites/${cat?.title}/${row.id}` 
       }))
     }));
 
-    const annees = await AnneeModel.find({}).lean();
-    const programmes = await ProgrammeModel
-        .find({})
-        .populate('section')
-        .where('section.slug').equals(scope.sectionSlug)
-        .lean();
-
-    console.log("Annees:", annees); // Debug pour vérifier les années récupérées
-    console.log("Programmes:", programmes); // Debug pour vérifier les programmes récupérés
-    console.log("Dynamic Metrics:", dynamicMetrics); // Debug pour vérifier les métriques générées
-    console.log("Resource Overview Chart:", resourceOverviewChart); // Debug pour vérifier les données du graphique
-    console.log("WhiteListRessources:", whiteListRessources); // Debug pour vérifier la structure des données
-
-    // 6. Détermination du rôle et des autorisations
-    const role = mapSessionToDashboardRole(session);
-    let agentAutorizations: DashboardAgentAuthorization[] = [];
-
-    if (session.email) {
-      const agent = await UserManager.getUserByEmail("Agent", session.email);
-      if (agent && "authorizations" in agent) {
-        agentAutorizations = mapMongoAuthorizations(agent as AgentWithAuthorizations);
-      }
-    }
-
-    // 7. Chargement et fusion des données globales
-    const data = await loadDashboardDataByRole(role);
-    const userName = session.name || session.email;
-    const ui = resolveDashboardUi(role, agentAutorizations);
-
-    const enrichedData = {
-      ...data,
-      metrics: dynamicMetrics,
-      // Vous pouvez injecter ici votre graphique dynamique ou écraser chartData existant
-      chartData: [resourceOverviewChart] 
-    };
-
     // 8. Rendu final vers le composant de gestion
     return (
-      <DashboardGestionnaire 
-        data={enrichedData} 
-        userName={userName} 
-        ui={ui} 
-      />
+    <DashboardGestionnaire 
+        metrics={dynamicMetrics}
+        chartData={resourceOverviewChart} // Objet direct (conforme au type ChartSerie du client)
+        whiteList={whiteListRessources}
+        tableData={{ // Double accolades obligatoires pour déclarer un objet en ligne en JSX/TSX
+        categories: annees 
+            ? annees.map((a: any) => ({
+                slug: String(a.slug),
+                designation: String(a.designation || `Année ${a.debut}-${a.fin}`),
+            })) 
+            : [],
+        rows: programmes ?? []
+        }}
+    />
     );
 
   } catch (e: any) {
