@@ -9,7 +9,7 @@ import logoGoogle from '@iconify/icons-ion/logo-google';
 import logoTux from '@iconify/icons-ion/logo-tux'; // Remplacement temporaire pour Tesla/X si nécessaire
 import { Metrique } from '../_components/MetricItem';
 import { ChartData } from '../_components/ChartCard';
-import { ListItem } from '../_components/ListData';
+import type { WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
 
 export interface UserRow {
   name: string;
@@ -64,7 +64,7 @@ export const mockWeeklyProfitChart: ChartData = {
 };
 
 // 3. Données pour ListData (Structure de votre capture d'écran 1 : "My Stocks")
-export const mockStocks = (IconComponent: any): ListItem[] => [
+export const mockStocks = (IconComponent: any): WhiteListItem[] => [
   {
     title: 'Apple Inc',
     description: '16 Shares',
