@@ -19,7 +19,7 @@ interface ListDataProps {
 
 export const ListData: React.FC<ListDataProps> = ({ title, items, filterType = 'Monthly' }) => {
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100 w-full">
+    <div className="bg-white p-6 rounded-2xl border border-slate-100 w-full shadow-md">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-slate-800">{title}</h3>
         <span className="text-xs font-semibold text-slate-400 bg-slate-50 px-2.5 py-1.5 rounded-lg border border-slate-100">

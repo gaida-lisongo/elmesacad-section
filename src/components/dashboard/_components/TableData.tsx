@@ -15,7 +15,7 @@ export const TableData: React.FC<TableDataProps> = ({
   searchPlaceholder = 'Search here...',
 }) => {
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden w-full">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-md overflow-hidden w-full">
       {/* Table Header Filter controls */}
       <div className="p-5 flex justify-between items-center gap-4 border-b border-slate-100">
         <div className="relative w-72">

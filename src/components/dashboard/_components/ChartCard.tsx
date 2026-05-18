@@ -62,7 +62,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ data, subtitle, extraInfo 
   const isLine = z.slug === 'line';
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100 flex-1 min-w-[320px]">
+    <div className="bg-white p-6 rounded-2xl border border-slate-100 flex-1 shadow-md min-w-[320px]">
       {/* Entête du graphique */}
       <div className="flex justify-between items-center mb-6">
         <div>
