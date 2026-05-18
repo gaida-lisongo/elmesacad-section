@@ -4,7 +4,7 @@
 import React, { ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 import { Metric, ChartSerie } from "@/lib/services/loadDashboardDataByRole";
-import type { WhiteListItem } from "@/components/secure/PageDashboard";
+import type { WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
 import { MetricItem } from './_components/MetricItem';
 import { ChartCard } from './_components/ChartCard';
 import { ListData } from './_components/ListData';
