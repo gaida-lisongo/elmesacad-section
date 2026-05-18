@@ -18,7 +18,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="dashboard-layout">
+    <div className="dashboard-layout p-8 bg-slate-50/60 min-h-screen space-y-8">
       {children}
     </div>
   );

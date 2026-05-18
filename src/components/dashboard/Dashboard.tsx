@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const stocks = mockStocks(renderIcon);
 
   return (
-    <div className="p-8 bg-slate-50/60 min-h-screen space-y-8">
+    <div className="">
       
       {/* 1. Zone Haute : Liste des Métriques (Capture d'écran 3) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -57,13 +57,13 @@ export default function DashboardPage() {
             }
           />
           
-          <ChartCard
+          {/* <ChartCard
             data={mockWeeklyProfitChart}
             subtitle="Sales vs Revenue"
-          />
+          /> */}
         </div>
 
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <ListData
             title="My Stocks"
             items={stocks}
