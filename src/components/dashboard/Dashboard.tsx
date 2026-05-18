@@ -66,7 +66,7 @@ export default function DashboardPage({ initialData, children }: DashboardPagePr
               data={mainChart}
               subtitle={mainChart.z?.title || "Aperçu général des activités"}
               extraInfo={
-                <div className="flex gap-12 text-xs font-semibold text-slate-500">
+                <div className="flex items-center gap-12 text-xs font-semibold text-slate-500">
                   <div>
                     Cumul Ressources : 
                     <span className="block text-lg font-bold text-indigo-600">
