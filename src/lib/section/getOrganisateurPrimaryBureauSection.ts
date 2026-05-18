@@ -35,6 +35,8 @@ export async function getOrganisateurPrimaryBureauSection(
 
   if (!row?._id) return null;
 
+  console.log("getOrganisateurPrimaryBureauSection =>", row);
+
   const isChefSection = row.bureau?.chefSection ? String(row.bureau.chefSection) === agentSub : false;
   const isChargeEnseignement =
     row.bureau?.chargeEnseignement ? String(row.bureau.chargeEnseignement) === agentSub : false;
