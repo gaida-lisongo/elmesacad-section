@@ -23,5 +23,8 @@ export async function getOrganisateurChargeRechercheSection(
     sectionId: String(row._id),
     sectionSlug: String(row.slug ?? "").trim(),
     sectionDesignation: String((row as { designation?: string }).designation ?? "").trim(),
+    isChefSection: false,
+    isChargeEnseignement: false,
+    isChargeRecherche: true,
   };
 }
