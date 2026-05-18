@@ -135,7 +135,7 @@ export default async function GestionnaireDashboardPage() {
         value: (row.amount ? row.amount.toLocaleString() : "0") + (row?.currency ? ` ${row.currency}` : ""),
         proportion: row.amount ? Math.round((row.amount / (cat.amount || 1)) * 10000) / 100 : 0, 
         icon: cat.icon,
-        url: `/section/modalites/${cat?.title}/${row.id}` 
+        url: `/modalites/${cat?.title}/${row.id}` 
       }))
     }));
 
