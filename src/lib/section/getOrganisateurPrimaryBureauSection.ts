@@ -29,7 +29,7 @@ export async function getOrganisateurPrimaryBureauSection(
       { "bureau.chargeRecherche": oid },
     ],
   })
-    .select("_id designation slug")
+    .select("_id designation slug bureau")
     .sort({ designation: 1 })
     .lean();
 
