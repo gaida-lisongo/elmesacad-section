@@ -9,7 +9,7 @@ import { connectDB } from "@/lib/services/connectedDB";
 import type { AgentWithAuthorizations } from "@/lib/services/UserManager";
 import DashboardView from "./DashboardView";
 
-function mapSessionToDashboardRole(
+export function mapSessionToDashboardRole(
   s: Awaited<ReturnType<typeof getSessionPayload>>
 ): DashboardRole {
   if (!s) return "organisateur";
@@ -21,7 +21,7 @@ function mapSessionToDashboardRole(
   return "organisateur";
 }
 
-function mapMongoAuthorizations(agent: AgentWithAuthorizations): DashboardAgentAuthorization[] {
+export function mapMongoAuthorizations(agent: AgentWithAuthorizations): DashboardAgentAuthorization[] {
   return agent.authorizations.map((a) => ({
     id: typeof a._id === "string" ? a._id : a._id.toString(),
     code: a.code,
