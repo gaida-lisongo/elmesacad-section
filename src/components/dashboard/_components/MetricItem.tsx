@@ -20,7 +20,7 @@ export const MetricItem: React.FC<Metrique> = ({
   const isPositive = proportion >= 0;
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-xs flex items-center justify-between min-w-[240px] flex-1">
+    <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-md flex items-center justify-between min-w-[240px] flex-1">
       <div className="space-y-3">
         <div className="text-sm font-medium text-slate-500">{title}</div>
         <div className="flex items-baseline gap-1">

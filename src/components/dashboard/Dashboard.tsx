@@ -45,7 +45,7 @@ export default function DashboardPage() {
 
       {/* 2. Zone Intermédiaire : Graphiques et Listes (Captures 1 & 3) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 my-6 items-start">
-        <div className="lg:col-span-2 space-y-6 shadow-xs">
+        <div className="lg:col-span-2 space-y-6 shadow-md">
           <ChartCard
             data={mockPaymentsChart}
             subtitle="Received vs Due amount"
@@ -63,7 +63,7 @@ export default function DashboardPage() {
           /> */}
         </div>
 
-        <div className="lg:col-span-1 w-full shadow-xs">
+        <div className="lg:col-span-1 shadow-md">
           <ListData
             title="My Stocks"
             items={stocks}
