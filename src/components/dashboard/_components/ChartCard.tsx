@@ -1,6 +1,7 @@
 // src/components/dashboard/ChartCard.tsx
 'use client';
 
+import { ChartSerie } from '@/lib/services/loadDashboardDataByRole';
 import React from 'react';
 import {
   ResponsiveContainer,
@@ -22,7 +23,7 @@ export interface ChartData {
 }
 
 interface ChartCardProps {
-  data: ChartData;
+  data: ChartSerie;
   subtitle?: string;
   extraInfo?: React.ReactNode;
 }

@@ -143,6 +143,7 @@ export default async function GestionnaireDashboardPage() {
     return (
     <DashboardGestionnaire 
         metrics={dynamicMetrics}
+        categories={categories.map(c => (c.title).toString().toLocaleUpperCase())} // Ex: ['SESSIONS', 'VALIDATIONS', 'RELEVES', 'LABORATOIRES']
         chartData={resourceOverviewChart} // Objet direct (conforme au type ChartSerie du client)
         whiteList={whiteListRessources}
         tableData={{ // Double accolades obligatoires pour déclarer un objet en ligne en JSX/TSX
