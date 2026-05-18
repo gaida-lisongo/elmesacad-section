@@ -19,5 +19,10 @@ interface DashboardGestionnaireProps {
 
 export default function DashboardGestionnaire({ metrics, chartData, whiteList, tableData }: DashboardGestionnaireProps) {
     console.log("DashboardGestionnaire Props:", { metrics, chartData, whiteList, tableData });
+
+    //Création Composant Header Table
+    // Creation Composant Carditem Table
+    // Creation méthode de filtrage et de tri pour les données de la table
+    // Intégration de la table dans le composant DashboardPage
     return <DashboardPage />;
 }

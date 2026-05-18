@@ -5,13 +5,8 @@ import { notFound } from "next/navigation";
 import DashboardGestionnaire from "@/components/dashboard/DashboardGestionnaire";
 import { getSessionPayload } from "@/lib/auth/sessionServer";
 import { connectDB } from "@/lib/services/connectedDB";
-import UserManager, { AgentWithAuthorizations } from "@/lib/services/UserManager";
-import { ChartSerie, loadDashboardDataByRole, Metric, WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
-import { resolveDashboardUi } from "@/lib/dashboard/resolveDashboardUi";
+import { ChartSerie, Metric, WhiteListItem } from "@/lib/services/loadDashboardDataByRole";
 import { resolveGestionnaireScope } from "@/lib/section/resolveGestionnaireScope";
-
-import { mapMongoAuthorizations, mapSessionToDashboardRole } from "../../dashboard/page";
-import { DashboardAgentAuthorization, DashboardMetric, DashboardChartSeries } from "@/lib/dashboard/types";
 
 // Server Actions
 import { listGestionnaireSessionResourcesAction } from "@/actions/gestionnaireSessionResources";
