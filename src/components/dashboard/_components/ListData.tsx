@@ -40,51 +40,11 @@ export const ListData: React.FC<ListDataProps> = ({ items }) => {
     <div className="bg-white p-6 rounded-2xl border border-slate-100 w-full shadow-md">
       
       {/* Entête du volet avec Titre Dynamique & Bouton Dropdown */}
-      <div className="flex justify-between items-center mb-6 relative" ref={dropdownRef}>
+      <div className="flex justify-center items-center mb-6 relative" ref={dropdownRef}>
         {/* Titre : Majuscule sur la première lettre de la catégorie courante */}
         <h3 className="text-lg font-bold text-slate-800 capitalize">
           {currentCategory || "Modalités"}
         </h3>
-        
-        {/* Bouton d'action transformé en Trigger Dropdown */}
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="flex items-center gap-1.5 text-xs font-bold text-indigo-600 bg-indigo-50/60 hover:bg-indigo-100 px-3 py-2 rounded-xl border border-indigo-100/30 transition-all cursor-pointer"
-        >
-          <span>Afficher tout</span>
-          <Icon 
-            icon="mdi:chevron-down" 
-            className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} 
-          />
-        </button>
-
-        {/* Menu Dropdown flottant */}
-        {isDropdownOpen && (
-          <div className="absolute right-0 top-11 w-48 bg-white border border-slate-100 rounded-xl shadow-xl z-30 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
-            <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-50 mb-1">
-              Filtrer par catégorie
-            </div>
-            {categoriesList.map((cat, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  setCurrentCategory(cat?.title || '');
-                  setIsDropdownOpen(false);
-                }}
-                className={`w-full text-left px-4 py-2 text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer ${
-                  cat?.title?.toLowerCase() === currentCategory.toLowerCase()
-                    ? 'text-indigo-600 bg-indigo-50/50'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                <span className="capitalize">{cat?.title || cat?.title}</span>
-                {cat?.title?.toLowerCase() === currentCategory.toLowerCase() && (
-                  <Icon icon="mdi:check" className="w-3.5 h-3.5 text-indigo-600" />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Liste filtrée dynamique */}

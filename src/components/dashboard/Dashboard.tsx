@@ -76,7 +76,7 @@ export default function DashboardPage({ initialData, children }: DashboardPagePr
                   <div>
                     Volume Financier : 
                     <span className="block text-lg font-bold text-emerald-600">
-                      {totalY2.toLocaleString()} $ / CDF
+                      {totalY2.toLocaleString()} $
                     </span>
                   </div>
                 </div>

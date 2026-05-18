@@ -151,7 +151,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ data, subtitle, extraInfo 
       </div>
 
       {/* Informations extra en bas (ex: Received / Due amount) */}
-      {extraInfo && <div className="mt-4 pt-4 border-t border-slate-50">{extraInfo}</div>}
+      {extraInfo && <div className="mt-4 pt-4 border-t border-slate-50 flex items-center">{extraInfo}</div>}
     </div>
   );
 };
