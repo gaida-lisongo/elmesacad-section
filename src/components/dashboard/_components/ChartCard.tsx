@@ -70,10 +70,8 @@ export const ChartCard: React.FC<ChartCardProps> = ({ data, subtitle, extraInfo 
           <h3 className="text-lg font-bold text-slate-800">{z.title}</h3>
           {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
         </div>
-        <select className="text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 outline-none cursor-pointer">
-          <option>Weekly</option>
-          <option>Monthly</option>
-        </select>
+        {/* Informations extra en bas (ex: Received / Due amount) */}
+        {extraInfo && <div className="mt-4 pt-4 border-t border-slate-50">{extraInfo}</div>}
       </div>
 
       {/* Conteneur de Graphique Réactif */}
@@ -150,8 +148,6 @@ export const ChartCard: React.FC<ChartCardProps> = ({ data, subtitle, extraInfo 
         </ResponsiveContainer>
       </div>
 
-      {/* Informations extra en bas (ex: Received / Due amount) */}
-      {extraInfo && <div className="mt-4 pt-4 border-t border-slate-50">{extraInfo}</div>}
     </div>
   );
 };
