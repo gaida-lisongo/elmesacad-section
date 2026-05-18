@@ -179,16 +179,6 @@ export async function loadDashboardDataByRole(role: DashboardRole): Promise<Bund
     };
   }
 
-  if(role === "organisateur") {
-  }
-
-  if (role === "gestionnaire") {
-    
-  }
-
-  if(role === "titulaire") {
-  }
-
 
   if (role === "titulaire" || role === "organisateur" || role === "gestionnaire") {
     await connectDB();

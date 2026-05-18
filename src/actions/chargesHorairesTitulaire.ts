@@ -28,6 +28,47 @@ type ProgrammePromotionRef = {
   designation?: string;
 };
 
+export interface ChDescripteur {
+  objectif: {
+    title: string;
+    contenu: string[]
+  }[];
+  methodologie: any[];
+  mode_evaluation: any[];
+  penalites: any[];
+  ressources: any[];
+  plan_cours: any[];
+}
+
+export interface chTitulaire {
+  name: string;
+  matricule: string;
+  email: string;
+  telephone: string;
+  disponibilites: string;
+}
+
+export interface IChargeHoraire {
+  _id: string;
+  matiere: {
+    designation: string;
+    reference: string;
+  };
+  unite: {
+    designation: string;
+    code_unite: string;
+    semestre: string;
+  };
+  promotion: {
+    designation: string;
+    reference: string;
+  };
+  titulaire: chTitulaire;
+  horaire: Record<string, unknown>;
+  status: "pending" | "finish" | "no";
+  descripteur: ChDescripteur;
+}
+
 async function messageFromGateResponse(res: Response): Promise<string> {
   try {
     const j = (await res.json()) as { message?: string };

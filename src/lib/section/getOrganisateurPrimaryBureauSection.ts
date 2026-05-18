@@ -6,6 +6,9 @@ export type OrganisateurBureauSectionContext = {
   sectionId: string;
   sectionSlug: string;
   sectionDesignation: string;
+  isChefSection: boolean;
+  isChargeEnseignement: boolean;
+  isChargeRecherche: boolean;
 };
 
 /**
@@ -31,9 +34,19 @@ export async function getOrganisateurPrimaryBureauSection(
     .lean();
 
   if (!row?._id) return null;
+
+  const isChefSection = row.bureau?.chefSection ? String(row.bureau.chefSection) === agentSub : false;
+  const isChargeEnseignement =
+    row.bureau?.chargeEnseignement ? String(row.bureau.chargeEnseignement) === agentSub : false;
+  const isChargeRecherche =
+    row.bureau?.chargeRecherche ? String(row.bureau.chargeRecherche) === agentSub : false;
+
   return {
     sectionId: String(row._id),
     sectionSlug: String(row.slug ?? "").trim(),
     sectionDesignation: String((row as { designation?: string }).designation ?? "").trim(),
+    isChefSection,
+    isChargeEnseignement,
+    isChargeRecherche,
   };
 }
