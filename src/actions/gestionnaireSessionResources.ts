@@ -31,8 +31,8 @@ export type SessionResourceRow = {
 
 async function assertGestionnaireSectionContext() {
   const session = await getSessionPayload();
-  if (!session || session.type !== "Agent" || session.role !== "gestionnaire") {
-    throw new Error("Accès réservé aux gestionnaires.");
+  if (!session || session.type !== "Agent" || (session.role !== "gestionnaire" && session.role !== "organisateur") || !session.sub) {
+    throw new Error("Accès réservé aux gestionnaires et organisateurs.");
   }
   await connectDB();
   const scope = await resolveGestionnaireScope(session.sub);
@@ -44,6 +44,7 @@ async function assertGestionnaireSectionContext() {
     sectionId: scope.sectionId,
     sectionSlug: scope.sectionSlug,
     sectionDesignation: scope.sectionDesignation,
+    isChefSection: scope.isChefSection,
   };
 }
 
