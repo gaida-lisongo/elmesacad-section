@@ -16,7 +16,7 @@ export const userFloatingMenu: {
   agentFallback: AdminMenuItem[];
 } = {
   student: [
-    { item: "Tableau de bord", path: "/student" },
+    { item: "Tableau de bord", path: "/dashboard" },
     { item: "Macarons", path: "student/macarons" },
     { item: "Documents", path: "#", subMenu: [
       { item: "Relevés de cotes", path: "/student/releves" },
@@ -32,7 +32,7 @@ export const userFloatingMenu: {
   ],
   agent: {
     admin: [
-      { item: "Dashboard", path: "/admin" },
+      { item: "Dashboard", path: "/dashboard" },
       { item: "Agents", path: "/agents" },
       { item: "Etudiants", path: "/etudiants" },
       { item: "Sections", path: "/sections" },
@@ -45,7 +45,7 @@ export const userFloatingMenu: {
       { item: "Gestion des Modalités", path: "/modalites" },
     ],
     titulaire: [
-      { item: "Tableau de bord", path: "/titulaire" },
+      { item: "Tableau de bord", path: "/dashboard" },
       { item: "Descripteurs", path: "/titulaire/descripteurs"},
       { item: "Présences", path: "/titulaire/presences"},
       { item: "Transactions", path: "#", subMenu: [
