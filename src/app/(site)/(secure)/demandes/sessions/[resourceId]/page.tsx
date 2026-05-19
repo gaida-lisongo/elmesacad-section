@@ -16,7 +16,7 @@ type PageProps = { params: Promise<{ resourceId: string }> };
 
 export default async function DemandesSessionCommandesPage({ params }: PageProps) {
   const session = await getSessionPayload();
-  if (!session || session.type !== "Agent" || session.role !== "gestionnaire") {
+  if (!session || session.type !== "Agent" || session.role !== "organisateur") {
     redirect("/dashboard");
   }
 
