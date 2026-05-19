@@ -227,11 +227,11 @@ export async function listGestionnaireSessionResourcesAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Impossible de charger les sessions d'enrôlement."));
+    throw new Error(await pickErrorMessage(payload, "Impossible de charger les sessions d'enrôlement."));
 
   }
 
@@ -305,11 +305,11 @@ export async function getGestionnaireSessionResourceAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Ressource introuvable."));
+    throw new Error(await pickErrorMessage(payload, "Ressource introuvable."));
 
   }
 
@@ -493,11 +493,11 @@ export async function createGestionnaireSessionResourceAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(formatEtudiantApiError(payload, pickErrorMessage(payload, "Création impossible.")));
+    throw new Error(formatEtudiantApiError(payload, await pickErrorMessage(payload, "Création impossible.")));
 
   }
 
@@ -669,11 +669,11 @@ export async function updateGestionnaireSessionResourceAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Mise à jour impossible."));
+    throw new Error(await pickErrorMessage(payload, "Mise à jour impossible."));
 
   }
 
@@ -729,11 +729,11 @@ export async function patchGestionnaireSessionResourceStatusAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Mise à jour du statut impossible."));
+    throw new Error(await pickErrorMessage(payload, "Mise à jour du statut impossible."));
 
   }
 
@@ -779,11 +779,11 @@ export async function deleteGestionnaireSessionResourceAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Suppression impossible."));
+    throw new Error(await pickErrorMessage(payload, "Suppression impossible."));
 
   }
 
@@ -885,11 +885,11 @@ export async function listSessionCommandesForResourceAction(input: {
 
   const verifyText = await verifyRes.text();
 
-  const verifyPayload = readJsonPayload(verifyRes, verifyText);
+  const verifyPayload = await readJsonPayload(verifyRes, verifyText);
 
   if (!verifyRes.ok) {
 
-    throw new Error(pickErrorMessage(verifyPayload, "Ressource introuvable."));
+    throw new Error(await pickErrorMessage(verifyPayload, "Ressource introuvable."));
 
   }
 
@@ -939,11 +939,11 @@ export async function listSessionCommandesForResourceAction(input: {
 
   const rawText = await upstream.text();
 
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
 
-    throw new Error(pickErrorMessage(payload, "Impossible de charger les commandes pour cette ressource."));
+    throw new Error(await pickErrorMessage(payload, "Impossible de charger les commandes pour cette ressource."));
 
   }
 
