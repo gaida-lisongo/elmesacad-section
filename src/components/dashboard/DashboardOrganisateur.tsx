@@ -55,8 +55,8 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
     const dynamicMetrics: Metric[] = [
         {
             title: 'Programmes',
-            value: programmes.reduce((sum, p) => sum + (p.credits || 0), 0).toLocaleString(),
-            unit: 'Crd',
+            value: programmes.length,
+            unit: 'Classes',
             proportion: maxCreditsProgrammes > 0 ? Math.round((programmes.reduce((sum, p) => sum + (p.credits || 0), 0) / maxCreditsProgrammes) * 10000) / 100 : 0,
             iconName: 'mdi:school',
             iconColor: 'blue',
@@ -91,7 +91,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
         x: categories.map(cat => cat.title),
         y: categories.map(cat => cat.amount),
         y2: categories.map(cat => cat.total),
-        z: { slug: 'bar', title: 'Aperçu des charges horaires par programme' }
+        z: { slug: 'line', title: 'Aperçu des charges horaires par programme' }
     }
 
     const totalCrdFilieres = [...filieres?.map((filiere: any) => filiere.semestres?.reduce((sum: number, semestre: any) => sum + (semestre.credits || 0), 0) || 0)].reduce((sum, crd) => sum + crd, 0);
