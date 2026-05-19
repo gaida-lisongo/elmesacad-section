@@ -6,6 +6,7 @@ import { getOrganisateurPrimaryBureauSection } from "@/lib/section/getOrganisate
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { fetchChargesHorairesByPromotionReferencesAction } from "@/actions/chargesHorairesTitulaire";
 import DashboardOrganisateur from "@/components/dashboard/DashboardOrganisateur";
+import { FiliereModel } from "@/lib/models/Filiere";
 
 export default async function OrganisateurDashboardPage() {
     try {
@@ -31,7 +32,7 @@ export default async function OrganisateurDashboardPage() {
                 </div>
             );
         }
-
+        const filieres = await FiliereModel.find().populate('semestres').lean();
         const programmes = await ProgrammeModel.find({ section: scope.sectionId }).lean();
         if (!programmes) {
             return (
@@ -62,6 +63,7 @@ export default async function OrganisateurDashboardPage() {
             }}
             programmes={programmes}
             chargesHoraires={chargesHoraires}
+            filieres={filieres}
         />;
     } catch (error) {
         console.error("Error loading Organisateur dashboard:", error);
