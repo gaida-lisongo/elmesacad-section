@@ -319,9 +319,9 @@ export async function listGestionnaireLaboResourcesAction(input: {
 
   const upstream = await fetchEtudiantApi(`/resources?${sp.toString()}`, { method: "GET" });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Impossible de charger les bons de laboratoire."));
+    throw new Error(await pickErrorMessage(payload, "Impossible de charger les bons de laboratoire."));
   }
   const data = Array.isArray(payload.data) ? payload.data : [];
   const meta = payload.meta && typeof payload.meta === "object" ? (payload.meta as Record<string, unknown>) : {};
@@ -379,9 +379,9 @@ export async function listLaboCommandesForResourceAction(input: {
 
   const verifyRes = await fetchEtudiantApi(`/resources/${resourceId}`, { method: "GET" });
   const verifyText = await verifyRes.text();
-  const verifyPayload = readJsonPayload(verifyRes, verifyText);
+  const verifyPayload = await readJsonPayload(verifyRes, verifyText);
   if (!verifyRes.ok) {
-    throw new Error(pickErrorMessage(verifyPayload, "Ressource introuvable."));
+    throw new Error(await pickErrorMessage(verifyPayload, "Ressource introuvable."));
   }
   const verifyRow = verifyPayload.data ?? verifyPayload;
   assertPayloadResourceIsLabo(verifyRow);
@@ -407,9 +407,9 @@ export async function listLaboCommandesForResourceAction(input: {
     method: "GET",
   });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Impossible de charger les commandes pour cette ressource."));
+    throw new Error(await pickErrorMessage(payload, "Impossible de charger les commandes pour cette ressource."));
   }
   const data = Array.isArray(payload.data) ? payload.data : [];
   const meta = payload.meta && typeof payload.meta === "object" ? (payload.meta as Record<string, unknown>) : {};
@@ -447,9 +447,9 @@ export async function getGestionnaireLaboResourceAction(input: {
 
   const upstream = await fetchEtudiantApi(`/resources/${id}`, { method: "GET" });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Ressource introuvable."));
+    throw new Error(await pickErrorMessage(payload, "Ressource introuvable."));
   }
   const row = payload.data ?? payload;
   assertPayloadResourceIsLabo(row);
@@ -559,10 +559,10 @@ export async function createGestionnaireLaboResourceAction(input: {
     body: JSON.stringify(body),
   });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
 
   if (!upstream.ok) {
-    throw new Error(formatEtudiantApiError(payload, pickErrorMessage(payload, "Création de la ressource impossible.")));
+    throw new Error(formatEtudiantApiError(payload, await pickErrorMessage(payload, "Création de la ressource impossible.")));
   }
   const created = payload.data ?? JSON.parse(rawText || "{}");
   let row = rowFromApi(created);
@@ -657,9 +657,9 @@ export async function updateGestionnaireLaboResourceAction(input: {
     body: JSON.stringify(patch),
   });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Mise à jour impossible."));
+    throw new Error(await pickErrorMessage(payload, "Mise à jour impossible."));
   }
   const updated = payload.data ?? JSON.parse(rawText || "{}");
   const row = rowFromApi(updated);
@@ -690,9 +690,9 @@ export async function patchGestionnaireLaboResourceStatusAction(input: {
     body: JSON.stringify({ status: input.status }),
   });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Mise à jour du statut impossible."));
+    throw new Error(await pickErrorMessage(payload, "Mise à jour du statut impossible."));
   }
   const updated = payload.data ?? JSON.parse(rawText || "{}");
   const row = rowFromApi(updated);
@@ -715,8 +715,8 @@ export async function deleteGestionnaireLaboResourceAction(input: {
 
   const upstream = await fetchEtudiantApi(`/resources/${id}`, { method: "DELETE" });
   const rawText = await upstream.text();
-  const payload = readJsonPayload(upstream, rawText);
+  const payload = await readJsonPayload(upstream, rawText);
   if (!upstream.ok) {
-    throw new Error(pickErrorMessage(payload, "Suppression impossible."));
+    throw new Error(await pickErrorMessage(payload, "Suppression impossible."));
   }
 }

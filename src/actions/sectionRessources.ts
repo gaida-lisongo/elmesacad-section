@@ -2,7 +2,7 @@
 
 import { fetchEtudiantApi } from "@/lib/etudiant-service/etudiantRemote";
 
-export function readJsonPayload(upstream: Response, rawText: string): Record<string, unknown> {
+export async function readJsonPayload(upstream: Response, rawText: string): Promise<Record<string, unknown>> {
   if (!rawText) return {};
   try {
     return JSON.parse(rawText) as Record<string, unknown>;
@@ -11,7 +11,7 @@ export function readJsonPayload(upstream: Response, rawText: string): Record<str
   }
 }
 
-export function pickErrorMessage(payload: Record<string, unknown>, fallback: string): string {
+export async function pickErrorMessage(payload: Record<string, unknown>, fallback: string): Promise<string> {
   return (
     (typeof payload.message === "string" && payload.message) ||
     (typeof payload.error === "string" && payload.error) ||
@@ -48,10 +48,10 @@ export async function getSectionRessourcesData(sectionCtx: {
     );
 
     const rawText = await upstream.text();
-    const payload = readJsonPayload(upstream, rawText);
+    const payload = await readJsonPayload(upstream, rawText);
 
     if (!upstream.ok) {
-        throw new Error(pickErrorMessage(payload, "Impossible de charger les sessions d'enrôlement."));
+        throw new Error(await pickErrorMessage(payload, "Impossible de charger les sessions d'enrôlement."));
     }
     
       const data = Array.isArray(payload.data) ? payload.data : [];
