@@ -71,7 +71,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({ data, subtitle, extraInfo 
           {subtitle && <p className="text-xs text-slate-400">{subtitle}</p>}
         </div>
         {/* Informations extra en bas (ex: Received / Due amount) */}
-        {extraInfo && <div className="mt-4 pt-4 border-t border-slate-50">{extraInfo}</div>}
+        {extraInfo && !isLine && <div className="mt-4 pt-4 border-t border-slate-50">{extraInfo}</div>}
       </div>
 
       {/* Conteneur de Graphique Réactif */}
