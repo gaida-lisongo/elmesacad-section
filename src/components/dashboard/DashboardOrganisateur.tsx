@@ -1,7 +1,6 @@
 'use client';
 
 import { ChartSerie, Metric } from "@/lib/services/loadDashboardDataByRole";
-import { label } from "framer-motion/m";
 import DashboardPage from "./Dashboard";
 
 interface DashboardOrganisateurProps {
@@ -16,15 +15,17 @@ interface DashboardOrganisateurProps {
     programmes: any[];
     chargesHoraires: any;
     filieres: any[];
+    tableData?: any[]; // Optionnel : données brutes pour une table personnalisée, si nécessaire
 }
 
 export default function DashboardOrganisateur(props: DashboardOrganisateurProps) {
 
-    const { section, programmes, chargesHoraires, filieres } = props;
+    const { section, programmes, chargesHoraires, filieres, tableData } = props;
     console.log("Section :", section);
     console.log("Programmes :", programmes);
     console.log("Charges Horaires :", chargesHoraires);
     console.log("Filières :", filieres);
+    console.log("Table Data :", tableData);
 
     const categories : {
         title: string;

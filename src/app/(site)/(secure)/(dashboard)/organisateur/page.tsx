@@ -7,6 +7,12 @@ import { ProgrammeModel } from "@/lib/models/Programme";
 import { fetchChargesHorairesByPromotionReferencesAction } from "@/actions/chargesHorairesTitulaire";
 import DashboardOrganisateur from "@/components/dashboard/DashboardOrganisateur";
 import { FiliereModel } from "@/lib/models/Filiere";
+import { listGestionnaireSessionResourcesAction } from "@/actions/gestionnaireSessionResources";
+import { listGestionnaireValidationResourcesAction } from "@/actions/gestionnaireValidationResources";
+import { listGestionnaireReleveResourcesAction } from "@/actions/gestionnaireReleveResources";
+import { listGestionnaireLaboResourcesAction } from "@/actions/gestionnaireLaboResources";
+import { table } from "console";
+import { loadOrganisateurCeChargesHoraires } from "@/lib/dashboard/loadOrganisateurCeChargesHoraires";
 
 export default async function OrganisateurDashboardPage() {
     try {
@@ -51,7 +57,50 @@ export default async function OrganisateurDashboardPage() {
         }));
 
         const chargesHoraires = await fetchChargesHorairesByPromotionReferencesAction(payload)
-        
+        const tableData = [
+            {
+                role: "Chef de section",
+                categories: [
+                    {slug: "sessions", title: "Sessions d'examen"},
+                    {slug: "validations", title: "Fiche de validation"},
+                    {slug: "releves", title: "Relevés de notes"},
+                    {slug: "laboratoires", title: "Laboratoires et salles"},
+                ],
+                tableData: [
+                    {
+                        slug: "sessions",
+                        data: await listGestionnaireSessionResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                    },
+                    {
+                        slug: "validations",
+                        data: await listGestionnaireValidationResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                    },
+                    {
+                        slug: "releves",
+                        data: await listGestionnaireReleveResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                    },
+                    {
+                        slug: "laboratoires",
+                        data: await listGestionnaireLaboResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                    }
+                ]
+            },
+            {
+                role: "Chargé d'enseignement",
+                categories: [
+                    {
+                        slug: session?.sub,
+                        title: "Gestion des charges horaires",
+                    }
+                ],
+                tableData: [
+                    {
+                        slug: session?.sub,
+                        data: await loadOrganisateurCeChargesHoraires(session.sub),
+                    }
+                ]
+            }
+        ]
         return <DashboardOrganisateur
             section={{
                 id: scope.sectionId,
@@ -64,6 +113,7 @@ export default async function OrganisateurDashboardPage() {
             programmes={programmes}
             chargesHoraires={chargesHoraires}
             filieres={filieres}
+            tableData={tableData}
         />;
     } catch (error) {
         console.error("Error loading Organisateur dashboard:", error);
