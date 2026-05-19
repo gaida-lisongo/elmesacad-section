@@ -101,7 +101,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
         list: filieres.map((filiere: any) => ({
             title: filiere.designation,
             label: filiere.slug,
-            description: `${filiere.description?.substring(0, 50)}...`, //50 premières caractères de la description de la filière
+            description: `Configurer la filière`, //50 premières caractères de la description de la filière
             value: `${filiere.semestres?.length || 0} semestre(s)`,
             proportion: totalCrdFilieres > 0 ? Math.round((filiere.semestres?.reduce((sum: number, semestre: any) => sum + (semestre.credits || 0), 0) || 0) / totalCrdFilieres * 10000) / 100 : 0,
             icon: 'mdi:format-list-bulleted',
