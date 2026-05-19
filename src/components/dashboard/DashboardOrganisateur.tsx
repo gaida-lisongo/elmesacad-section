@@ -2,6 +2,7 @@
 
 import { ChartSerie, Metric } from "@/lib/services/loadDashboardDataByRole";
 import DashboardPage from "./Dashboard";
+import ResourceDashboardTable from "./tables/RessourceDashboardTable";
 
 interface DashboardOrganisateurProps {
     section: {
@@ -119,20 +120,40 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                 whiteList: whiteListFilieres,
             }}
         >
-            {/* Ici, on pourrait injecter une table personnalisée (TableData) configurée pour les programmes ou les filières */}
-            <ul className="mt-6 space-y-4">
+            <>
+                {/* Ici, on pourrait injecter une table personnalisée (TableData) configurée pour les programmes ou les filières */}
+                <ul className="mt-6 space-y-4">
+                    {
+                        [
+                            { status: section.isChefSection, label: "Chef de section" },
+                            { status: section.isChargeEnseignement, label: "Chargé d'enseignement" },
+                            { status: section.isChargeRecherche, label: "Chargé de recherche" },
+                        ].map((role, idx) => (
+                            <li key={idx} className={`px-4 py-2 rounded-md text-sm font-medium ${role.status ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                                {role.label}
+                            </li>
+                        ))
+                    }
+                </ul>
+                {/* Exemple de table personnalisée pour les programmes (si tableData est fourni) */}
                 {
-                    [
-                        { status: section.isChefSection, label: "Chef de section" },
-                        { status: section.isChargeEnseignement, label: "Chargé d'enseignement" },
-                        { status: section.isChargeRecherche, label: "Chargé de recherche" },
-                    ].map((role, idx) => (
-                        <li key={idx} className={`px-4 py-2 rounded-md text-sm font-medium ${role.status ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                            {role.label}
-                        </li>
-                    ))
+                    tableData ? tableData?.map((tab : {
+                        role: string;
+                        categories: { slug: string; title: string; }[];
+                        items: any[];
+                    }) => {
+                        if (tab.role === 'Chef de section') {
+                            return <ResourceDashboardTable
+                                key={tab.role}
+                                role={tab.role}
+                                categories={tab.categories}
+                                tableData={tab.items}
+                            />;
+                        }
+                    })
+                    : <p className="text-sm text-gray-500 mt-4">Aucune donnée de table disponible pour le moment.</p>
                 }
-            </ul>
+            </>
         </DashboardPage>
     );
 

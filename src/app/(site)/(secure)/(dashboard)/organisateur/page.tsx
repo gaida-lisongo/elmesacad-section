@@ -67,7 +67,7 @@ export default async function OrganisateurDashboardPage() {
                     {slug: "releves", title: "Relevés de notes"},
                     {slug: "laboratoires", title: "Laboratoires et salles"},
                 ],
-                tableData: [
+                items: [
                     {
                         slug: "sessions",
                         data: await getSectionRessourcesData({ sectionSlug: scope.sectionSlug, sectionId: scope.sectionId, categorie: "session" }),
@@ -94,7 +94,7 @@ export default async function OrganisateurDashboardPage() {
                         title: "Gestion des charges horaires",
                     }
                 ],
-                tableData: [
+                items: [
                     {
                         slug: session?.sub,
                         data: await loadOrganisateurCeChargesHoraires(session.sub),
