@@ -49,7 +49,7 @@ const DEMANDE_TYPES = [
 
 export default async function DemandesPage() {
   const session = await getSessionPayload();
-  if (!session || session.type !== "Agent" || session.role !== "gestionnaire") {
+  if (!session || session.type !== "Agent" || session.role !== "organisateur") {
     redirect("/dashboard");
   }
 
