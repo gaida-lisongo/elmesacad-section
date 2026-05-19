@@ -41,7 +41,7 @@ export async function getSectionRessourcesData(sectionCtx: {
     }
 
     const upstream = await fetchEtudiantApi(
-        `/ressources?${sp.toString()}`,
+        `/resources?${sp.toString()}`,
         {
             method: "GET",
         }
