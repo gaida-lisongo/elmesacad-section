@@ -7,6 +7,7 @@ import { connectDB } from "@/lib/services/connectedDB";
 import { SectionModel } from "@/lib/models/Section";
 import { resolveGestionnaireScope } from "@/lib/section/resolveGestionnaireScope";
 import type { DescriptionSectionInput, SujetCommandeListRow } from "@/actions/organisateurSujetResources";
+import { pickErrorMessage, readJsonPayload } from "./sectionRessources";
 
 export type { DescriptionSectionInput };
 
@@ -46,23 +47,6 @@ async function assertGestionnaireSectionContext() {
     sectionDesignation: scope.sectionDesignation,
     isChefSection: scope.isChefSection,
   };
-}
-
-function readJsonPayload(upstream: Response, rawText: string): Record<string, unknown> {
-  if (!rawText) return {};
-  try {
-    return JSON.parse(rawText) as Record<string, unknown>;
-  } catch {
-    return { message: rawText.slice(0, 400) };
-  }
-}
-
-function pickErrorMessage(payload: Record<string, unknown>, fallback: string): string {
-  return (
-    (typeof payload.message === "string" && payload.message) ||
-    (typeof payload.error === "string" && payload.error) ||
-    fallback
-  );
 }
 
 function formatEtudiantApiError(payload: Record<string, unknown>, base: string): string {

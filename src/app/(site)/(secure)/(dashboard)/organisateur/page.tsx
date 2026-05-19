@@ -13,6 +13,7 @@ import { listGestionnaireReleveResourcesAction } from "@/actions/gestionnaireRel
 import { listGestionnaireLaboResourcesAction } from "@/actions/gestionnaireLaboResources";
 import { table } from "console";
 import { loadOrganisateurCeChargesHoraires } from "@/lib/dashboard/loadOrganisateurCeChargesHoraires";
+import { getSectionRessourcesData } from "@/actions/sectionRessources";
 
 export default async function OrganisateurDashboardPage() {
     try {
@@ -69,19 +70,19 @@ export default async function OrganisateurDashboardPage() {
                 tableData: [
                     {
                         slug: "sessions",
-                        data: await listGestionnaireSessionResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                        data: await getSectionRessourcesData({ sectionSlug: scope.sectionSlug, sectionId: scope.sectionId, categorie: "session" }),
                     },
                     {
                         slug: "validations",
-                        data: await listGestionnaireValidationResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                        data: await getSectionRessourcesData({ sectionSlug: scope.sectionSlug, sectionId: scope.sectionId, categorie: "validation" }),
                     },
                     {
                         slug: "releves",
-                        data: await listGestionnaireReleveResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                        data: await getSectionRessourcesData({ sectionSlug: scope.sectionSlug, sectionId: scope.sectionId, categorie: "releve" }),
                     },
                     {
                         slug: "laboratoires",
-                        data: await listGestionnaireLaboResourcesAction({ sectionSlug: scope.sectionSlug, page: 1, limit: 1000, search: "" }),
+                        data: await getSectionRessourcesData({ sectionSlug: scope.sectionSlug, sectionId: scope.sectionId, categorie: "laboratoire" }),
                     }
                 ]
             },
