@@ -13,8 +13,10 @@ export async function getOrganisateurChargeRechercheSection(
   if (!Types.ObjectId.isValid(agentSub)) return null;
   const oid = new Types.ObjectId(agentSub);
   await connectDB();
-  const row = await SectionModel.findOne({ "bureau.chargeRecherche": oid })
-    .select("_id designation slug")
+  const row = await SectionModel.findOne({ 
+    "bureau.chargeRecherche": oid,
+    "bureau.chefSection": oid, // filtrer aussi sur chef de section pour éviter les cas où un même agent serait chargé de recherche dans une section et chef de section dans une autre
+  })
     .sort({ designation: 1 })
     .lean();
 
@@ -24,7 +26,7 @@ export async function getOrganisateurChargeRechercheSection(
     sectionSlug: String(row.slug ?? "").trim(),
     sectionDesignation: String((row as { designation?: string }).designation ?? "").trim(),
     isChefSection: false,
-    isChargeEnseignement: false,
+    isChargeEnseignement: true,
     isChargeRecherche: true,
   };
 }

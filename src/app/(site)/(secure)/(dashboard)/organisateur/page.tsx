@@ -11,9 +11,9 @@ import { listGestionnaireSessionResourcesAction } from "@/actions/gestionnaireSe
 import { listGestionnaireValidationResourcesAction } from "@/actions/gestionnaireValidationResources";
 import { listGestionnaireReleveResourcesAction } from "@/actions/gestionnaireReleveResources";
 import { listGestionnaireLaboResourcesAction } from "@/actions/gestionnaireLaboResources";
-import { table } from "console";
 import { loadOrganisateurCeChargesHoraires } from "@/lib/dashboard/loadOrganisateurCeChargesHoraires";
 import { getSectionRessourcesData } from "@/actions/sectionRessources";
+import { loadOrganisateurCrTableData } from "@/lib/dashboard/loadOrganisateurCrTableData";
 
 export default async function OrganisateurDashboardPage() {
     try {
@@ -102,6 +102,12 @@ export default async function OrganisateurDashboardPage() {
                 ]
             }
         ]
+
+        let chargeRechercheData = undefined;
+        if (scope.isChargeRecherche) {
+            chargeRechercheData = await loadOrganisateurCrTableData(scope.sectionId, scope.sectionSlug);
+        }
+
         return <DashboardOrganisateur
             section={{
                 id: scope.sectionId,
@@ -115,6 +121,7 @@ export default async function OrganisateurDashboardPage() {
             chargesHoraires={chargesHoraires}
             filieres={filieres}
             tableData={tableData}
+            chargeRechercheData={chargeRechercheData}
         />;
     } catch (error) {
         console.error("Error loading Organisateur dashboard:", error);

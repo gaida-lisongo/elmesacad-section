@@ -57,8 +57,6 @@ export const userFloatingMenu: {
     organisateur: [
       { item: "Tableau de bord", path: "/organisateur" },
       { item: "Programmes", path: "/section/programmes" },
-      { item: "Ressources sujets (recherche)", path: "/section/recherche/ressources-sujets" },
-      { item: "Ressources stages (recherche)", path: "/section/recherche/ressources-stages" },
       { item: "Transactions", path: "#", subMenu: [
         { item: "TP", path: "/section/tp" },
         { item: "QCM", path: "/section/qcm" },

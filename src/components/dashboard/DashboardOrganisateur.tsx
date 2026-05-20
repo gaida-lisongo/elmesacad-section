@@ -4,6 +4,8 @@ import { ChartSerie, Metric } from "@/lib/services/loadDashboardDataByRole";
 import DashboardPage from "./Dashboard";
 import ResourceDashboardTable from "./tables/RessourceDashboardTable";
 import { TableChargeHoraire } from "./tables/TableChargeHoraire";
+import TableChargeRecherche from "./tables/TableChargeRecherche";
+import type { ChargeRechercheTablePayload } from "@/lib/dashboard/loadOrganisateurCrTableData";
 
 interface DashboardOrganisateurProps {
     section: {
@@ -17,12 +19,13 @@ interface DashboardOrganisateurProps {
     programmes: any[];
     chargesHoraires: any;
     filieres: any[];
-    tableData?: any[]; // Optionnel : données brutes pour une table personnalisée, si nécessaire
+    tableData?: any[];
+    chargeRechercheData?: ChargeRechercheTablePayload;
 }
 
 export default function DashboardOrganisateur(props: DashboardOrganisateurProps) {
 
-    const { section, programmes, chargesHoraires, filieres, tableData } = props;
+    const { section, programmes, chargesHoraires, filieres, tableData, chargeRechercheData } = props;
     console.log("Section :", section);
     console.log("Programmes :", programmes);
     console.log("Charges Horaires :", chargesHoraires);
@@ -167,6 +170,14 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                     })
                     : <p className="text-sm text-gray-500 mt-4">Aucune donnée de table disponible pour le moment.</p>
                 }
+
+                {section.isChargeRecherche && chargeRechercheData ? (
+                    <TableChargeRecherche
+                        sectionSlug={section.slug}
+                        sectionDesignation={section.designation}
+                        data={chargeRechercheData}
+                    />
+                ) : null}
             </>
         </DashboardPage>
     );
