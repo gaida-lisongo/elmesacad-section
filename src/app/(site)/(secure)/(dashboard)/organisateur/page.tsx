@@ -104,7 +104,7 @@ export default async function OrganisateurDashboardPage() {
         ]
 
         let chargeRechercheData = undefined;
-        if (scope.isChargeRecherche) {
+        if (scope.isChargeRecherche || scope.isChefSection) {
             chargeRechercheData = await loadOrganisateurCrTableData(scope.sectionId, scope.sectionSlug);
         }
 

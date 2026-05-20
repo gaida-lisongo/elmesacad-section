@@ -31,6 +31,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
     console.log("Charges Horaires :", chargesHoraires);
     console.log("Filières :", filieres);
     console.log("Table Data :", tableData);
+    console.log("Charge Recherche Data :", chargeRechercheData);
 
     const categories : {
         title: string;
@@ -57,6 +58,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
     console.log("Categories :", categories);
     console.log("Total Charges :", totalCharges);
     console.log("Total Volume Horaire :", totalVolumeHoraire);
+
 
     const dynamicMetrics: Metric[] = [
         {
