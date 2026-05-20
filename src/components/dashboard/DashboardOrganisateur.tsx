@@ -155,11 +155,13 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                         if (tab.role === "Chargé d'enseignement" || tab.role === "Chef de section") {
                             return <TableChargeHoraire
                                 key={tab.role}
-                                sectionId={section.id as string}
-                                sectionSlug={section.slug}
-                                sectionDesignation={section.designation}
-                                programmes={programmes.map(p => ({ _id: p._id, designation: p.designation, credits: p.credits }))}
-                                rows={[]}
+                                payload={{
+                                    sectionId: section.id as string,
+                                    sectionSlug: section.slug,
+                                    sectionDesignation: section.designation,
+                                    programmes: programmes.map(p => ({ _id: p._id, designation: p.designation, credits: p.credits })),
+                                    rows: [],
+                                }}
                             />;
                         }
                     })
