@@ -171,7 +171,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                     : <p className="text-sm text-gray-500 mt-4">Aucune donnée de table disponible pour le moment.</p>
                 }
 
-                {section.isChargeRecherche && chargeRechercheData ? (
+                {(section.isChargeRecherche || section.isChefSection) && chargeRechercheData ? (
                     <TableChargeRecherche
                         sectionSlug={section.slug}
                         sectionDesignation={section.designation}
