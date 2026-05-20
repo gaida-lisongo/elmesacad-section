@@ -123,7 +123,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
         >
             <>
                 {/* Ici, on pourrait injecter une table personnalisée (TableData) configurée pour les programmes ou les filières */}
-                <ul className="mt-6 space-y-4">
+                {/* <ul className="mt-6 space-y-4">
                     {
                         [
                             { status: section.isChefSection, label: "Chef de section" },
@@ -135,7 +135,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                             </li>
                         ))
                     }
-                </ul>
+                </ul> */}
                 {/* Exemple de table personnalisée pour les programmes (si tableData est fourni) */}
                 {
                     tableData ? tableData?.map((tab : {
