@@ -823,6 +823,8 @@ function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
 
   else if (typeof created === "string") createdAt = created;
 
+  const rawAmount = Number(o.amount ?? o.montant ?? 0);
+
   return {
 
     id,
@@ -840,6 +842,10 @@ function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
     studentEmail: String(student.email ?? "").trim(),
 
     designation: String(res.designation ?? "").trim(),
+
+    amount: Number.isFinite(rawAmount) ? rawAmount : 0,
+
+    currency: String(o.currency ?? o.devise ?? "USD").trim(),
 
     createdAt,
 
