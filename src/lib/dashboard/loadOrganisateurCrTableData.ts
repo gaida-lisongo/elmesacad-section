@@ -2,8 +2,8 @@ import { Types } from "mongoose";
 import { connectDB } from "@/lib/services/connectedDB";
 import { SectionModel } from "@/lib/models/Section";
 import { ProgrammeModel } from "@/lib/models/Programme";
-import { listOrganisateurSujetResourcesAction, type SujetResourceRow } from "@/actions/organisateurSujetResources";
-import { listOrganisateurStageResourcesAction, type StageResourceRow } from "@/actions/organisateurStageResources";
+import { fetchEtudesSectionResourcesGrouped } from "@/lib/product/fetchEtudesSectionResourcesGrouped";
+import type { ResourceProductVM } from "@/lib/product/loadProductPageData";
 
 type JuryMemberOption = {
   id: string;
@@ -52,10 +52,8 @@ export type ChargeRechercheTablePayload = {
   juryCoursMembers: JuryMemberOption[];
   juryRechercheMembers: JuryMemberOption[];
   chefSection: { name: string; telephone: string; email: string };
-  sujetsInitial: { rows: SujetResourceRow[]; total: number; page: number; limit: number };
-  stagesInitial: { rows: StageResourceRow[]; total: number; page: number; limit: number };
-  sujetsError?: string;
-  stagesError?: string;
+  sujets: ResourceProductVM[];
+  stages: ResourceProductVM[];
 };
 
 export async function loadOrganisateurCrTableData(
@@ -108,40 +106,14 @@ export async function loadOrganisateurCrTableData(
         : "",
   };
 
-  let sujetsInitial = { rows: [] as SujetResourceRow[], total: 0, page: 1, limit: 10 };
-  let sujetsError: string | undefined;
-  try {
-    sujetsInitial = await listOrganisateurSujetResourcesAction({
-      sectionSlug,
-      page: 1,
-      limit: 10,
-      search: "",
-    });
-  } catch (e) {
-    sujetsError = (e as Error).message;
-  }
-
-  let stagesInitial = { rows: [] as StageResourceRow[], total: 0, page: 1, limit: 10 };
-  let stagesError: string | undefined;
-  try {
-    stagesInitial = await listOrganisateurStageResourcesAction({
-      sectionSlug,
-      page: 1,
-      limit: 10,
-      search: "",
-    });
-  } catch (e) {
-    stagesError = (e as Error).message;
-  }
+  const grouped = await fetchEtudesSectionResourcesGrouped(sectionSlug);
 
   return {
     programmes,
     juryCoursMembers,
     juryRechercheMembers,
     chefSection,
-    sujetsInitial,
-    stagesInitial,
-    sujetsError,
-    stagesError,
+    sujets: grouped.sujets,
+    stages: grouped.stages,
   };
 }

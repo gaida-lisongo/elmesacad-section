@@ -1,19 +1,16 @@
 "use client";
 
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useMemo, useState, useTransition } from "react";
 import { Icon } from "@iconify/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import type { SujetResourceRow } from "@/actions/organisateurSujetResources";
-import type { StageResourceRow } from "@/actions/organisateurStageResources";
+import type { ResourceProductVM } from "@/lib/product/loadProductPageData";
 import {
   deleteOrganisateurSujetResourceAction,
-  listOrganisateurSujetResourcesAction,
   patchOrganisateurSujetResourceStatusAction,
 } from "@/actions/organisateurSujetResources";
 import {
   deleteOrganisateurStageResourceAction,
-  listOrganisateurStageResourcesAction,
   patchOrganisateurStageResourceStatusAction,
 } from "@/actions/organisateurStageResources";
 import { updateSectionJuryAction } from "@/actions/sectionUpdateJury";
@@ -53,57 +50,26 @@ function programmeLabel(slug: string, programmes: { slug: string; designation: s
   return programmes.find((p) => p.slug === slug)?.designation ?? slug;
 }
 
-function useResourceList<T>(
-  fetcher: (params: { sectionSlug: string; page: number; limit: number; search: string }) => Promise<{ rows: T[]; total: number; page: number; limit: number }>,
-  sectionSlug: string,
-  initial: { rows: T[]; total: number; page: number; limit: number }
-) {
-  const [rows, setRows] = useState<T[]>(initial.rows);
-  const [total, setTotal] = useState(initial.total);
-  const [page, setPage] = useState(initial.page);
-  const limit = initial.limit;
-  const [search, setSearch] = useState("");
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | undefined>();
-
-  const load = useCallback(
-    (nextPage: number, q: string) => {
-      setError(undefined);
-      startTransition(async () => {
-        try {
-          const res = await fetcher({ sectionSlug, page: nextPage, limit, search: q });
-          setRows(res.rows);
-          setTotal(res.total);
-          setPage(res.page);
-        } catch (e) {
-          setError((e as Error).message);
-        }
-      });
-    },
-    [fetcher, sectionSlug, limit]
-  );
-
-  return { rows, setRows, total, page, limit, search, setSearch, pending, error, load, startTransition };
-}
-
-function SujetCard({
-  row,
+function ResourceCard({
+  item,
   programmes,
-  onEdit,
+  kind,
+  sectionSlug,
   onDelete,
   onToggle,
   switching,
   removing,
 }: {
-  row: SujetResourceRow;
+  item: ResourceProductVM;
   programmes: { slug: string; designation: string; credits: number }[];
-  onEdit: () => void;
+  kind: "sujet" | "stage";
+  sectionSlug: string;
   onDelete: () => void;
   onToggle: () => void;
   switching: boolean;
   removing: boolean;
 }) {
-  const active = isActive(row.status);
+  const active = isActive(item.status);
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900">
       {removing ? (
@@ -115,11 +81,11 @@ function SujetCard({
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-primary to-sky-400 transition-transform duration-300 group-hover:scale-x-100" />
       <div className="flex flex-1 flex-col p-5 pt-6">
         <h3 className="line-clamp-2 text-base font-bold leading-snug text-midnight_text dark:text-white">
-          {row.designation}
+          {item.designation}
         </h3>
         <p className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-gray-400">
           <Icon icon="solar:hashtag-bold-duotone" className="h-3 w-3" />
-          {row.id.slice(-10)}
+          {item.id.slice(-10)}
         </p>
         <div className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 transition-colors ${
           active
@@ -157,144 +123,41 @@ function SujetCard({
         <div className="mt-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-midnight_text">
             <Icon icon="solar:wad-of-money-bold-duotone" className="h-3.5 w-3.5 text-primary" />
-            {row.amount} {row.currency}
+            {item.amount} {item.currency}
           </span>
           <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
             <Icon icon="solar:book-bold-duotone" className="h-3.5 w-3.5 text-primary" />
-            {creditsLabel(row.matiereCredit, programmes, row.matiereReference)}
+            {creditsLabel(item.matiereCredit, programmes, item.matiereReference)}
           </span>
         </div>
         <p className="mt-3 flex items-start gap-2 text-xs text-gray-600">
           <Icon icon="solar:diploma-bold-duotone" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <span className="line-clamp-2">{programmeLabel(row.matiereReference, programmes) || "—"}</span>
+          <span className="line-clamp-2">{programmeLabel(item.matiereReference, programmes) || "—"}</span>
         </p>
-        {row.lecteursLabel ? (
+        {item.lecteursLabel ? (
           <p className="mt-2 line-clamp-2 text-xs text-gray-500">
             <span className="font-medium text-gray-600">Lecteurs : </span>
-            {row.lecteursLabel}
+            {item.lecteursLabel}
           </p>
         ) : null}
         <div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15"
-          >
-            <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
-            Modifier
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={removing}
-            className="inline-flex items-center justify-center rounded-xl border border-rose-200/80 bg-rose-50/80 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
-          >
-            <Icon icon="solar:trash-bin-trash-bold-duotone" className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function StageCard({
-  row,
-  programmes,
-  onEdit,
-  onDelete,
-  onToggle,
-  switching,
-  removing,
-}: {
-  row: StageResourceRow;
-  programmes: { slug: string; designation: string; credits: number }[];
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggle: () => void;
-  switching: boolean;
-  removing: boolean;
-}) {
-  const active = isActive(row.status);
-  return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200/90 bg-white shadow-md transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-xl dark:border-gray-700 dark:bg-gray-900">
-      {removing ? (
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-white/80 px-4 text-center dark:bg-gray-900/85">
-          <Icon icon="svg-spinners:ring-resize" className="h-8 w-8 text-primary" />
-          <p className="text-sm font-semibold text-midnight_text dark:text-white">Suppression...</p>
-        </div>
-      ) : null}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-1 origin-left scale-x-0 bg-gradient-to-r from-primary to-sky-400 transition-transform duration-300 group-hover:scale-x-100" />
-      <div className="flex flex-1 flex-col p-5 pt-6">
-        <h3 className="line-clamp-2 text-base font-bold leading-snug text-midnight_text dark:text-white">
-          {row.designation}
-        </h3>
-        <p className="mt-1.5 flex items-center gap-1 font-mono text-[11px] text-gray-400">
-          <Icon icon="solar:hashtag-bold-duotone" className="h-3 w-3" />
-          {row.id.slice(-10)}
-        </p>
-        <div className={`mt-4 flex items-center justify-between gap-3 rounded-2xl border px-3 py-3 transition-colors ${
-          active
-            ? "border-primary/35 bg-primary/[0.07]"
-            : "border-gray-200/90 bg-gray-50/90"
-        }`}>
-          <div className="min-w-0">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-midnight_text dark:text-white">
-              <Icon icon={active ? "solar:eye-bold-duotone" : "solar:eye-closed-bold-duotone"} className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-gray-400"}`} />
-              Publication
-            </p>
-            <p className="mt-0.5 text-[11px] text-gray-600">
-              {active ? "Visible" : "Inactive"}
-            </p>
-          </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={active}
-            disabled={switching}
-            onClick={onToggle}
-            className={`relative h-8 w-[3.25rem] shrink-0 rounded-full border-2 transition-all duration-300 ${
-              active
-                ? "border-primary/50 bg-primary shadow-inner shadow-primary/20"
-                : "border-gray-300 bg-gray-200"
-            }`}
-          >
-            <span className={`absolute top-0.5 left-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md transition-transform duration-300 ${
-              active ? "translate-x-[1.25rem]" : "translate-x-0"
-            }`}>
-              {switching ? <Icon icon="svg-spinners:ring-resize" className="size-3.5 text-primary" /> : null}
-            </span>
-          </button>
-        </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-semibold tabular-nums text-midnight_text">
-            <Icon icon="solar:wad-of-money-bold-duotone" className="h-3.5 w-3.5 text-primary" />
-            {row.amount} {row.currency}
-          </span>
-          <span className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700">
-            <Icon icon="solar:book-bold-duotone" className="h-3.5 w-3.5 text-primary" />
-            {creditsLabel(row.matiereCredit, programmes, row.matiereReference)}
-          </span>
-        </div>
-        <p className="mt-3 flex items-start gap-2 text-xs text-gray-600">
-          <Icon icon="solar:diploma-bold-duotone" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          <span className="line-clamp-2">{programmeLabel(row.matiereReference, programmes) || "—"}</span>
-        </p>
-        <div className="mt-auto flex flex-wrap gap-2 border-t border-gray-100 pt-4">
-          <Link
-            href={`/section/recherche/ressources-stages/stages/${row.id}`}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5"
-          >
-            <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
-            Demandes
-          </Link>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition hover:bg-primary/15"
-          >
-            <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
-            Modifier
-          </button>
+          {kind === "stage" ? (
+            <Link
+              href={`/section/recherche/ressources-stages/stages/${item.id}`}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
+              Demandes
+            </Link>
+          ) : (
+            <Link
+              href={`/section/recherche/ressources-sujets/sujets/${item.id}`}
+              className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-gray-50/80 px-3 py-2 text-xs font-semibold text-midnight_text transition hover:border-primary/40 hover:bg-primary/5"
+            >
+              <Icon icon="solar:cart-check-bold-duotone" className="h-4 w-4 text-primary" />
+              Demandes
+            </Link>
+          )}
           <button
             type="button"
             onClick={onDelete}
@@ -460,6 +323,123 @@ function JuryTabSection({
   );
 }
 
+type FilterableListProps = {
+  items: ResourceProductVM[];
+  kind: "sujet" | "stage";
+  programmes: { slug: string; designation: string; credits: number }[];
+  sectionSlug: string;
+  onDelete: (item: ResourceProductVM) => void;
+  onToggle: (item: ResourceProductVM) => void;
+  switchingId: string | null;
+  deletingId: string | null;
+  createHref: string;
+};
+
+function FilterableResourceList({
+  items,
+  kind,
+  programmes,
+  sectionSlug,
+  onDelete,
+  onToggle,
+  switchingId,
+  deletingId,
+  createHref,
+}: FilterableListProps) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 9;
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter(
+      (r) =>
+        r.designation.toLowerCase().includes(q) ||
+        r.id.toLowerCase().includes(q)
+    );
+  }, [items, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * limit, safePage * limit);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-gray-600">
+          {items.length} ressource{items.length !== 1 ? "s" : ""} — {kind === "sujet" ? "sujets" : "stages"} publié{items.length !== 1 ? "s" : ""}
+        </p>
+        <div className="flex gap-2">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Filtrer par désignation..."
+            className="w-full min-w-[12rem] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm outline-none focus:border-primary/50 sm:w-48"
+          />
+          <Link
+            href={createHref}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-darkprimary"
+          >
+            <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
+            Nouvelle ressource
+          </Link>
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center">
+          <Icon icon="solar:documents-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
+          <p className="font-semibold text-midnight_text">
+            {search ? "Aucun résultat pour cette recherche" : "Aucune ressource disponible"}
+          </p>
+        </div>
+      ) : (
+        <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${deletingId ? "pointer-events-none opacity-70" : ""}`}>
+          {paged.map((r) => (
+            <ResourceCard
+              key={r.id}
+              item={r}
+              kind={kind}
+              programmes={programmes}
+              sectionSlug={sectionSlug}
+              onDelete={() => onDelete(r)}
+              onToggle={() => onToggle(r)}
+              switching={switchingId === r.id}
+              removing={deletingId === r.id}
+            />
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-3 pt-2 text-sm text-gray-600">
+          <span>Page {safePage} / {totalPages}</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={safePage <= 1}
+              onClick={() => setPage(safePage - 1)}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
+            >
+              Précédent
+            </button>
+            <button
+              type="button"
+              disabled={safePage >= totalPages}
+              onClick={() => setPage(safePage + 1)}
+              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
+            >
+              Suivant
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TableChargeRecherche({
   sectionSlug,
   sectionDesignation,
@@ -470,60 +450,54 @@ export default function TableChargeRecherche({
   data: ChargeRechercheTablePayload;
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("jury");
-
-  const sujetsState = useResourceList(listOrganisateurSujetResourcesAction, sectionSlug, data.sujetsInitial);
-  const stagesState = useResourceList(listOrganisateurStageResourcesAction, sectionSlug, data.stagesInitial);
-  const [statusToggleId, setStatusToggleId] = useState<string | null>(null);
+  const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
-  const handleToggleSujet = (row: SujetResourceRow) => {
-    const next = !isActive(row.status);
+  const handleToggleSujet = (item: ResourceProductVM) => {
+    const next = !isActive(item.status);
     const nextStatus = next ? "active" : "inactive";
-    setStatusToggleId(row.id);
+    setSwitchingId(item.id);
     void (async () => {
       try {
-        const updated = await patchOrganisateurSujetResourceStatusAction({ sectionSlug, id: row.id, status: nextStatus });
-        sujetsState.setRows((prev) => prev.map((x) => (x.id === row.id ? updated : x)));
+        await patchOrganisateurSujetResourceStatusAction({ sectionSlug, id: item.id, status: nextStatus });
       } catch { } finally {
-        setStatusToggleId(null);
+        setSwitchingId(null);
       }
     })();
   };
 
-  const handleDeleteSujet = (row: SujetResourceRow) => {
-    if (!window.confirm(`Supprimer « ${row.designation} » ?`)) return;
-    setDeletingId(row.id);
-    sujetsState.startTransition(async () => {
+  const handleDeleteSujet = (item: ResourceProductVM) => {
+    if (!window.confirm(`Supprimer « ${item.designation} » ?`)) return;
+    setDeletingId(item.id);
+    startTransition(async () => {
       try {
-        await deleteOrganisateurSujetResourceAction({ sectionSlug, id: row.id });
-        sujetsState.load(sujetsState.page, sujetsState.search);
+        await deleteOrganisateurSujetResourceAction({ sectionSlug, id: item.id });
       } catch { } finally {
         setDeletingId(null);
       }
     });
   };
 
-  const handleToggleStage = (row: StageResourceRow) => {
-    const next = !isActive(row.status);
+  const handleToggleStage = (item: ResourceProductVM) => {
+    const next = !isActive(item.status);
     const nextStatus = next ? "active" : "inactive";
-    setStatusToggleId(row.id);
+    setSwitchingId(item.id);
     void (async () => {
       try {
-        const updated = await patchOrganisateurStageResourceStatusAction({ sectionSlug, id: row.id, status: nextStatus });
-        stagesState.setRows((prev) => prev.map((x) => (x.id === row.id ? updated : x)));
+        await patchOrganisateurStageResourceStatusAction({ sectionSlug, id: item.id, status: nextStatus });
       } catch { } finally {
-        setStatusToggleId(null);
+        setSwitchingId(null);
       }
     })();
   };
 
-  const handleDeleteStage = (row: StageResourceRow) => {
-    if (!window.confirm(`Supprimer « ${row.designation} » ?`)) return;
-    setDeletingId(row.id);
-    stagesState.startTransition(async () => {
+  const handleDeleteStage = (item: ResourceProductVM) => {
+    if (!window.confirm(`Supprimer « ${item.designation} » ?`)) return;
+    setDeletingId(item.id);
+    startTransition(async () => {
       try {
-        await deleteOrganisateurStageResourceAction({ sectionSlug, id: row.id });
-        stagesState.load(stagesState.page, stagesState.search);
+        await deleteOrganisateurStageResourceAction({ sectionSlug, id: item.id });
       } catch { } finally {
         setDeletingId(null);
       }
@@ -614,98 +588,18 @@ export default function TableChargeRecherche({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="space-y-4"
           >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-gray-600">
-                Gestion des ressources sujets. Les nouvelles ressources sont créées en <strong>inactive</strong>.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="search"
-                  value={sujetsState.search}
-                  onChange={(e) => sujetsState.setSearch(e.target.value)}
-                  placeholder="Filtrer..."
-                  disabled={sujetsState.pending}
-                  className="w-full min-w-[12rem] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm outline-none focus:border-primary/50 sm:w-48"
-                />
-                <button
-                  type="button"
-                  onClick={() => sujetsState.load(1, sujetsState.search)}
-                  disabled={sujetsState.pending}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-midnight_text shadow-sm hover:bg-gray-50"
-                >
-                  <Icon icon="solar:magnifer-bold-duotone" className="h-4 w-4 text-primary" />
-                  Rechercher
-                </button>
-                <Link
-                  href={`/section/recherche/ressources-sujets`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-darkprimary"
-                >
-                  <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
-                  Nouvelle ressource
-                </Link>
-              </div>
-            </div>
-
-            {sujetsState.error ? (
-              <div className="flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
-                <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
-                <p>{sujetsState.error}</p>
-              </div>
-            ) : null}
-
-            {sujetsState.pending && sujetsState.rows.length === 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-52 animate-pulse rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50" />
-                ))}
-              </div>
-            ) : sujetsState.rows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center">
-                <Icon icon="solar:documents-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
-                <p className="font-semibold text-midnight_text">Aucune ressource sujet</p>
-              </div>
-            ) : (
-              <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${sujetsState.pending || !!deletingId ? "pointer-events-none opacity-70" : ""}`}>
-                {sujetsState.rows.map((r) => (
-                  <SujetCard
-                    key={r.id}
-                    row={r}
-                    programmes={data.programmes}
-                    onEdit={() => window.open(`/section/recherche/ressources-sujets?edit=${r.id}`, "_blank")}
-                    onDelete={() => handleDeleteSujet(r)}
-                    onToggle={() => handleToggleSujet(r)}
-                    switching={statusToggleId === r.id}
-                    removing={deletingId === r.id}
-                  />
-                ))}
-              </div>
-            )}
-
-            {sujetsState.total > 0 && (
-              <div className="flex items-center justify-between gap-3 pt-2 text-sm text-gray-600">
-                <span>{sujetsState.total} résultat{sujetsState.total > 1 ? "s" : ""} — page {sujetsState.page} / {Math.max(1, Math.ceil(sujetsState.total / sujetsState.limit))}</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={sujetsState.page <= 1 || sujetsState.pending}
-                    onClick={() => sujetsState.load(sujetsState.page - 1, sujetsState.search)}
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    Précédent
-                  </button>
-                  <button
-                    type="button"
-                    disabled={sujetsState.pending || sujetsState.page >= Math.ceil(sujetsState.total / sujetsState.limit)}
-                    onClick={() => sujetsState.load(sujetsState.page + 1, sujetsState.search)}
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </div>
-            )}
+            <FilterableResourceList
+              items={data.sujets}
+              kind="sujet"
+              programmes={data.programmes}
+              sectionSlug={sectionSlug}
+              onDelete={handleDeleteSujet}
+              onToggle={handleToggleSujet}
+              switchingId={switchingId}
+              deletingId={deletingId}
+              createHref="/section/recherche/ressources-sujets"
+            />
           </motion.div>
         )}
 
@@ -716,98 +610,18 @@ export default function TableChargeRecherche({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="space-y-4"
           >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-gray-600">
-                Gestion des ressources stages. Les nouvelles ressources sont créées en <strong>inactive</strong>.
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="search"
-                  value={stagesState.search}
-                  onChange={(e) => stagesState.setSearch(e.target.value)}
-                  placeholder="Filtrer..."
-                  disabled={stagesState.pending}
-                  className="w-full min-w-[12rem] rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm shadow-sm outline-none focus:border-primary/50 sm:w-48"
-                />
-                <button
-                  type="button"
-                  onClick={() => stagesState.load(1, stagesState.search)}
-                  disabled={stagesState.pending}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-midnight_text shadow-sm hover:bg-gray-50"
-                >
-                  <Icon icon="solar:magnifer-bold-duotone" className="h-4 w-4 text-primary" />
-                  Rechercher
-                </button>
-                <Link
-                  href={`/section/recherche/ressources-stages`}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-darkprimary"
-                >
-                  <Icon icon="solar:add-circle-bold-duotone" className="h-5 w-5" />
-                  Nouvelle ressource
-                </Link>
-              </div>
-            </div>
-
-            {stagesState.error ? (
-              <div className="flex gap-3 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950">
-                <Icon icon="solar:info-circle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
-                <p>{stagesState.error}</p>
-              </div>
-            ) : null}
-
-            {stagesState.pending && stagesState.rows.length === 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-52 animate-pulse rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50" />
-                ))}
-              </div>
-            ) : stagesState.rows.length === 0 ? (
-              <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center">
-                <Icon icon="solar:documents-bold-duotone" className="mb-3 h-14 w-14 text-gray-400" />
-                <p className="font-semibold text-midnight_text">Aucune ressource stage</p>
-              </div>
-            ) : (
-              <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${stagesState.pending || !!deletingId ? "pointer-events-none opacity-70" : ""}`}>
-                {stagesState.rows.map((r) => (
-                  <StageCard
-                    key={r.id}
-                    row={r}
-                    programmes={data.programmes}
-                    onEdit={() => window.open(`/section/recherche/ressources-stages?edit=${r.id}`, "_blank")}
-                    onDelete={() => handleDeleteStage(r)}
-                    onToggle={() => handleToggleStage(r)}
-                    switching={statusToggleId === r.id}
-                    removing={deletingId === r.id}
-                  />
-                ))}
-              </div>
-            )}
-
-            {stagesState.total > 0 && (
-              <div className="flex items-center justify-between gap-3 pt-2 text-sm text-gray-600">
-                <span>{stagesState.total} résultat{stagesState.total > 1 ? "s" : ""} — page {stagesState.page} / {Math.max(1, Math.ceil(stagesState.total / stagesState.limit))}</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={stagesState.page <= 1 || stagesState.pending}
-                    onClick={() => stagesState.load(stagesState.page - 1, stagesState.search)}
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    Précédent
-                  </button>
-                  <button
-                    type="button"
-                    disabled={stagesState.pending || stagesState.page >= Math.ceil(stagesState.total / stagesState.limit)}
-                    onClick={() => stagesState.load(stagesState.page + 1, stagesState.search)}
-                    className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50 disabled:opacity-40"
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </div>
-            )}
+            <FilterableResourceList
+              items={data.stages}
+              kind="stage"
+              programmes={data.programmes}
+              sectionSlug={sectionSlug}
+              onDelete={handleDeleteStage}
+              onToggle={handleToggleStage}
+              switchingId={switchingId}
+              deletingId={deletingId}
+              createHref="/section/recherche/ressources-stages"
+            />
           </motion.div>
         )}
       </AnimatePresence>
