@@ -202,7 +202,7 @@ async function assertStageBureauContext() {
   const ctx = await getOrganisateurStageBureauSection(session.sub);
   if (!ctx || !ctx.sectionSlug) {
     throw new Error(
-      "Vous devez être désigné chargé de recherche ou chargé d'enseignement du bureau d'une section."
+      "Vous devez être désigné chargé de recherche, chargé d'enseignement ou chef de section."
     );
   }
   return ctx;

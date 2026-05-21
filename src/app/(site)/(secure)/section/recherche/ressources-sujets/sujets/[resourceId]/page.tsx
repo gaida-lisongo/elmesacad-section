@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionPayload } from "@/lib/auth/sessionServer";
-import { getOrganisateurChargeRechercheSection } from "@/lib/section/getOrganisateurChargeRechercheSection";
+import { getOrganisateurSujetBureauSection } from "@/lib/section/getOrganisateurSujetBureauSection";
 import { getOrganisateurSujetResourceAction, type SujetCommandeListRow } from "@/actions/organisateurSujetResources";
 import { listEtudiantResourceCommandesAction } from "@/actions/etudiantResourceCommandes";
 import EtudiantResourceCommandesClient from "@/components/secure/etudiant-resources/EtudiantResourceCommandesClient";
@@ -18,7 +18,7 @@ export default async function SujetResourceCommandesPage({ params }: PageProps) 
     redirect("/dashboard");
   }
 
-  const sectionCtx = await getOrganisateurChargeRechercheSection(session.sub);
+  const sectionCtx = await getOrganisateurSujetBureauSection(session.sub);
   if (!sectionCtx) {
     redirect("/dashboard");
   }

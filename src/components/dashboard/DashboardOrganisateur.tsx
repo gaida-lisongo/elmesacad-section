@@ -178,6 +178,11 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                         sectionSlug={section.slug}
                         sectionDesignation={section.designation}
                         data={chargeRechercheData}
+                        role={{
+                            isChefSection: section.isChefSection,
+                            isChargeRecherche: section.isChargeRecherche,
+                            isChargeEnseignement: section.isChargeEnseignement,
+                        }}
                     />
                 ) : null}
             </>

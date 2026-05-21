@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Types } from "mongoose";
 import { getSessionPayload } from "@/lib/auth/sessionServer";
-import { getOrganisateurChargeRechercheSection } from "@/lib/section/getOrganisateurChargeRechercheSection";
+import { getOrganisateurSujetBureauSection } from "@/lib/section/getOrganisateurSujetBureauSection";
 import {
   listOrganisateurSujetResourcesAction,
   type SujetResourceRow,
@@ -64,14 +64,14 @@ export default async function OrganisateurRessourcesSujetsPage() {
     redirect("/dashboard");
   }
 
-  const sectionCtx = await getOrganisateurChargeRechercheSection(session.sub);
+  const sectionCtx = await getOrganisateurSujetBureauSection(session.sub);
   if (!sectionCtx) {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
-        <p className="font-semibold">Accès réservé au chargé de recherche</p>
+        <p className="font-semibold">Accès réservé au chargé de recherche ou au chef de section</p>
         <p className="mt-2 text-amber-900/90 dark:text-amber-100/90">
-          Vous devez être désigné comme <strong>chargé de recherche</strong> du bureau d&apos;une section pour gérer les
-          ressources sujets. Rôle actuel : organisateur sans cette affectation sur la section.
+          Vous devez être désigné comme <strong>chargé de recherche</strong> ou <strong>chef de section</strong> pour gérer les
+          ressources sujets.
         </p>
       </div>
     );

@@ -20,7 +20,7 @@ import type { ChargeRechercheTablePayload } from "@/lib/dashboard/loadOrganisate
 
 type TabId = "jury" | "sujets" | "stages";
 
-const tabs: { id: TabId; label: string; icon: string }[] = [
+const fullTabs: { id: TabId; label: string; icon: string }[] = [
   { id: "jury", label: "Jury", icon: "mdi:account-group" },
   { id: "sujets", label: "Ressources Sujets", icon: "mdi:library" },
   { id: "stages", label: "Ressources Stages", icon: "mdi:briefcase-clock" },
@@ -444,12 +444,29 @@ export default function TableChargeRecherche({
   sectionSlug,
   sectionDesignation,
   data,
+  role,
 }: {
   sectionSlug: string;
   sectionDesignation: string;
   data: ChargeRechercheTablePayload;
+  role?: {
+    isChefSection: boolean;
+    isChargeRecherche: boolean;
+    isChargeEnseignement: boolean;
+  };
 }) {
-  const [activeTab, setActiveTab] = useState<TabId>("jury");
+  const tabs = useMemo(() => {
+    if (!role || role.isChefSection) return fullTabs;
+    const filtered: typeof fullTabs = [];
+    if (role.isChargeRecherche) {
+      filtered.push(fullTabs[1]); // sujets
+    }
+    if (role.isChargeEnseignement) {
+      filtered.push(fullTabs[2]); // stages
+    }
+    return filtered;
+  }, [role]);
+  const [activeTab, setActiveTab] = useState<TabId>(() => (tabs[0]?.id ?? "jury"));
   const [switchingId, setSwitchingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -520,7 +537,7 @@ export default function TableChargeRecherche({
         <div>
           <h2 className="text-xl font-bold text-slate-800 tracking-tight flex items-center gap-2">
             <Icon icon="mdi:flask-outline" className="text-indigo-600 w-6 h-6" />
-            Chargé de recherche
+            {role?.isChefSection ? "Bureau de section" : "Chargé de recherche"}
           </h2>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
             Section : <strong>{sectionDesignation}</strong>

@@ -3,7 +3,7 @@
 import { Types } from "mongoose";
 import { fetchEtudiantApi } from "@/lib/etudiant-service/etudiantRemote";
 import { getSessionPayload } from "@/lib/auth/sessionServer";
-import { getOrganisateurChargeRechercheSection } from "@/lib/section/getOrganisateurChargeRechercheSection";
+import { getOrganisateurSujetBureauSection } from "@/lib/section/getOrganisateurSujetBureauSection";
 import { connectDB } from "@/lib/services/connectedDB";
 import { ProgrammeModel } from "@/lib/models/Programme";
 import { SectionModel } from "@/lib/models/Section";
@@ -175,9 +175,9 @@ async function assertChargeRechercheContext() {
   if (!session || session.type !== "Agent" || session.role !== "organisateur") {
     throw new Error("Accès réservé aux organisateurs.");
   }
-  const ctx = await getOrganisateurChargeRechercheSection(session.sub);
+  const ctx = await getOrganisateurSujetBureauSection(session.sub);
   if (!ctx || !ctx.sectionSlug) {
-    throw new Error("Vous devez être désigné chargé de recherche du bureau d'une section.");
+    throw new Error("Vous devez être désigné chargé de recherche ou chef de section.");
   }
   return ctx;
 }
