@@ -308,6 +308,8 @@ export type SujetCommandeListRow = {
   matricule: string;
   studentEmail: string;
   designation: string;
+  amount: number;
+  currency: string;
   createdAt: string;
 };
 
@@ -327,6 +329,8 @@ function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
   let createdAt = "";
   if (created instanceof Date) createdAt = created.toISOString();
   else if (typeof created === "string") createdAt = created;
+
+  const rawAmount = Number(o.amount ?? o.montant ?? 0);
   return {
     id,
     orderNumber: String(o.orderNumber ?? "").trim(),
@@ -336,6 +340,8 @@ function commandeRowFromEtudiantApi(raw: unknown): SujetCommandeListRow | null {
     matricule: String(student.matricule ?? "").trim(),
     studentEmail: String(student.email ?? "").trim(),
     designation: String(res.designation ?? "").trim(),
+    amount: Number.isFinite(rawAmount) ? rawAmount : 0,
+    currency: String(o.currency ?? o.devise ?? "USD").trim(),
     createdAt,
   };
 }
