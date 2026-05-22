@@ -13,6 +13,7 @@ export default async function SectionProgrammeParcoursPage({
 }) {
   try {
     const { programmeSlug, anneeSlug } = await params;
+    console.log("Received params:", { programmeSlug, anneeSlug });
   
     //Scope
     const session = await getSessionPayload();
@@ -40,6 +41,7 @@ export default async function SectionProgrammeParcoursPage({
 
     //Programme
     const programme = await ProgrammeModel.findOne({ slug: programmeSlug }).lean();
+    console.log("Fetched programme:", programme);
     if (!programme) {
       return (
         <div className="flex items-center justify-center h-screen bg-slate-50">
@@ -52,6 +54,7 @@ export default async function SectionProgrammeParcoursPage({
   
     //Annee
     const annee = await AnneeModel.findOne({ slug: anneeSlug }).lean();
+      console.log("Fetched annee:", annee);
     if (!annee) {
       return (
         <div className="flex items-center justify-center h-screen bg-slate-50">
@@ -70,7 +73,9 @@ export default async function SectionProgrammeParcoursPage({
       search: "",
       page: 1,
       limit: 13000,
-    })
+    });
+
+    console.log("Fetched parcours data:", listData);
 
     const parcours = (listData.data ?? []).map((p: any) => ({
       id: String(p._id ?? p.id ?? ""),
