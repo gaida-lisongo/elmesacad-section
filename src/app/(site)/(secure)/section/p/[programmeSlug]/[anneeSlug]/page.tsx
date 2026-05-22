@@ -79,14 +79,14 @@ export default async function SectionProgrammeParcoursPage({
 
     const parcours = (listData.data ?? []).map((p: any) => ({
       id: String(p._id ?? p.id ?? ""),
-      nomComplet: String(p.nomComplet ?? ""),
-      matricule: String(p.matricule ?? ""),
-      email: String(p.email ?? ""),
-      sexe: String(p.sexe ?? ""),
-      nationalite: String(p.nationalite ?? ""),
-      date_naissance: String(p.date_naissance ?? ""),
-      lieu_naissance: String(p.lieu_naissance ?? ""),
-      photo: String(p.photo ?? ""),
+      nomComplet: String(p?.student?.nomComplet ?? ""),
+      matricule: String(p?.student?.matricule ?? ""),
+      email: String(p?.student?.email ?? ""),
+      sexe: String(p?.student?.sexe ?? ""),
+      nationalite: String(p?.student?.nationalite ?? ""),
+      date_naissance: String(p?.student?.date_naissance ?? ""),
+      lieu_naissance: String(p?.student?.lieu_naissance ?? ""),
+      photo: String(p?.student?.photo ?? ""),
       status: String(p.status ?? ""),
       reference: String(p.reference ?? ""),
     }));
