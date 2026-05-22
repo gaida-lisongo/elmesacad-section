@@ -1,26 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { PageListe } from "@/components/Layout/PageListe";
+import { DataTable } from "@/components/data/DataTable";
+import { Icon } from "@iconify/react";
 import {
   createParcoursBulkStudentService,
   deleteParcoursBulkStudentService,
-  listParcoursStudentService,
   patchParcoursBulkStudentService,
   updateParcoursStudentService,
 } from "@/actions/gestionnaireParcours";
-import { ProgrammeDoc } from "@/lib/models/Programme";
-import { AnneeDoc } from "@/lib/models/Annee";
+import type { ProgrammeDoc } from "@/lib/models/Programme";
+import type { AnneeDoc } from "@/lib/models/Annee";
 
-type CtxResponse = {
-  message?: string;
-  scope?: { sectionDesignation?: string; sectionSlug?: string };
-  programme?: { designation?: string; slug?: string; credits?: number };
-  annee?: { slug?: string; designation?: string; debut?: string; fin?: string };
-  canCreateDelete?: boolean;
-  canUpdateStatus?: boolean;
-};
-
+// ── Types ─────────────────────────────────────────────────────
 type ParcoursRow = {
   id: string;
   nomComplet: string;
@@ -45,128 +38,33 @@ type CsvDraftRow = {
   email: string;
 };
 
-const PAGE_SIZE = 40;
+// ── Constantes ────────────────────────────────────────────────
+const LOCAL_PAGE_SIZE = 15;
 const STATUS_OPTIONS = ["inscrit", "suspendu", "abandon", "diplômé"] as const;
 
+// ── Helpers ───────────────────────────────────────────────────
 function statusLabel(value: string): string {
   switch (value) {
-    case "inscrit":
-      return "Inscrit";
-    case "suspendu":
-      return "Suspendu";
-    case "abandon":
-      return "Abandon";
-    case "diplômé":
-      return "Finaliste";
-    default:
-      return value || "—";
+    case "inscrit": return "Inscrit";
+    case "suspendu": return "Suspendu";
+    case "abandon": return "Abandon";
+    case "diplômé": return "Finaliste";
+    default: return value || "—";
   }
 }
 
-function statusCardTone(value: string): string {
+function statusColor(value: string): string {
   switch (value) {
-    case "inscrit":
-      return "border-emerald-200 bg-emerald-50/30 dark:border-emerald-900/50";
-    case "suspendu":
-      return "border-amber-200 bg-amber-50/30 dark:border-amber-900/50";
-    case "abandon":
-      return "border-rose-200 bg-rose-50/30 dark:border-rose-900/50";
-    case "diplômé":
-      return "border-sky-200 bg-sky-50/30 dark:border-sky-900/50";
-    default:
-      return "border-gray-200 dark:border-gray-700";
+    case "inscrit": return "#10b981";
+    case "suspendu": return "#f59e0b";
+    case "abandon": return "#f43f5e";
+    case "diplômé": return "#0ea5e9";
+    default: return "#6b7280";
   }
-}
-
-function normalizeHeader(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function splitCsvLine(line: string, delimiter: string): string[] {
-  const values: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-      continue;
-    }
-    if (ch === delimiter && !inQuotes) {
-      values.push(current.trim());
-      current = "";
-      continue;
-    }
-    current += ch;
-  }
-  values.push(current.trim());
-  return values;
-}
-
-function parseCsv(text: string): CsvDraftRow[] {
-  const lines = text
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-  if (lines.length <= 1) return [];
-  const delimiter = lines[0].includes(";") ? ";" : ",";
-  const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader);
-  const indexOf = (aliases: string[]) => headers.findIndex((h) => aliases.includes(h));
-  const idxNom = indexOf(["nom", "nomcomplet"]);
-  const idxMatricule = indexOf(["matricule"]);
-  const idxSexe = indexOf(["sexe"]);
-  const idxNationalite = indexOf(["nationalite", "natiobnalite"]);
-  const idxDateNaissance = indexOf(["datenaissance"]);
-  const idxLieuNaissance = indexOf(["lieudenaissance", "lieunaissance"]);
-  const idxEmail = indexOf(["email", "mail"]);
-  return lines.slice(1).flatMap((line) => {
-    const cols = splitCsvLine(line, delimiter);
-    const row: CsvDraftRow = {
-      nomComplet: idxNom >= 0 ? String(cols[idxNom] ?? "").trim() : "",
-      matricule: idxMatricule >= 0 ? String(cols[idxMatricule] ?? "").trim() : "",
-      sexe: idxSexe >= 0 ? String(cols[idxSexe] ?? "M").trim().toUpperCase() : "M",
-      nationalite: idxNationalite >= 0 ? String(cols[idxNationalite] ?? "").trim() : "",
-      date_naissance: idxDateNaissance >= 0 ? String(cols[idxDateNaissance] ?? "").trim() : "",
-      lieu_naissance: idxLieuNaissance >= 0 ? String(cols[idxLieuNaissance] ?? "").trim() : "",
-      email: idxEmail >= 0 ? String(cols[idxEmail] ?? "").trim().toLowerCase() : "",
-    };
-    if (!row.nomComplet || !row.matricule || !row.email) return [];
-    row.sexe = row.sexe === "F" ? "F" : "M";
-    return [row];
-  });
-}
-
-function normalizeParcoursRow(raw: Record<string, unknown>): ParcoursRow {
-  const student = (raw.student ?? {}) as Record<string, unknown>;
-  return {
-    id: String(raw._id ?? raw.id ?? ""),
-    nomComplet: String(student.nomComplet ?? "—"),
-    matricule: String(student.matricule ?? "—"),
-    email: String(student.email ?? "—"),
-    sexe: String(student.sexe ?? "M"),
-    nationalite: String(student.nationalite ?? ""),
-    date_naissance: String(student.date_naissance ?? ""),
-    lieu_naissance: String(student.lieu_naissance ?? ""),
-    photo: String(student.photo ?? ""),
-    status: String(raw.status ?? "—"),
-    reference: String(raw.reference ?? "—"),
-  };
 }
 
 function getInitials(fullName: string): string {
-  const parts = fullName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return "ET";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
@@ -177,44 +75,75 @@ function formatDateFr(input: string): string {
   if (!raw) return "—";
   const d = new Date(raw);
   if (Number.isNaN(d.getTime())) return raw;
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(d);
+  return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d);
 }
 
-export default function SectionProgrammeParcoursClient({
-  programmeSlug,
-  anneeSlug,
-  programme,
-  annee,  
-  autorizations,
-  parcours,
-}: {
-  programmeSlug: string;
-  anneeSlug: string;
-  programme: ProgrammeDoc;
-  annee: AnneeDoc;
-  autorizations: {
-    canCreateDelete: boolean;
-    canUpdateStatus: boolean;
-  };
-  parcours: ParcoursRow[];
-}) {
-  console.log("SectionProgrammeParcoursClient render", { programmeSlug, anneeSlug });
-  console.log("Parcours reçus", { parcours });
-  console.log("Programme reçu", { programme });
-  console.log("Année reçue", { annee });
-  console.log("Autorisations", { autorizations });
+// ── CSV helpers ───────────────────────────────────────────────
+function normalizeHeader(input: string): string {
+  return input.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+}
 
-  const [ctx, setCtx] = useState<CtxResponse | null>(null);
-  const [rows, setRows] = useState<ParcoursRow[]>([]);
-  const [loading, setLoading] = useState(false);
+function splitCsvLine(line: string, delimiter: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i += 1) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') { current += '"'; i += 1; }
+      else { inQuotes = !inQuotes; }
+      continue;
+    }
+    if (ch === delimiter && !inQuotes) { values.push(current.trim()); current = ""; continue; }
+    current += ch;
+  }
+  values.push(current.trim());
+  return values;
+}
+
+function parseCsv(text: string): CsvDraftRow[] {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length <= 1) return [];
+  const delimiter = lines[0].includes(";") ? ";" : ",";
+  const headers = splitCsvLine(lines[0], delimiter).map(normalizeHeader);
+  const idx = (aliases: string[]) => headers.findIndex((h) => aliases.includes(h));
+  const idxNom = idx(["nom", "nomcomplet"]);
+  const idxMat = idx(["matricule"]);
+  const idxSexe = idx(["sexe"]);
+  const idxNat = idx(["nationalite", "natiobnalite"]);
+  const idxDN = idx(["datenaissance"]);
+  const idxLN = idx(["lieudenaissance", "lieunaissance"]);
+  const idxEmail = idx(["email", "mail"]);
+  return lines.slice(1).flatMap((line) => {
+    const cols = splitCsvLine(line, delimiter);
+    const row: CsvDraftRow = {
+      nomComplet: idxNom >= 0 ? String(cols[idxNom] ?? "").trim() : "",
+      matricule: idxMat >= 0 ? String(cols[idxMat] ?? "").trim() : "",
+      sexe: idxSexe >= 0 ? String(cols[idxSexe] ?? "M").trim().toUpperCase() : "M",
+      nationalite: idxNat >= 0 ? String(cols[idxNat] ?? "").trim() : "",
+      date_naissance: idxDN >= 0 ? String(cols[idxDN] ?? "").trim() : "",
+      lieu_naissance: idxLN >= 0 ? String(cols[idxLN] ?? "").trim() : "",
+      email: idxEmail >= 0 ? String(cols[idxEmail] ?? "").trim().toLowerCase() : "",
+    };
+    if (!row.nomComplet || !row.matricule || !row.email) return [];
+    row.sexe = row.sexe === "F" ? "F" : "M";
+    return [row];
+  });
+}
+
+// ── Composant principal ───────────────────────────────────────
+export default function SectionProgrammeParcoursClient({
+  programmeSlug, anneeSlug, programme, annee, autorizations, parcours: initialParcours, scope,
+}: {
+  programmeSlug: string; anneeSlug: string; programme: ProgrammeDoc; annee: AnneeDoc;
+  autorizations: { canCreateDelete: boolean; canUpdateStatus: boolean };
+  parcours: ParcoursRow[];
+  scope?: { sectionDesignation?: string; sectionSlug?: string };
+}) {
+  const [rows] = useState<ParcoursRow[]>(initialParcours);
   const [err, setErr] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [total, setTotal] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState("");
   const [bulkStatus, setBulkStatus] = useState("inscrit");
@@ -223,600 +152,341 @@ export default function SectionProgrammeParcoursClient({
   const [busy, setBusy] = useState<string | null>(null);
   const [editing, setEditing] = useState<ParcoursRow | null>(null);
   const [editForm, setEditForm] = useState<ParcoursRow | null>(null);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const photoRef = useRef<HTMLInputElement | null>(null);
 
-  const load = useCallback(async () => {
-    setErr(null);
-    setLoading(true);
-    try {
-      const ctxRes = await fetch(
-        `/api/section/parcours/context?programmeSlug=${encodeURIComponent(programmeSlug)}&anneeSlug=${encodeURIComponent(
-          anneeSlug
-        )}`
-      );
-      const ctxPayload = (await ctxRes.json()) as CtxResponse;
-      if (!ctxRes.ok) throw new Error(ctxPayload.message || "Contexte indisponible");
-      setCtx(ctxPayload);
-
-      const list = await listParcoursStudentService({
-        anneeSlug,
-        filiereSlug: String(ctxPayload.scope?.sectionSlug ?? ""),
-        classeSlug: programmeSlug,
-        search: search.trim(),
-        status: statusFilter || undefined,
-        page: page + 1,
-        limit: PAGE_SIZE,
-      });
-      setRows((list.data ?? []).map((x) => normalizeParcoursRow(x as Record<string, unknown>)));
-      setTotal(list.total ?? 0);
-    } catch (error) {
-      setRows([]);
-      setTotal(0);
-      setErr((error as Error).message);
-    } finally {
-      setLoading(false);
+  // ── Filtrage & pagination internes ──────────────────────────
+  const filtered = useMemo(() => {
+    let data = rows;
+    if (statusFilter) data = data.filter((r) => r.status === statusFilter);
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      data = data.filter((r) => r.nomComplet.toLowerCase().includes(q) || r.matricule.toLowerCase().includes(q) || r.email.toLowerCase().includes(q));
     }
-  }, [programmeSlug, anneeSlug, search, statusFilter, page]);
+    return data;
+  }, [rows, statusFilter, search]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const totalFiltered = filtered.length;
+  const paginatedRows = useMemo(() => filtered.slice(page * LOCAL_PAGE_SIZE, (page + 1) * LOCAL_PAGE_SIZE), [filtered, page]);
 
-  const allPageSelected = rows.length > 0 && rows.every((r) => selectedIds.includes(r.id));
-  const toggleAllPage = () => {
-    if (allPageSelected) {
-      setSelectedIds((prev) => prev.filter((id) => !rows.some((r) => r.id === id)));
-      return;
-    }
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      rows.forEach((r) => next.add(r.id));
-      return [...next];
-    });
-  };
+  // ── Stats ───────────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const counts: Record<string, number> = { total: rows.length };
+    for (const s of STATUS_OPTIONS) counts[s] = 0;
+    for (const r of rows) { if (counts[r.status] !== undefined) counts[r.status] += 1; }
+    return counts;
+  }, [rows]);
 
-  const onCsvSelected = async (file: File | null) => {
-    if (!file) return;
-    const text = await file.text();
-    setCsvRows(parseCsv(text));
-  };
+  // ── CSV ─────────────────────────────────────────────────────
+  const onCsvSelected = async (file: File | null) => { if (file) setCsvRows(parseCsv(await file.text())); };
 
   const downloadTemplate = () => {
-    const headers = ["Nom", "Matricule", "Sexe", "Nationalite", "Date_naissance", "Lieu de Naissance", "Email"];
-    const sample = ["KABILA Moise", "2026001", "M", "CD", "2000-01-15", "Kinshasa", "etudiant@example.com"];
-    const csv = `${headers.join(";")}\n${sample.join(";")}\n`;
+    const h = ["Nom", "Matricule", "Sexe", "Nationalite", "Date_naissance", "Lieu de Naissance", "Email"];
+    const s = ["KABILA Moise", "2026001", "M", "CD", "2000-01-15", "Kinshasa", "etudiant@example.com"];
+    const csv = `${h.join(";")}\n${s.join(";")}\n`;
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "template-parcours.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    const a = document.createElement("a"); a.href = url; a.download = "template-parcours.csv"; a.click(); URL.revokeObjectURL(url);
   };
 
   const createBulk = async () => {
-    if (!ctx?.canCreateDelete || csvRows.length === 0) return;
-    setBusy("create");
-    setProgress(0);
-    setErr(null);
+    if (!autorizations.canCreateDelete || csvRows.length === 0) return;
+    setBusy("create"); setProgress(0); setErr(null);
     try {
-      const chunkSize = 100;
-      const chunks = Math.ceil(csvRows.length / chunkSize);
+      const chunks = Math.ceil(csvRows.length / 100);
       for (let i = 0; i < chunks; i += 1) {
-        const chunk = csvRows.slice(i * chunkSize, (i + 1) * chunkSize);
-        const payload = chunk.map((row, idx) => ({
-          student: {
-            email: row.email,
-            matricule: row.matricule,
-            sexe: row.sexe,
-            nomComplet: row.nomComplet,
-            photo: "",
-            nationalite: row.nationalite,
-            date_naissance: row.date_naissance,
-            lieu_naissance: row.lieu_naissance,
-          },
-          programme: {
-            classe: String(ctx.programme?.slug ?? programmeSlug),
-            filiere: String(ctx.scope?.sectionSlug ?? ""),
-            credits: Number(ctx.programme?.credits ?? 0),
-          },
-          annee: {
-            debut: String(ctx.annee?.debut ?? ""),
-            fin: String(ctx.annee?.fin ?? ""),
-            slug: String(ctx.annee?.slug ?? anneeSlug),
-          },
-          status: "suspendu",
-          ncv: 0,
-          reference: `${String(ctx.annee?.slug ?? anneeSlug)}/${String(ctx.programme?.slug ?? programmeSlug)}/${row.matricule}/${Date.now()}${idx}`,
-        }));
-        await createParcoursBulkStudentService(payload);
+        const chunk = csvRows.slice(i * 100, (i + 1) * 100);
+        await createParcoursBulkStudentService(chunk.map((row, idx) => ({
+          student: { email: row.email, matricule: row.matricule, sexe: row.sexe, nomComplet: row.nomComplet, photo: "", nationalite: row.nationalite, date_naissance: row.date_naissance, lieu_naissance: row.lieu_naissance },
+          programme: { classe: programmeSlug, filiere: scope?.sectionSlug ?? "", credits: programme.credits },
+          annee: { debut: String(annee.debut), fin: String(annee.fin), slug: anneeSlug },
+          status: "suspendu", ncv: 0,
+          reference: `${anneeSlug}/${programmeSlug}/${row.matricule}/${Date.now()}${idx}`,
+        })));
         setProgress(Math.round(((i + 1) / chunks) * 100));
       }
-      setCsvRows([]);
-      await load();
-    } catch (error) {
-      setErr((error as Error).message);
-    } finally {
-      setBusy(null);
-    }
+      setCsvRows([]); window.location.reload();
+    } catch (error) { setErr((error as Error).message); }
+    finally { setBusy(null); }
   };
 
+  // ── Bulk actions ────────────────────────────────────────────
   const patchBulk = async () => {
-    if (!ctx?.canUpdateStatus || selectedIds.length === 0) return;
-    setBusy("patch");
-    setErr(null);
-    try {
-      await patchParcoursBulkStudentService(selectedIds.map((id) => ({ _id: id, status: bulkStatus })));
-      setSelectedIds([]);
-      await load();
-    } catch (error) {
-      setErr((error as Error).message);
-    } finally {
-      setBusy(null);
-    }
+    if (!autorizations.canUpdateStatus || selectedIds.length === 0) return;
+    setBusy("patch"); setErr(null);
+    try { await patchParcoursBulkStudentService(selectedIds.map((id) => ({ _id: id, status: bulkStatus }))); setSelectedIds([]); window.location.reload(); }
+    catch (error) { setErr((error as Error).message); }
+    finally { setBusy(null); }
   };
 
   const deleteBulk = async () => {
-    if (!ctx?.canCreateDelete || selectedIds.length === 0) return;
-    setBusy("delete");
-    setErr(null);
-    try {
-      await deleteParcoursBulkStudentService(selectedIds);
-      setSelectedIds([]);
-      await load();
-    } catch (error) {
-      setErr((error as Error).message);
-    } finally {
-      setBusy(null);
-    }
+    if (!autorizations.canCreateDelete || selectedIds.length === 0) return;
+    setBusy("delete"); setErr(null);
+    try { await deleteParcoursBulkStudentService(selectedIds); setSelectedIds([]); window.location.reload(); }
+    catch (error) { setErr((error as Error).message); }
+    finally { setBusy(null); }
   };
 
-  const openEdit = (row: ParcoursRow) => {
-    setEditing(row);
-    setEditForm({ ...row });
-  };
-
-  const closeEdit = () => {
-    if (busy === "save" || busy === "photo") return;
-    setEditing(null);
-    setEditForm(null);
-  };
+  // ── Edit modal ──────────────────────────────────────────────
+  const openEdit = (row: ParcoursRow) => { setEditing(row); setEditForm({ ...row }); };
+  const closeEdit = () => { if (busy === "save" || busy === "photo") return; setEditing(null); setEditForm(null); };
 
   const uploadPhoto = async (file: File | null) => {
     if (!file || !editForm) return;
-    setBusy("photo");
-    setErr(null);
+    setBusy("photo"); setErr(null);
     try {
-      const fd = new FormData();
-      fd.set("file", file);
+      const fd = new FormData(); fd.set("file", file);
       const res = await fetch("/api/section/parcours/upload-photo", { method: "POST", body: fd });
-      const payload = (await res.json().catch(() => ({}))) as { photo?: string; message?: string };
-      if (!res.ok) throw new Error(payload.message || "Upload photo impossible");
-      if (payload.photo) {
-        setEditForm((prev): ParcoursRow | null => (prev ? { ...prev, photo: payload.photo ?? prev.photo } : prev));
-      }
-    } catch (error) {
-      setErr((error as Error).message);
-    } finally {
-      setBusy(null);
-    }
+      const p = (await res.json().catch(() => ({}))) as { photo?: string; message?: string };
+      if (!res.ok) throw new Error(p.message || "Upload photo impossible");
+      if (p.photo) setEditForm((prev) => (prev ? { ...prev, photo: p.photo! } : prev));
+    } catch (error) { setErr((error as Error).message); }
+    finally { setBusy(null); }
   };
 
   const saveEdit = async () => {
     if (!editForm) return;
-    setBusy("save");
-    setErr(null);
+    setBusy("save"); setErr(null);
     try {
       await updateParcoursStudentService({
         id: editForm.id,
-        student: {
-          nomComplet: editForm.nomComplet.trim(),
-          email: editForm.email.trim().toLowerCase(),
-          matricule: editForm.matricule.trim(),
-          sexe: editForm.sexe.trim().toUpperCase() === "F" ? "F" : "M",
-          nationalite: editForm.nationalite.trim(),
-          date_naissance: editForm.date_naissance.trim(),
-          lieu_naissance: editForm.lieu_naissance.trim(),
-          photo: editForm.photo.trim(),
-        },
-        ...(ctx?.canUpdateStatus ? { status: editForm.status } : {}),
+        student: { nomComplet: editForm.nomComplet.trim(), email: editForm.email.trim().toLowerCase(), matricule: editForm.matricule.trim(), sexe: editForm.sexe.trim().toUpperCase() === "F" ? "F" : "M", nationalite: editForm.nationalite.trim(), date_naissance: editForm.date_naissance.trim(), lieu_naissance: editForm.lieu_naissance.trim(), photo: editForm.photo.trim() },
+        ...(autorizations.canUpdateStatus ? { status: editForm.status } : {}),
       });
-      closeEdit();
-      await load();
-    } catch (error) {
-      setErr((error as Error).message);
-    } finally {
-      setBusy(null);
-    }
+      closeEdit(); window.location.reload();
+    } catch (error) { setErr((error as Error).message); }
+    finally { setBusy(null); }
   };
 
-  return (
-    <PageListe
-      heading={
-        <div>
-          <h1 className="text-2xl font-bold text-midnight_text dark:text-white">
-            Parcours - {ctx?.programme?.designation || programmeSlug}
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Section {ctx?.scope?.sectionDesignation || "—"} · Année {ctx?.annee?.slug || anneeSlug}
-          </p>
-        </div>
-      }
-      sidebar={
-        <div className="space-y-3">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-            <p className="text-xs font-semibold uppercase text-gray-500">Statuts</p>
-            <div className="mt-2 space-y-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setPage(0);
-                  setStatusFilter("");
-                }}
-                className={`block w-full rounded px-2 py-1 text-left text-xs ${statusFilter === "" ? "bg-emerald-100 dark:bg-emerald-900/40" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-              >
-                Tous
-              </button>
-              {STATUS_OPTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => {
-                    setPage(0);
-                    setStatusFilter(s);
-                  }}
-                  className={`block w-full rounded px-2 py-1 text-left text-xs ${statusFilter === s ? "bg-emerald-100 dark:bg-emerald-900/40" : "hover:bg-gray-50 dark:hover:bg-gray-800"}`}
-                >
-                  {statusLabel(s)}
-                </button>
-              ))}
-            </div>
+  // ── Colonnes DataTable ──────────────────────────────────────
+  const columns = useMemo(() => [
+    { id: "nomComplet", header: "Étudiant",
+      cell: (row: ParcoursRow) => (
+        <div className="flex items-center gap-3">
+          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
+            {row.photo ? <img src={row.photo} alt={row.nomComplet} className="h-full w-full object-cover" />
+              : <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-gray-500">{getInitials(row.nomComplet)}</span>}
           </div>
-          {ctx?.canCreateDelete && (
-            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
-              <p className="text-xs font-semibold uppercase text-gray-500">Création bulk CSV (Appariteur)</p>
-              <p className="mt-2 text-xs text-gray-500">1) Télécharger le modèle CSV</p>
-              <button
-                type="button"
-                onClick={downloadTemplate}
-                className="mt-1 rounded border border-emerald-300 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
-              >
-                Télécharger le template
-              </button>
-              <p className="mt-3 text-xs text-gray-500">2) Charger le fichier</p>
-              <input
-                className="mt-1 block w-full text-xs"
-                type="file"
-                accept=".csv,text/csv"
-                onChange={(e) => void onCsvSelected(e.target.files?.[0] ?? null)}
-              />
-              <p className="mt-3 text-xs text-gray-500">3) Envoyer vers STUDENT_SERVICE</p>
-              <button
-                type="button"
-                onClick={() => void createBulk()}
-                disabled={busy === "create" || csvRows.length === 0}
-                className="mt-2 rounded bg-primary px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                Importer ({csvRows.length})
-              </button>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
-                <div className="h-full bg-primary transition-all" style={{ width: `${progress}%` }} />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-midnight_text dark:text-white">{row.nomComplet}</p>
+            <p className="truncate text-xs text-gray-500">{row.email}</p>
+          </div>
+        </div>
+      ) },
+    { id: "matricule", header: "Matricule", cell: (row: ParcoursRow) => <span className="font-mono text-xs font-medium text-gray-700 dark:text-gray-300">{row.matricule}</span> },
+    { id: "status", header: "Statut", cell: (row: ParcoursRow) => (
+      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+        style={{ backgroundColor: `${statusColor(row.status)}18`, color: statusColor(row.status) }}>
+        <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: statusColor(row.status) }} />
+        {statusLabel(row.status)}
+      </span>
+    ) },
+    { id: "sexe", header: "Sexe", cell: (row: ParcoursRow) => <span className="text-xs text-gray-600 dark:text-gray-400">{row.sexe || "—"}</span> },
+    { id: "date_naissance", header: "Né(e) le", cell: (row: ParcoursRow) => <span className="text-xs text-gray-600 dark:text-gray-400">{formatDateFr(row.date_naissance)}</span> },
+    { id: "lieu_naissance", header: "Lieu", cell: (row: ParcoursRow) => <span className="text-xs text-gray-600 dark:text-gray-400">{row.lieu_naissance || "—"}</span> },
+  ], []);
+
+  // ── Filtre statut ────────────────────────────────────────────
+  const filterSlot = useMemo(() => (
+    <div className="flex items-center gap-1.5">
+      {["", ...STATUS_OPTIONS].map((s) => (
+        <button key={s || "all"} type="button" onClick={() => { setPage(0); setStatusFilter(s); }}
+          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${statusFilter === s ? "bg-primary text-white shadow-xs" : "bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"}`}>
+          {s ? statusLabel(s) : "Tous"}
+        </button>
+      ))}
+    </div>
+  ), [statusFilter]);
+
+  // ── Sidebar ──────────────────────────────────────────────────
+  const sidebar = useMemo(() => (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Statistiques</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-gray-600 dark:text-gray-400">Total</span>
+            <span className="font-bold text-midnight_text dark:text-white">{stats.total}</span>
+          </div>
+          {STATUS_OPTIONS.map((s) => (
+            <div key={s} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: statusColor(s) }} />
+                <span className="text-gray-600 dark:text-gray-400">{statusLabel(s)}</span>
               </div>
+              <span className="font-semibold text-midnight_text dark:text-white">{stats[s] ?? 0}</span>
             </div>
-          )}
-          {!ctx?.canCreateDelete && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
-              Création/suppression désactivée: réservé à l&apos;appariteur.
-            </div>
-          )}
-          {!ctx?.canUpdateStatus && (
-            <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-xs text-sky-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-100">
-              Mise à jour de statut désactivée: réservée au secrétaire.
-            </div>
-          )}
+          ))}
         </div>
-      }
-    >
-      {err && <p className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">{err}</p>}
-      <section className="space-y-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => {
-              setPage(0);
-              setSearch(e.target.value);
-            }}
-            placeholder="Recherche par matricule ou nom..."
-            className="min-w-[14rem] flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-          />
-          <button
-            type="button"
-            onClick={toggleAllPage}
-            className="rounded-md border border-gray-300 px-3 py-2 text-xs font-semibold dark:border-gray-700"
-            disabled={rows.length === 0}
-          >
-            {allPageSelected ? "Tout désélectionner" : "Tout sélectionner"}
+      </div>
+
+      {autorizations.canCreateDelete && (
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <Icon icon="solar:document-add-linear" className="mr-1 inline-block size-3.5" />Import CSV
+          </p>
+          <button type="button" onClick={downloadTemplate}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300 dark:hover:bg-emerald-950/30">
+            <Icon icon="solar:download-linear" className="size-3.5" />Template
           </button>
-          {ctx?.canUpdateStatus && (
-            <>
-              <select
-                value={bulkStatus}
-                onChange={(e) => setBulkStatus(e.target.value)}
-                className="rounded-md border border-gray-300 px-2 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {statusLabel(s)}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => void patchBulk()}
-                disabled={busy === "patch" || selectedIds.length === 0}
-                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                Appliquer statut ({selectedIds.length})
+          <label className="mt-2 flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-600 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-800">
+            <Icon icon="solar:upload-linear" className="size-3.5" />{csvRows.length > 0 ? `${csvRows.length} ligne(s)` : "Charger CSV"}
+            <input className="sr-only" type="file" accept=".csv,text/csv" onChange={(e) => void onCsvSelected(e.target.files?.[0] ?? null)} />
+          </label>
+          <button type="button" onClick={() => void createBulk()} disabled={busy === "create" || csvRows.length === 0}
+            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-darkprimary disabled:opacity-50">
+            {busy === "create" ? <Icon icon="solar:spinner-bold" className="size-3.5 animate-spin" /> : <Icon icon="solar:import-linear" className="size-3.5" />}
+            Importer {csvRows.length > 0 ? `(${csvRows.length})` : ""}
+          </button>
+          {progress > 0 && (
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+              <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {!autorizations.canCreateDelete && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
+          <Icon icon="solar:shield-warning-linear" className="mr-1 inline-block size-3.5" />
+          Création/suppression désactivée&nbsp;: réservé à l&apos;appariteur.
+        </div>
+      )}
+      {!autorizations.canUpdateStatus && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-xs text-sky-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-100">
+          <Icon icon="solar:shield-warning-linear" className="mr-1 inline-block size-3.5" />
+          Mise à jour de statut désactivée&nbsp;: réservée au secrétaire.
+        </div>
+      )}
+    </div>
+  ), [autorizations, busy, csvRows, progress, stats]);
+
+  return (
+    <PageListe heading={
+      <div>
+        <h1 className="text-2xl font-bold text-midnight_text dark:text-white">Parcours — {programme.designation || programmeSlug}</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Icon icon="solar:buildings-linear" className="mr-1 inline-block size-4 align-text-bottom" />
+          {scope?.sectionDesignation || "—"} · Année {annee.designation || anneeSlug}
+        </p>
+      </div>
+    } sidebar={sidebar}>
+      {err && (
+        <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+          <Icon icon="solar:danger-triangle-linear" className="size-4 shrink-0" />{err}
+        </div>
+      )}
+
+      <DataTable columns={columns} rows={paginatedRows}
+        searchValue={search} onSearchChange={(v) => { setPage(0); setSearch(v); }}
+        searchPlaceholder="Rechercher par nom, matricule ou email…"
+        selectable selectedIds={selectedIds} onSelectedIdsChange={setSelectedIds}
+        filterSlot={filterSlot}
+        secondaryActions={
+          <>
+            {autorizations.canUpdateStatus && (
+              <div className="flex items-center gap-1.5">
+                <select value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)}
+                  className="rounded-md border border-gray-300 px-2 py-2 text-xs dark:border-gray-700 dark:bg-gray-800">
+                  {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                </select>
+                <button type="button" onClick={() => void patchBulk()} disabled={busy === "patch" || selectedIds.length === 0}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-darkprimary disabled:opacity-50">
+                  {busy === "patch" ? <Icon icon="solar:spinner-bold" className="size-3.5 animate-spin" /> : <Icon icon="solar:check-circle-linear" className="size-3.5" />}
+                  Appliquer ({selectedIds.length})
+                </button>
+              </div>
+            )}
+            {autorizations.canCreateDelete && (
+              <button type="button" onClick={() => void deleteBulk()} disabled={busy === "delete" || selectedIds.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-md border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/30">
+                {busy === "delete" ? <Icon icon="solar:spinner-bold" className="size-3.5 animate-spin" /> : <Icon icon="solar:trash-bin-trash-linear" className="size-3.5" />}
+                Supprimer ({selectedIds.length})
               </button>
-            </>
-          )}
-          {ctx?.canCreateDelete && (
-            <button
-              type="button"
-              onClick={() => void deleteBulk()}
-              disabled={busy === "delete" || selectedIds.length === 0}
-              className="rounded-md border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 disabled:opacity-50"
-            >
-              Supprimer sélection ({selectedIds.length})
-            </button>
-          )}
-        </div>
-
-        {loading ? (
-          <p className="text-sm text-gray-500">Chargement des étudiants...</p>
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-gray-500">Aucun parcours.</p>
-        ) : (
-          <div className="grid gap-3 md:grid-cols-2">
-            {rows.map((row) => {
-              const selected = selectedIds.includes(row.id);
-              return (
-                <article
-                  key={row.id}
-                  className={`w-full rounded-2xl border p-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900 ${
-                    selected
-                      ? "border-primary dark:border-primary"
-                      : statusCardTone(row.status)
-                  }`}
-                >
-                  <div className="grid gap-3 sm:grid-cols-[96px_minmax(0,1fr)]">
-                    <div className="relative h-24 w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800">
-                      {row.photo ? (
-                        <img src={row.photo} alt={row.nomComplet} className="h-full w-full object-cover" />
-                      ) : null}
-                      {!row.photo && (
-                        <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-gray-600 dark:text-gray-300">
-                          {getInitials(row.nomComplet)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selected}
-                            onChange={() =>
-                              setSelectedIds((prev) =>
-                                prev.includes(row.id) ? prev.filter((id) => id !== row.id) : [...prev, row.id]
-                              )
-                            }
-                            className="mt-1 rounded border-gray-300"
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-midnight_text dark:text-white">{row.nomComplet}</p>
-                            <p className="truncate text-xs text-gray-500">{row.email}</p>
-                          </div>
-                        </label>
-                        <span className="rounded-full bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                          {statusLabel(row.status)}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                        <span>
-                          Matricule: <span className="font-mono">{row.matricule}</span>
-                        </span>
-                        <span>
-                          Naissance: <span className="font-medium">{formatDateFr(row.date_naissance)}</span>
-                        </span>
-                        <span>
-                          Sexe: <span className="font-medium">{row.sexe || "—"}</span>
-                        </span>
-                        <span>
-                          Lieu: <span className="font-medium">{row.lieu_naissance || "—"}</span>
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => openEdit(row)}
-                        className="mt-3 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold transition hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800"
-                      >
-                        Modifier l'étudiant
-                      </button>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+            )}
+          </>
+        }
+        pagination={{ page, pageSize: LOCAL_PAGE_SIZE, total: totalFiltered, onPageChange: setPage }}
+        emptyMessage="Aucun étudiant trouvé pour ce parcours."
+        rowActions={(row: ParcoursRow) => (
+          <button type="button" onClick={() => openEdit(row)}
+            className="inline-flex items-center gap-1 rounded-md border border-gray-300 px-2 py-1 text-[11px] font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+            <Icon icon="solar:pen-linear" className="size-3.5" />Modifier
+          </button>
         )}
-
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
-          <span>
-            {total} résultat{total > 1 ? "s" : ""} — page {page + 1} / {Math.max(1, Math.ceil(total / PAGE_SIZE) || 1)}
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={page <= 0 || loading}
-              className="rounded-md border border-gray-300 px-3 py-1.5 font-medium transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-800"
-            >
-              Précédent
-            </button>
-            <button
-              type="button"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={loading || (page + 1) * PAGE_SIZE >= total || total === 0}
-              className="rounded-md border border-gray-300 px-3 py-1.5 font-medium transition hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-800"
-            >
-              Suivant
-            </button>
-          </div>
-        </div>
-      </section>
+      />
 
       {editing && editForm && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-3">
-          <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
-            <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-3">
+          <div className="max-h-[95vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
               <div>
-                <h3 className="text-base font-semibold text-midnight_text dark:text-white">Référence: {editing.reference}</h3>
-                <p className="text-[11px] text-gray-500">Référence non modifiable</p>
+                <h3 className="text-base font-semibold text-midnight_text dark:text-white">
+                  <Icon icon="solar:user-id-linear" className="mr-1.5 inline-block size-4" />{editForm.nomComplet}
+                </h3>
+                <p className="mt-0.5 text-xs text-gray-500">Réf: {editing.reference}</p>
               </div>
-              <button
-                type="button"
-                onClick={closeEdit}
-                className="rounded-md border border-gray-300 px-2 py-1 text-xs dark:border-gray-600"
-              >
-                Fermer
+              <button type="button" onClick={closeEdit} className="rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Fermer">
+                <Icon icon="solar:close-circle-linear" className="size-5" />
               </button>
             </div>
-            <div className="space-y-4 px-4 py-4">
-              <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
-                <section className="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-800/40">
-                  <p className="mb-2 text-xs font-semibold uppercase text-gray-500">Photo</p>
-                  <div className="relative h-44 w-full overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-                    {editForm.photo ? (
-                      <img src={editForm.photo} alt={editForm.nomComplet} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-gray-500">
-                        {getInitials(editForm.nomComplet)}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => photoInputRef.current?.click()}
-                      className="absolute left-2 top-2 rounded-md bg-black/65 px-2 py-1 text-[11px] font-semibold text-white"
-                    >
-                      Modifier
+
+            <div className="space-y-5 px-5 py-5">
+              <div className="grid gap-5 md:grid-cols-[200px_minmax(0,1fr)]">
+                <section className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Photo</p>
+                  <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/40">
+                    {editForm.photo ? <img src={editForm.photo} alt={editForm.nomComplet} className="h-full w-full object-cover" />
+                      : <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-gray-400">{getInitials(editForm.nomComplet)}</div>}
+                    <button type="button" onClick={() => photoRef.current?.click()}
+                      className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/70 px-2 py-1.5 text-[11px] font-semibold text-white backdrop-blur-xs transition hover:bg-black/80">
+                      <Icon icon="solar:camera-linear" className="mr-1 inline-block size-3" />Changer
                     </button>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept=".jpg,.jpeg,.png,.webp,.gif,image/*"
-                      className="hidden"
-                      onChange={(e) => void uploadPhoto(e.target.files?.[0] ?? null)}
-                    />
+                    <input ref={photoRef} type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/*" className="hidden" onChange={(e) => void uploadPhoto(e.target.files?.[0] ?? null)} />
                   </div>
                 </section>
-                <section className="grid gap-3 md:grid-cols-2">
-                <label className="text-xs text-gray-500">
-                  Nom complet
-                  <input
-                    value={editForm.nomComplet}
-                    onChange={(e) => setEditForm({ ...editForm, nomComplet: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                <label className="text-xs text-gray-500">
-                  Email
-                  <input
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                <label className="text-xs text-gray-500">
-                  Matricule
-                  <input
-                    value={editForm.matricule}
-                    onChange={(e) => setEditForm({ ...editForm, matricule: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                <label className="text-xs text-gray-500">
-                  Sexe
-                  <select
-                    value={editForm.sexe}
-                    onChange={(e) => setEditForm({ ...editForm, sexe: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  >
-                    <option value="M">M</option>
-                    <option value="F">F</option>
-                  </select>
-                </label>
-                <label className="text-xs text-gray-500">
-                  Nationalité
-                  <input
-                    value={editForm.nationalite}
-                    onChange={(e) => setEditForm({ ...editForm, nationalite: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                <label className="text-xs text-gray-500">
-                  Date de naissance
-                  <input
-                    value={editForm.date_naissance}
-                    onChange={(e) => setEditForm({ ...editForm, date_naissance: e.target.value })}
-                    placeholder="YYYY-MM-DD"
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                <label className="text-xs text-gray-500 md:col-span-2">
-                  Lieu de naissance
-                  <input
-                    value={editForm.lieu_naissance}
-                    onChange={(e) => setEditForm({ ...editForm, lieu_naissance: e.target.value })}
-                    className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                  />
-                </label>
-                {ctx?.canUpdateStatus && (
-                  <label className="text-xs text-gray-500 md:col-span-2">
-                    Statut d'inscription (secrétaire uniquement)
-                    <select
-                      value={editForm.status}
-                      onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                      className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))}
+
+                <section className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    { label: "Nom complet", key: "nomComplet", type: "text" },
+                    { label: "Email", key: "email", type: "email" },
+                    { label: "Matricule", key: "matricule", type: "text" },
+                    { label: "Nationalité", key: "nationalite", type: "text" },
+                    { label: "Date de naissance", key: "date_naissance", type: "text", placeholder: "YYYY-MM-DD" },
+                    { label: "Lieu de naissance", key: "lieu_naissance", type: "text" },
+                  ].map((f) => (
+                    <label key={f.key} className={`text-xs font-medium text-gray-500 ${f.key === "lieu_naissance" ? "sm:col-span-2" : ""}`}>
+                      {f.label}
+                      <input type={f.type} value={(editForm as Record<string, string>)[f.key]} onChange={(e) => setEditForm({ ...editForm, [f.key]: e.target.value })}
+                        placeholder={f.placeholder}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-midnight_text outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                    </label>
+                  ))}
+                  <label className="text-xs font-medium text-gray-500">Sexe
+                    <select value={editForm.sexe} onChange={(e) => setEditForm({ ...editForm, sexe: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-midnight_text outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                      <option value="M">Masculin</option><option value="F">Féminin</option>
                     </select>
                   </label>
-                )}
+                  {autorizations.canUpdateStatus && (
+                    <label className="text-xs font-medium text-gray-500 sm:col-span-2">
+                      <Icon icon="solar:flag-linear" className="mr-1 inline-block size-3.5" />Statut d&apos;inscription
+                      <select value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                        className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-midnight_text outline-none transition focus:border-primary focus:ring-1 focus:ring-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+                        {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+                      </select>
+                    </label>
+                  )}
                 </section>
               </div>
             </div>
-            <div className="flex justify-end gap-2 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-              <button
-                type="button"
-                onClick={closeEdit}
-                className="rounded-md border border-gray-300 px-3 py-2 text-xs font-semibold dark:border-gray-600"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={() => void saveEdit()}
-                disabled={busy === "save" || busy === "photo"}
-                className="rounded-md bg-primary px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                {busy === "save" ? "Enregistrement..." : "Enregistrer"}
+
+            <div className="flex items-center justify-end gap-2 border-t border-gray-200 px-5 py-4 dark:border-gray-700">
+              <button type="button" onClick={closeEdit}
+                className="rounded-lg border border-gray-300 px-4 py-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">Annuler</button>
+              <button type="button" onClick={() => void saveEdit()} disabled={busy === "save" || busy === "photo"}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-darkprimary disabled:opacity-50">
+                {busy === "save" ? <><Icon icon="solar:spinner-bold" className="size-3.5 animate-spin" />Enregistrement…</>
+                  : <><Icon icon="solar:diskette-linear" className="size-3.5" />Enregistrer</>}
               </button>
             </div>
           </div>

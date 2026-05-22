@@ -103,6 +103,7 @@ export default async function SectionProgrammeParcoursPage({
         canUpdateStatus: (scope.isSecretaire || scope.isChefSection) ?? false,
       }}
       parcours={parcours}
+      scope={scope}
     />;
     
   } catch (error) {
