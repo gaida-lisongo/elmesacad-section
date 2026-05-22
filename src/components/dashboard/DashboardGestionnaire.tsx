@@ -23,7 +23,7 @@ export default function DashboardGestionnaire({ metrics, categories, chartData, 
 
   // Callback de construction de carte ligne par ligne
   const renderProgrammeRow = (programme: any, index: number, selectedCategorySlug: string) => {
-    const targetUrl = `/section/p/${selectedCategorySlug}/${programme.slug}`;
+    const targetUrl = `/section/p/${programme.slug}/${selectedCategorySlug}`;
 
     return (
       <tr key={programme._id || index} className="hover:bg-slate-50/80 transition-colors group">
