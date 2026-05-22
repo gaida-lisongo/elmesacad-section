@@ -9,6 +9,8 @@ import {
   patchParcoursBulkStudentService,
   updateParcoursStudentService,
 } from "@/actions/gestionnaireParcours";
+import { ProgrammeDoc } from "@/lib/models/Programme";
+import { AnneeDoc } from "@/lib/models/Annee";
 
 type CtxResponse = {
   message?: string;
@@ -185,10 +187,27 @@ function formatDateFr(input: string): string {
 export default function SectionProgrammeParcoursClient({
   programmeSlug,
   anneeSlug,
+  programme,
+  annee,  
+  autorizations,
+  parcours,
 }: {
   programmeSlug: string;
   anneeSlug: string;
+  programme: ProgrammeDoc;
+  annee: AnneeDoc;
+  autorizations: {
+    canCreateDelete: boolean;
+    canUpdateStatus: boolean;
+  };
+  parcours: ParcoursRow[];
 }) {
+  console.log("SectionProgrammeParcoursClient render", { programmeSlug, anneeSlug });
+  console.log("Parcours reçus", { parcours });
+  console.log("Programme reçu", { programme });
+  console.log("Année reçue", { annee });
+  console.log("Autorisations", { autorizations });
+
   const [ctx, setCtx] = useState<CtxResponse | null>(null);
   const [rows, setRows] = useState<ParcoursRow[]>([]);
   const [loading, setLoading] = useState(false);
