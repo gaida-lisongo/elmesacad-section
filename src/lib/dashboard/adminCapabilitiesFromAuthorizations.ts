@@ -34,6 +34,15 @@ export function resolveAdminCapabilities(
   role: DashboardRole,
   list: DashboardAgentAuthorization[]
 ): DashboardAdminCapabilities {
+
+  if (role === "organisateur") {
+    return {
+      canManageFilieres: true,
+      canManageUserAccounts: false,
+      canReadTransactions: false,
+    };
+  }
+
   if (role !== "admin") {
     return {
       canManageFilieres: false,
@@ -41,7 +50,6 @@ export function resolveAdminCapabilities(
       canReadTransactions: false,
     };
   }
-
   if (list.length === 0) {
     return {
       canManageFilieres: true,
