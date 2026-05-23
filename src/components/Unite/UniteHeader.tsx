@@ -12,7 +12,7 @@ const UniteHeader = ({ designation, code, description }: { designation: string; 
         {designation}
       </h1>
       <div className="prose prose-slate dark:prose-invert max-w-none">
-        <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+        <p className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-line">
           {description}
         </p>
       </div>
