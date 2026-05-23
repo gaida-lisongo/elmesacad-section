@@ -145,6 +145,84 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
         }
     }
 
+    const handleEditPresentation = async () => {
+      try {
+        if(!editUe) return;
+        const payload = {
+          designation: editDesignation.trim(),
+          code: editCode.trim().toUpperCase(),
+          credits: Number.parseFloat(editCredits.replace(",", "."))
+        }
+
+        if(!payload.designation || !payload.code) {
+          setErr("Désignation et code requis.");
+          return;
+        }
+
+        if (!Number.isFinite(payload.credits) || payload.credits < 0) {
+          setErr("Crédits invalides.");
+          return;
+        }
+
+        const sommeMat = (editUe.matieres ?? []).reduce((s, m) => s + (Number(m.credits) || 0), 0);
+        if (creditsMatiereDepasseUnite(payload.credits, sommeMat)) {
+          setErr(
+            `Les matières totalisent ${sommeMat} cr. : impossible de fixer l’unité à ${payload.credits} cr. Réduisez d’abord les cours ou leurs crédits.`
+          );
+          return;
+        }
+        savingEdit(true);
+        setErr(null);
+
+        const res = await fetch(`/api/unites/${editUe._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const j = (await res.json()) as { message?: string };
+        if (!res.ok) throw new Error(j.message || "Mise à jour impossible");
+        closeEditModal();
+        await onSaveUe();
+        
+      } catch (error) {
+        const errMsg = error instanceof Error ? error.message : "Une erreur est survenue";
+        setErr(errMsg);        
+      } finally {
+        setSavingEdit(false);
+      }
+    }
+
+    const handleEditDescription = async () => {
+        if (!editUe) return;
+        try {
+          const descParsed = parseDescriptionForSave(editDescription);
+          if (!descParsed.ok) {
+            setErr(descParsed.message);
+            return;
+          }
+
+          setSavingEdit(true);
+          setErr(null);
+
+          const res = await fetch(`/api/unites/${editUe._id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ description: descParsed.value }),
+          });
+
+          const j = (await res.json()) as { message?: string };
+          if (!res.ok) throw new Error(j.message || "Mise à jour impossible");
+          closeEditModal();
+          await onSaveUe();
+          
+        } catch (error) {
+          const errMsg = error instanceof Error ? error.message : "Une erreur est survenue";
+          setErr(errMsg);
+        } finally {
+          setSavingEdit(false);
+        }
+    }
 
     const submitEditUe = async () => {
         if (!editUe) return;
@@ -189,6 +267,7 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
             setSavingEdit(false);
         }
     }
+
 
     useEffect(() => {
         if (!editUe) return;
@@ -250,7 +329,7 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
                     {[
                         { id: TAB_UNITE, label: "Présentation" },
                         { id: TAB_DESC, label: "Description détaillée" },
-                        { id: TAB_COURS, label: "Matières & Crédits" }
+                        { id: TAB_COURS, label: "Eléments constitutifs" }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -309,7 +388,7 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
                   <button
                     type="button"
                     disabled={savingEdit}
-                    onClick={() => void submitEditUe()}
+                    onClick={() => void handleEditPresentation()}
                     className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900"
                   >
                     {savingEdit ? "…" : "Enregistrer l’unité"}
@@ -338,7 +417,7 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
                     />
                     <div className="mt-6 flex justify-end gap-2">
                         <button onClick={
-                            () => void submitEditUe()
+                            () => void handleEditDescription()
                         } disabled={savingEdit} className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white dark:bg-primary dark:text-gray-900">
                             {savingEdit ? "…" : "Mettre à jour la description"}
                         </button>
