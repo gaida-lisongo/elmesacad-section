@@ -101,7 +101,11 @@ export default async function OrganisateurDashboardPage() {
                     }
                 ]
             }
-        ]
+        ];
+
+        const enseignementTable = tableData.find(t => t.role === "Chargé d'enseignement" && scope.isChargeEnseignement)
+        const sectionTable = tableData.find(t => t.role === "Chef de section" && scope.isChefSection)
+
 
         let chargeRechercheData = undefined;
         if (scope.isChargeRecherche || scope.isChefSection) {
@@ -120,7 +124,7 @@ export default async function OrganisateurDashboardPage() {
             programmes={programmes}
             chargesHoraires={chargesHoraires}
             filieres={filieres}
-            tableData={tableData}
+            tableData={scope.isChefSection ? [sectionTable] : [enseignementTable]}
             chargeRechercheData={chargeRechercheData}
         />;
     } catch (error) {
