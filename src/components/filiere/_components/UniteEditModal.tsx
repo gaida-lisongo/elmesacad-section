@@ -171,7 +171,7 @@ const UniteEditModal = ({ editUe, closeEditModal, reload, onSaveUe }: Props) => 
           );
           return;
         }
-        savingEdit(true);
+        setSavingEdit(true);
         setErr(null);
 
         const res = await fetch(`/api/unites/${editUe._id}`, {
