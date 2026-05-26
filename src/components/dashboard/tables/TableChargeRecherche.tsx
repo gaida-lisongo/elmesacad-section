@@ -456,13 +456,10 @@ export default function TableChargeRecherche({
   };
 }) {
   const tabs = useMemo(() => {
-    if (!role || role.isChefSection) return fullTabs;
+    if (role && !role.isChargeEnseignement) return fullTabs;
     const filtered: typeof fullTabs = [];
-    if (role.isChargeRecherche) {
-      filtered.push(fullTabs[1]); // sujets
-    }
-    if (role.isChargeEnseignement) {
-      filtered.push(fullTabs[2]); // stages
+    if (role && role.isChargeEnseignement) {
+      filtered.push(fullTabs[1]); // stages
     }
     return filtered;
   }, [role]);
