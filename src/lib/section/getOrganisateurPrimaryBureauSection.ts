@@ -17,9 +17,7 @@ export type OrganisateurBureauSectionContext = {
  * (chef, chargé d’enseignement ou chargé de recherche).
  * Aligné sur `GET /api/my-sections/bureau`.
  */
-export async function getOrganisateurPrimaryBureauSection(
-  agentSub: string
-): Promise<OrganisateurBureauSectionContext | null> {
+export async function getOrganisateurPrimaryBureauSection(agentSub: string): Promise<OrganisateurBureauSectionContext | null> {
   if (!Types.ObjectId.isValid(agentSub)) return null;
   const oid = new Types.ObjectId(agentSub);
   await connectDB();
