@@ -34,6 +34,7 @@ async function loadBootstrap(): Promise<ArchivageBootstrap> {
       { "bureau.chefSection": agentId },
       { "bureau.chargeEnseignement": agentId },
       { "bureau.chargeRecherche": agentId },
+      { "bureau.secretaire": agentId },
     ],
   })
     .select("_id designation slug cycle")
