@@ -5,6 +5,7 @@ import DashboardPage from "./Dashboard";
 import ResourceDashboardTable from "./tables/RessourceDashboardTable";
 import { TableChargeHoraire } from "./tables/TableChargeHoraire";
 import TableChargeRecherche from "./tables/TableChargeRecherche";
+import { GestionnaireParcoursTable } from "./tables/GestionnaireParcoursTable";
 import type { ChargeRechercheTablePayload } from "@/lib/dashboard/loadOrganisateurCrTableData";
 
 interface DashboardOrganisateurProps {
@@ -15,17 +16,19 @@ interface DashboardOrganisateurProps {
         isChefSection: boolean;
         isChargeEnseignement: boolean;
         isChargeRecherche: boolean;
+        isSecretaire: boolean;
     };
     programmes: any[];
     chargesHoraires: any;
     filieres: any[];
     tableData?: any[];
     chargeRechercheData?: ChargeRechercheTablePayload;
+    anneeActive?: { id: string; designation: string; slug: string } | null;
 }
 
 export default function DashboardOrganisateur(props: DashboardOrganisateurProps) {
 
-    const { section, programmes, chargesHoraires, filieres, tableData, chargeRechercheData } = props;
+    const { section, programmes, chargesHoraires, filieres, tableData, chargeRechercheData, anneeActive } = props;
     console.log("Section :", section);
     console.log("Programmes :", programmes);
     console.log("Charges Horaires :", chargesHoraires);
@@ -184,6 +187,18 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                             isChargeEnseignement: section.isChargeEnseignement,
                         }}
                     />
+                ) : null}
+
+                {section.isSecretaire && anneeActive ? (
+                    <article className="animate-dashboard-in rounded-xl border border-gray-200/80 bg-gradient-to-b from-white to-gray-50/30 p-4 shadow-sm transition duration-500 hover:shadow-md dark:border-gray-800 dark:from-gray-900 dark:to-gray-950/50">
+                        <h2 className="mb-3 text-sm font-semibold text-midnight_text dark:text-white">
+                            Gestion des parcours académiques
+                        </h2>
+                        <GestionnaireParcoursTable
+                            currentAnneeId={anneeActive.id}
+                            currentAnneeLabel={anneeActive.designation}
+                        />
+                    </article>
                 ) : null}
             </>
         </DashboardPage>

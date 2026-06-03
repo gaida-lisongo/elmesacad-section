@@ -10,6 +10,7 @@ import { FiliereModel } from "@/lib/models/Filiere";
 import { loadOrganisateurCeChargesHoraires } from "@/lib/dashboard/loadOrganisateurCeChargesHoraires";
 import { getSectionRessourcesData } from "@/actions/sectionRessources";
 import { loadOrganisateurCrTableData } from "@/lib/dashboard/loadOrganisateurCrTableData";
+import { AnneeModel } from "@/lib/models/Annee";
 
 export default async function OrganisateurDashboardPage() {
     try {
@@ -101,12 +102,23 @@ export default async function OrganisateurDashboardPage() {
 
         const enseignementTable = tableData.find(t => t.role === "Chargé d'enseignement" && scope.isChargeEnseignement)
         const sectionTable = tableData.find(t => t.role === "Chef de section" && scope.isChefSection)
+        const resolvedTableData = [sectionTable, enseignementTable].filter(Boolean);
 
 
         let chargeRechercheData = undefined;
         if (scope.isChargeRecherche || scope.isChefSection) {
             chargeRechercheData = await loadOrganisateurCrTableData(scope.sectionId, scope.sectionSlug);
         }
+
+        // Année active pour les parcours (secrétaire)
+        const activeAnnee = await AnneeModel.findOne({ status: true }).select("_id designation slug").lean();
+        const anneeActive = activeAnnee
+            ? {
+                  id: String(activeAnnee._id),
+                  designation: String((activeAnnee as { designation?: string }).designation ?? ""),
+                  slug: String((activeAnnee as { slug?: string }).slug ?? ""),
+              }
+            : null;
 
         return <DashboardOrganisateur
             section={{
@@ -116,12 +128,14 @@ export default async function OrganisateurDashboardPage() {
                 isChefSection: scope.isChefSection,
                 isChargeEnseignement: scope.isChargeEnseignement,
                 isChargeRecherche: scope.isChargeRecherche,
+                isSecretaire: scope.isSecretaire,
             }}
             programmes={programmes}
             chargesHoraires={chargesHoraires}
             filieres={filieres}
-            tableData={scope.isChefSection ? [sectionTable] : [enseignementTable]}
+            tableData={resolvedTableData}
             chargeRechercheData={chargeRechercheData}
+            anneeActive={anneeActive}
         />;
     } catch (error) {
         console.error("Error loading Organisateur dashboard:", error);
