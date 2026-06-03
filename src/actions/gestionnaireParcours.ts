@@ -45,7 +45,7 @@ function withJson(init: RequestInit, body: unknown): RequestInit {
 
 async function assertGestionnaireSession() {
   const session = await getSessionPayload();
-  if (!session || session.type !== "Agent" || session.role !== "gestionnaire") {
+  if (!session || session.type !== "Agent" || (session.role !== "gestionnaire" && session.role !== "organisateur")) {
     throw new Error("Accès réservé aux gestionnaires.");
   }
   return session;
