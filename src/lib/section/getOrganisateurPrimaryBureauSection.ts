@@ -9,7 +9,7 @@ export type OrganisateurBureauSectionContext = {
   isChefSection: boolean;
   isChargeEnseignement: boolean;
   isChargeRecherche: boolean;
-  isSecrétaire: boolean;
+  isSecretaire: boolean;
 };
 
 /**
@@ -44,7 +44,7 @@ export async function getOrganisateurPrimaryBureauSection(
     row.bureau?.chargeEnseignement ? String(row.bureau.chargeEnseignement) === agentSub : false;
   const isChargeRecherche =
     row.bureau?.chargeRecherche ? String(row.bureau.chargeRecherche) === agentSub : false;
-  const isSecrétaire =
+  const isSecretaire =
     row.bureau?.secretaire ? String(row.bureau.secretaire) === agentSub : false;
 
   return {
@@ -54,6 +54,6 @@ export async function getOrganisateurPrimaryBureauSection(
     isChefSection,
     isChargeEnseignement,
     isChargeRecherche,
-    isSecrétaire,
+    isSecretaire,
   };
 }
