@@ -34,6 +34,7 @@ export type SectionDoc = {
   jury?: {
     cours?: {
       president?: Types.ObjectId;
+      secretaire?: Types.ObjectId;
       membres?: Types.ObjectId[];
     };
     recherche?: {
