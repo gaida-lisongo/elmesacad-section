@@ -9,6 +9,7 @@ export type OrganisateurBureauSectionContext = {
   isChefSection: boolean;
   isChargeEnseignement: boolean;
   isChargeRecherche: boolean;
+  isSecrétaire: boolean;
 };
 
 /**
@@ -27,6 +28,7 @@ export async function getOrganisateurPrimaryBureauSection(
       { "bureau.chefSection": oid },
       { "bureau.chargeEnseignement": oid },
       { "bureau.chargeRecherche": oid },
+      { "bureau.secretaire": oid },
     ],
   })
     .select("_id designation slug bureau")
@@ -42,6 +44,8 @@ export async function getOrganisateurPrimaryBureauSection(
     row.bureau?.chargeEnseignement ? String(row.bureau.chargeEnseignement) === agentSub : false;
   const isChargeRecherche =
     row.bureau?.chargeRecherche ? String(row.bureau.chargeRecherche) === agentSub : false;
+  const isSecrétaire =
+    row.bureau?.secretaire ? String(row.bureau.secretaire) === agentSub : false;
 
   return {
     sectionId: String(row._id),
@@ -50,5 +54,6 @@ export async function getOrganisateurPrimaryBureauSection(
     isChefSection,
     isChargeEnseignement,
     isChargeRecherche,
+    isSecrétaire,
   };
 }
