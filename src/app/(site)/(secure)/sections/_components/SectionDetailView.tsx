@@ -28,6 +28,7 @@ type SectionPayload = {
     chefSection?: BureauRef;
     chargeEnseignement?: BureauRef;
     chargeRecherche?: BureauRef;
+    secretaire?: BureauRef;
   };
   apiKey?: string | null;
   secretKey?: string | null;
@@ -69,6 +70,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
   const [bureauChef, setBureauChef] = useState<AgentPick | null>(null);
   const [bureauEns, setBureauEns] = useState<AgentPick | null>(null);
   const [bureauRech, setBureauRech] = useState<AgentPick | null>(null);
+  const [bureauSec, setBureauSec] = useState<AgentPick | null>(null);
   const [descBlocks, setDescBlocks] = useState<TitleContentBlock[]>([]);
 
   const load = useCallback(async () => {
@@ -104,6 +106,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
     setBureauChef(bureauRefToAgentPick(data.bureau?.chefSection));
     setBureauEns(bureauRefToAgentPick(data.bureau?.chargeEnseignement));
     setBureauRech(bureauRefToAgentPick(data.bureau?.chargeRecherche));
+    setBureauSec(bureauRefToAgentPick(data.bureau?.secretaire));
     setDescBlocks(apiToDescBlocks(data.description));
   }, [data]);
 
@@ -157,6 +160,7 @@ export default function SectionDetailView({ slug }: { slug: string }) {
         chefSection: bureauChef?.id ?? "",
         chargeEnseignement: bureauEns?.id ?? "",
         chargeRecherche: bureauRech?.id ?? "",
+        secretaire: bureauSec?.id ?? "",
       },
     });
   };
@@ -358,6 +362,11 @@ export default function SectionDetailView({ slug }: { slug: string }) {
             label="Chargé de recherche"
             value={bureauRech}
             onChange={setBureauRech}
+          />
+          <BureauAgentField
+            label="Secrétaire"
+            value={bureauSec}
+            onChange={setBureauSec}
           />
           <button
             type="submit"
