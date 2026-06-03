@@ -19,6 +19,9 @@ type LocalSectionAssignments = {
   sectionSlug: string;
   gestionnaires: {
     appariteur: AgentView | null;
+    operateurSaisie: AgentView | null;
+  };
+  bureau: {
     secretaire: AgentView | null;
   };
   jury: {
@@ -81,12 +84,14 @@ export default async function SectionAutorisationsPage() {
       { "bureau.chefSection": oid },
       { "bureau.chargeEnseignement": oid },
       { "bureau.chargeRecherche": oid },
+      { "bureau.secretaire": oid },
     ],
   })
-    .select("designation slug gestionnaires jury")
+    .select("designation slug bureau gestionnaires jury")
     .populate([
-      { path: "gestionnaires.secretaire", select: "name email matricule photo role" },
+      { path: "bureau.secretaire", select: "name email matricule photo role" },
       { path: "gestionnaires.appariteur", select: "name email matricule photo role" },
+      { path: "gestionnaires.operateurSaisie", select: "name email matricule photo role" },
       { path: "jury.cours.president", select: "name email matricule photo role" },
       { path: "jury.cours.secretaire", select: "name email matricule photo role" },
       { path: "jury.cours.membres", select: "name email matricule photo role" },
@@ -108,7 +113,8 @@ export default async function SectionAutorisationsPage() {
     _id: unknown;
     designation?: unknown;
     slug?: unknown;
-    gestionnaires?: { appariteur?: MaybeAgentDoc; secretaire?: MaybeAgentDoc };
+    bureau?: { secretaire?: MaybeAgentDoc };
+    gestionnaires?: { appariteur?: MaybeAgentDoc; operateurSaisie?: MaybeAgentDoc };
     jury?: {
       cours?: { president?: MaybeAgentDoc; secretaire?: MaybeAgentDoc; membres?: unknown };
       recherche?: { president?: MaybeAgentDoc; secretaire?: MaybeAgentDoc; membres?: unknown };
@@ -121,7 +127,10 @@ export default async function SectionAutorisationsPage() {
     sectionSlug: String(data.slug ?? ""),
     gestionnaires: {
       appariteur: toAgentView(data.gestionnaires?.appariteur ?? null),
-      secretaire: toAgentView(data.gestionnaires?.secretaire ?? null),
+      operateurSaisie: toAgentView(data.gestionnaires?.operateurSaisie ?? null),
+    },
+    bureau: {
+      secretaire: toAgentView(data.bureau?.secretaire ?? null),
     },
     jury: {
       cours: {
