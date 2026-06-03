@@ -12,6 +12,7 @@ const bureauPopulate = [
   { path: "bureau.chefSection", select: "name email" },
   { path: "bureau.chargeEnseignement", select: "name email" },
   { path: "bureau.chargeRecherche", select: "name email" },
+  { path: "bureau.secretaire", select: "name email" },
 ];
 
 type Ctx = { params: Promise<{ slug: string }> };
@@ -21,7 +22,7 @@ function leanWithStringId(d: Record<string, unknown>) {
   if (o._id) o._id = String(o._id);
   if (o.bureau && typeof o.bureau === "object" && o.bureau !== null) {
     const b = o.bureau as Record<string, unknown>;
-    for (const k of ["chefSection", "chargeEnseignement", "chargeRecherche"] as const) {
+    for (const k of ["chefSection", "chargeEnseignement", "chargeRecherche", "secretaire"] as const) {
       const v = b[k];
       if (v && typeof v === "object" && v !== null && "_id" in (v as object)) {
         b[k] = { ...(v as object), _id: String((v as { _id: unknown })._id) };
@@ -101,6 +102,7 @@ export async function PATCH(request: Request, context: Ctx) {
       chefSection?: string;
       chargeEnseignement?: string;
       chargeRecherche?: string;
+      secretaire?: string;  
     };
   };
 
@@ -133,7 +135,7 @@ export async function PATCH(request: Request, context: Ctx) {
       }
       const prev = (cur.bureau as Record<string, unknown> | undefined) ?? {};
       const next: Record<string, Types.ObjectId> = {};
-      for (const key of ["chefSection", "chargeEnseignement", "chargeRecherche"] as const) {
+      for (const key of ["chefSection", "chargeEnseignement", "chargeRecherche", "secretaire"] as const) {
         if (!payload.bureau || !Object.prototype.hasOwnProperty.call(payload.bureau, key)) {
           const ex = prev[key];
           if (ex && Types.ObjectId.isValid(String(ex))) {
