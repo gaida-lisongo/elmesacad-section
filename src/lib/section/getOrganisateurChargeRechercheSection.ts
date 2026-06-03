@@ -25,5 +25,6 @@ export async function getOrganisateurChargeRechercheSection(
     isChefSection: false,
     isChargeEnseignement: true,
     isChargeRecherche: true,
+    isSecretaire: false,
   };
 }
