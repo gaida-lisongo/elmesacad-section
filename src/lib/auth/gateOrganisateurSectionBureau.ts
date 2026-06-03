@@ -34,7 +34,7 @@ export async function gateOrganisateurSectionBureau(sectionId: string): Promise<
     return { ok: false, response: NextResponse.json({ message: "Section introuvable" }, { status: 404 }) };
   }
   const b = section.bureau;
-  const bureauIds = [b?.chefSection, b?.chargeEnseignement, b?.chargeRecherche]
+  const bureauIds = [b?.chefSection, b?.chargeEnseignement, b?.chargeRecherche, b?.secretaire]
     .filter(Boolean)
     .map((id) => String(id));
   if (!bureauIds.includes(agentId)) {
@@ -43,7 +43,7 @@ export async function gateOrganisateurSectionBureau(sectionId: string): Promise<
       response: NextResponse.json(
         {
           message:
-            "Vous n’êtes pas membre du bureau de cette section (chef de section, chargé d’enseignement ou chargé de recherche).",
+            "Vous n'êtes pas membre du bureau de cette section (chef de section, chargé d'enseignement, chargé de recherche ou secrétaire).",
         },
         { status: 403 }
       ),

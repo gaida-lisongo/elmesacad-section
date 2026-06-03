@@ -99,7 +99,7 @@ export default async function SectionProgrammeParcoursPage({
       programme={programme}
       annee={annee}
       autorizations={{
-        canCreateDelete: (scope.isAppariteur || scope.isChefSection) ?? false,
+        canCreateDelete: (scope.isSecretaire || scope.isChefSection) ?? false,
         canUpdateStatus: (scope.isSecretaire || scope.isChefSection) ?? false,
       }}
       parcours={parcours}

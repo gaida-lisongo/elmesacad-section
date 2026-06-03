@@ -96,6 +96,7 @@ export async function POST(request: Request) {
         chefSection?: string;
         chargeEnseignement?: string;
         chargeRecherche?: string;
+        secretaire?: string;
       };
       cycle?: string;
       logo?: string;
@@ -126,9 +127,10 @@ export async function POST(request: Request) {
       chefSection?: Types.ObjectId;
       chargeEnseignement?: Types.ObjectId;
       chargeRecherche?: Types.ObjectId;
+      secretaire?: Types.ObjectId;
     } = {};
     if (bureauIn) {
-      for (const key of ["chefSection", "chargeEnseignement", "chargeRecherche"] as const) {
+      for (const key of ["chefSection", "chargeEnseignement", "chargeRecherche", "secretaire"] as const) {
         const v = bureauIn[key];
         if (!v) continue;
         if (!Types.ObjectId.isValid(v)) {

@@ -9,6 +9,7 @@ import { UserDatabaseSearch } from "@/components/secure/UserDatabaseSearch";
 export type SectionAuthorizationTab =
   | "appariteur"
   | "secretaire"
+  | "operateurSaisie"
   | "president"
   | "secretaire-jury"
   | "membre";
@@ -25,7 +26,8 @@ export type SectionAuthorizationPreset = {
 
 export const SECTION_AUTHORIZATION_PRESETS: SectionAuthorizationPreset[] = [
   { tab: "appariteur", label: "Appariteur", designation: "Appariteur", badge: "Gestionnaires" },
-  { tab: "secretaire", label: "Secrétaire", designation: "Secrétaire", badge: "Gestionnaires" },
+  { tab: "secretaire", label: "Secrétaire", designation: "Secrétaire", badge: "Bureau" },
+  { tab: "operateurSaisie", label: "Opérateur de saisie", designation: "Opérateur de saisie", badge: "Gestionnaires" },
   { tab: "president", label: "Président", designation: "Président", badge: "Jury", requiresJuryKind: true },
   {
     tab: "secretaire-jury",

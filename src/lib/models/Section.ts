@@ -24,15 +24,16 @@ export type SectionDoc = {
     chefSection?: Types.ObjectId;
     chargeEnseignement?: Types.ObjectId;
     chargeRecherche?: Types.ObjectId;
+    secretaire?: Types.ObjectId;
   };
   gestionnaires?: {
-    secretaire?: Types.ObjectId;
+    operateurSaisie?: Types.ObjectId;
     appariteur?: Types.ObjectId;
+
   };
   jury?: {
     cours?: {
       president?: Types.ObjectId;
-      secretaire?: Types.ObjectId;
       membres?: Types.ObjectId[];
     };
     recherche?: {
@@ -62,9 +63,10 @@ const sectionSchema = new Schema<SectionDoc>(
       chefSection: { type: Schema.Types.ObjectId, ref: "Agent" },
       chargeEnseignement: { type: Schema.Types.ObjectId, ref: "Agent" },
       chargeRecherche: { type: Schema.Types.ObjectId, ref: "Agent" },
+      secretaire: { type: Schema.Types.ObjectId, ref: "Agent" },
     },
     gestionnaires: {
-      secretaire: { type: Schema.Types.ObjectId, ref: "Agent" },
+      operateurSaisie: { type: Schema.Types.ObjectId, ref: "Agent" },
       appariteur: { type: Schema.Types.ObjectId, ref: "Agent" },
     },
     jury: {

@@ -348,7 +348,7 @@ export default function SectionProgrammeParcoursClient({
       {!autorizations.canCreateDelete && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-100">
           <Icon icon="solar:shield-warning-linear" className="mr-1 inline-block size-3.5" />
-          Création/suppression désactivée&nbsp;: réservé à l&apos;appariteur.
+          Création/suppression désactivée&nbsp;: réservé au secrétaire.
         </div>
       )}
       {!autorizations.canUpdateStatus && (

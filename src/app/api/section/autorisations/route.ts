@@ -6,7 +6,7 @@ import { SectionModel } from "@/lib/models/Section";
 import { AgentModel } from "@/lib/models/User";
 
 type JuryKind = "cours" | "recherche";
-type SectionAuthorizationTab = "appariteur" | "secretaire" | "president" | "secretaire-jury" | "membre";
+type SectionAuthorizationTab = "appariteur" | "secretaire" | "operateurSaisie" | "president" | "secretaire-jury" | "membre";
 
 type AgentLean = {
   _id?: unknown;
@@ -18,7 +18,7 @@ type AgentLean = {
 } | null;
 
 function isValidTab(v: string): v is SectionAuthorizationTab {
-  return ["appariteur", "secretaire", "president", "secretaire-jury", "membre"].includes(v);
+  return ["appariteur", "secretaire", "operateurSaisie", "president", "secretaire-jury", "membre"].includes(v);
 }
 
 function isValidJuryKind(v: string): v is JuryKind {
@@ -46,7 +46,8 @@ function toAgentArray(raw: unknown) {
 
 function pathFor(tab: SectionAuthorizationTab, juryKind?: JuryKind): string | null {
   if (tab === "appariteur") return "gestionnaires.appariteur";
-  if (tab === "secretaire") return "gestionnaires.secretaire";
+  if (tab === "secretaire") return "bureau.secretaire";
+  if (tab === "operateurSaisie") return "gestionnaires.operateurSaisie";
   if (tab === "president") return juryKind ? `jury.${juryKind}.president` : null;
   if (tab === "secretaire-jury") return juryKind ? `jury.${juryKind}.secretaire` : null;
   if (tab === "membre") return juryKind ? `jury.${juryKind}.membres` : null;
@@ -60,16 +61,18 @@ async function findSectionForOrganisateur(agentId: string, sectionId: string) {
       { "bureau.chefSection": new Types.ObjectId(agentId) },
       { "bureau.chargeEnseignement": new Types.ObjectId(agentId) },
       { "bureau.chargeRecherche": new Types.ObjectId(agentId) },
+      { "bureau.secretaire": new Types.ObjectId(agentId) },
     ],
   });
 }
 
 async function loadSectionPayload(sectionId: string) {
   const doc = await SectionModel.findById(sectionId)
-    .select("designation slug gestionnaires jury")
+    .select("designation slug bureau gestionnaires jury")
     .populate([
-      { path: "gestionnaires.secretaire", select: "name email matricule photo role" },
+      { path: "bureau.secretaire", select: "name email matricule photo role" },
       { path: "gestionnaires.appariteur", select: "name email matricule photo role" },
+      { path: "gestionnaires.operateurSaisie", select: "name email matricule photo role" },
       { path: "jury.cours.president", select: "name email matricule photo role" },
       { path: "jury.cours.secretaire", select: "name email matricule photo role" },
       { path: "jury.cours.membres", select: "name email matricule photo role" },
@@ -84,7 +87,8 @@ async function loadSectionPayload(sectionId: string) {
     _id: unknown;
     designation?: unknown;
     slug?: unknown;
-    gestionnaires?: { appariteur?: AgentLean; secretaire?: AgentLean };
+    bureau?: { secretaire?: AgentLean };
+    gestionnaires?: { appariteur?: AgentLean; operateurSaisie?: AgentLean };
     jury?: {
       cours?: { president?: AgentLean; secretaire?: AgentLean; membres?: unknown };
       recherche?: { president?: AgentLean; secretaire?: AgentLean; membres?: unknown };
@@ -96,7 +100,10 @@ async function loadSectionPayload(sectionId: string) {
     sectionSlug: String(d.slug ?? ""),
     gestionnaires: {
       appariteur: toAgent(d.gestionnaires?.appariteur ?? null),
-      secretaire: toAgent(d.gestionnaires?.secretaire ?? null),
+      operateurSaisie: toAgent(d.gestionnaires?.operateurSaisie ?? null),
+    },
+    bureau: {
+      secretaire: toAgent(d.bureau?.secretaire ?? null),
     },
     jury: {
       cours: {

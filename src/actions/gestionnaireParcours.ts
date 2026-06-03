@@ -59,7 +59,7 @@ async function resolveGestionnaireRights() {
     throw new Error("Aucune section locale trouvée pour ce gestionnaire.");
   }
   return {
-    canEditPersonal: scope.isAppariteur || scope.isSecretaire,
+    canEditPersonal: scope.isSecretaire,
     canUpdateStatus: scope.isSecretaire,
   };
 }
@@ -103,7 +103,7 @@ export async function listParcoursStudentService(input: {
 
 export async function createParcoursBulkStudentService(records: unknown[]) {
   const rights = await resolveGestionnaireRights();
-  if (!rights.canEditPersonal) throw new Error("Action réservée à l'appariteur/secrétaire.");
+  if (!rights.canEditPersonal) throw new Error("Action réservée au secrétaire.");
   if (!Array.isArray(records) || records.length === 0) throw new Error("Aucune donnée à créer.");
   const upstream = await fetchEtudiantApi(PARCOURS_BASE_PATH, withJson({ method: "POST" }, records));
   const rawText = await upstream.text().catch(() => "");
@@ -140,7 +140,7 @@ export async function patchParcoursBulkStudentService(updates: Array<{ _id: stri
 
 export async function deleteParcoursBulkStudentService(ids: string[]) {
   const rights = await resolveGestionnaireRights();
-  if (!rights.canEditPersonal) throw new Error("Action réservée à l'appariteur/secrétaire.");
+  if (!rights.canEditPersonal) throw new Error("Action réservée au secrétaire.");
   const clean = (Array.isArray(ids) ? ids : []).map((id) => String(id).trim()).filter(Boolean);
   if (clean.length === 0) throw new Error("Aucun id valide.");
   const upstream = await fetchEtudiantApi(PARCOURS_BASE_PATH, withJson({ method: "DELETE" }, { ids: clean }));

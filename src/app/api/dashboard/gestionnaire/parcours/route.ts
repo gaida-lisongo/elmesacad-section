@@ -20,7 +20,7 @@ async function resolveGuard() {
     return {
       ok: false as const,
       response: NextResponse.json(
-        { message: "Aucune section locale trouvée pour ce gestionnaire (appariteur/secrétaire)." },
+        { message: "Aucune section locale trouvée pour ce gestionnaire (secrétaire)." },
         { status: 403 }
       ),
     };

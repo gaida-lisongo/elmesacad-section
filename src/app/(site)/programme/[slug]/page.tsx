@@ -27,7 +27,7 @@ export interface ISemestre {
 }
 
 export interface IGestionnaires {
-  secretaire: ObjectId | string;
+  operateurSaisie: ObjectId | string;
   appariteur: ObjectId | string;
 }
 
@@ -35,6 +35,7 @@ export interface IBureau {
   chefSection: ObjectId | string;
   chargeEnseignement: ObjectId | string;
   chargeRecherche: ObjectId | string;
+  secretaire: ObjectId | string;
 }
 
 export interface ISection {
