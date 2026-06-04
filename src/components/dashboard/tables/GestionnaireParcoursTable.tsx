@@ -14,16 +14,27 @@ type ApiListResponse = {
 export function GestionnaireParcoursTable({
   currentAnneeId,
   currentAnneeLabel,
+  annees,
 }: {
   currentAnneeId: string;
   currentAnneeLabel: string;
+  annees?: { id: string; designation: string; slug: string; debut: number; fin: number }[];
 }) {
-  const resolveWorkingAnneeId = useCallback(() => currentAnneeId.trim(), [currentAnneeId]);
+  const [selectedAnneeId, setSelectedAnneeId] = useState(currentAnneeId.trim());
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [scopeLabel, setScopeLabel] = useState("");
   const [anneeSlug, setAnneeSlug] = useState("");
   const [programmes, setProgrammes] = useState<Array<{ id: string; designation: string; code: string; slug: string }>>([]);
+
+  useEffect(() => {
+    setSelectedAnneeId(currentAnneeId.trim());
+  }, [currentAnneeId]);
+
+  const selectedAnnee = annees?.find((annee) => annee.id === selectedAnneeId);
+  const selectedAnneeLabel = selectedAnnee ? `${selectedAnnee.debut} - ${selectedAnnee.fin}` : currentAnneeLabel;
+
+  const resolveWorkingAnneeId = useCallback(() => selectedAnneeId.trim(), [selectedAnneeId]);
 
   const load = useCallback(async () => {
     const workingAnneeId = resolveWorkingAnneeId();
@@ -64,10 +75,32 @@ export function GestionnaireParcoursTable({
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        Section : <strong>{scopeLabel || "—"}</strong> · Année de travail :{" "}
-        <strong>{currentAnneeLabel || "—"}</strong>
+        Section : <strong>{scopeLabel || "—"}</strong> · Année de travail : <strong>{selectedAnneeLabel || "—"}</strong>
       </p>
-      <ActiveAnneeIndicator label={currentAnneeLabel || "—"} />
+      <ActiveAnneeIndicator label={selectedAnneeLabel || "—"} />
+
+      {annees && annees.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {annees.map((annee) => {
+            const label = `${annee.debut} - ${annee.fin}`;
+            const isActive = annee.id === selectedAnneeId;
+            return (
+              <button
+                key={annee.id}
+                type="button"
+                onClick={() => setSelectedAnneeId(annee.id)}
+                className={`rounded-full border px-3 py-1 text-xs transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  isActive
+                    ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                    : "border-gray-300 bg-white text-gray-700 hover:border-blue-500 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
 
       {err && (
         <p className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">

@@ -111,14 +111,20 @@ export default async function OrganisateurDashboardPage() {
         }
 
         // Année active pour les parcours (secrétaire)
-        const activeAnnee = await AnneeModel.findOne({ status: true }).select("_id designation slug").lean();
-        const anneeActive = activeAnnee
-            ? {
-                  id: String(activeAnnee._id),
-                  designation: String((activeAnnee as { designation?: string }).designation ?? ""),
-                  slug: String((activeAnnee as { slug?: string }).slug ?? ""),
-              }
-            : null;
+        const annees = await AnneeModel.find().select("_id designation debut fin slug status").lean();
+        //const activeAnnee = await AnneeModel.findOne({ status: true }).select("_id designation slug").lean();
+        const anneeActive = (() => {
+            if (!annees) return null;
+            const activeAnnee = annees.find(a => a?.status === true);
+            if (!activeAnnee) return null;
+            return {
+                id: String(activeAnnee._id),
+                designation: String((activeAnnee as { designation?: string }).designation ?? ""),
+                debut: Number((activeAnnee as { debut?: number }).debut ?? 0),
+                fin: Number((activeAnnee as { fin?: number }).fin ?? 0),
+                slug: String((activeAnnee as { slug?: string }).slug ?? ""),
+            };
+        })();
 
         return <DashboardOrganisateur
             section={{
@@ -136,6 +142,7 @@ export default async function OrganisateurDashboardPage() {
             tableData={resolvedTableData}
             chargeRechercheData={chargeRechercheData}
             anneeActive={anneeActive}
+            annees={annees.map(a => ({ id: String(a._id), designation: String(a.designation ?? ""), slug: String(a.slug ?? ""), debut: Number(a.debut ?? 0), fin: Number(a.fin ?? 0) }))}
         />;
     } catch (error) {
         console.error("Error loading Organisateur dashboard:", error);

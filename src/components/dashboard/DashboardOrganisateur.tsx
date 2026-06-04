@@ -23,7 +23,8 @@ interface DashboardOrganisateurProps {
     filieres: any[];
     tableData?: any[];
     chargeRechercheData?: ChargeRechercheTablePayload;
-    anneeActive?: { id: string; designation: string; slug: string } | null;
+    anneeActive?: { id: string;  designation: string; slug: string; debut: number; fin: number } | null;
+    annees?: { id: string; designation: string; slug: string; debut: number; fin: number }[];
 }
 
 export default function DashboardOrganisateur(props: DashboardOrganisateurProps) {
@@ -197,6 +198,7 @@ export default function DashboardOrganisateur(props: DashboardOrganisateurProps)
                         <GestionnaireParcoursTable
                             currentAnneeId={anneeActive.id}
                             currentAnneeLabel={anneeActive.designation}
+                            annees={props.annees}
                         />
                     </article>
                 ) : null}
