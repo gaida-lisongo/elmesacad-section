@@ -29,7 +29,7 @@ export default async function DemandesSessionCommandesPage({ params }: PageProps
   const rid = String(resourceId ?? "").trim();
   if (!rid) redirect("/demandes");
 
-  const commandes = await CommandeModel().find({
+  const commandes = await CommandeModel.find({
     "ressource.categorie": "SESSION",
     "ressource.reference": rid,
   }).lean();
