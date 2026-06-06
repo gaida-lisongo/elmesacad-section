@@ -34,7 +34,37 @@ export default async function DemandesSessionCommandesPage({ params }: PageProps
     "ressource.reference": rid,
   }).lean();
 
-  console.log("all commandes of Session: ", commandes);
+  const sessionCommandes = commandes.length > 0 ? commandes.map(
+    (c: any) => {
+      const student = {
+        nom: c?.ressource?.metadata?.fullName ?? "N/A",
+        matricule: c?.student?.matricule ?? "N/A",
+        email: c?.student?.email ?? "N/A",
+      }
+
+      const transaction = {
+        _id: c?.transaction?.providerResponses?._id?.$_oid ?? "N/A",
+        categorie: c?.ressource?.categorie ?? "N/A",
+        orderNumber: c?.transaction?.orderNumber ?? "N/A",
+        amount: c?.transaction?.amount ?? 0,
+        currency: c?.transaction?.currency ?? "N/A",
+        phoneNumber: c?.transaction?.phoneNumber ?? "N/A",
+        providerInfo: c?.transaction?.providerResponses?.lastCheck?.message ?? "N/A",
+      }
+
+      return {
+        _id: c._id.toString(),
+        student,
+        transaction,
+        status: c.status,
+        createdAt: c.createdAt,
+        rechargeId: c.rechargeId,
+      }
+    }
+  ) : false;
+
+  if(sessionCommandes) console.log("all commandes of Session: ", sessionCommandes);
+
   let designation = rid;
   let initialData: { rows: SujetCommandeListRow[]; total: number; page: number; limit: number } = {
     rows: [],
