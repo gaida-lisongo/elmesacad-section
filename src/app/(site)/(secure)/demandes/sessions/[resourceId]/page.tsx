@@ -8,6 +8,7 @@ import { listEtudiantResourceCommandesAction } from "@/actions/etudiantResourceC
 import type { SujetCommandeListRow } from "@/actions/organisateurSujetResources";
 import EtudiantResourceCommandesClient from "@/components/secure/etudiant-resources/EtudiantResourceCommandesClient";
 import { CommandeModel } from "@/lib/models/Commande";
+import { OrderCard, OrderData } from "../../_components/OrderCard";
 
 export const metadata: Metadata = {
   title: "Demandes - Session | INBTP",
@@ -63,7 +64,29 @@ export default async function DemandesSessionCommandesPage({ params }: PageProps
     }
   ) : false;
 
-  if(sessionCommandes) console.log("all commandes of Session: ", sessionCommandes);
+  if(sessionCommandes){
+    return (
+      <>
+      {
+        sessionCommandes.map((order: OrderData) => (
+          <OrderCard
+            key={order._id}
+            order={order}
+            renderActions={(order: OrderData) => (
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                onClick={() => {
+                  // Logique pour gérer les actions sur la commande, par exemple, afficher les détails ou permettre le remboursement
+                  alert(`Actions pour la commande ${order.transaction.orderNumber}`);
+                }}
+              >Gérer</button>
+            )}
+          />
+        ))
+      }
+      </>
+    )
+  };
 
   let designation = rid;
   let initialData: { rows: SujetCommandeListRow[]; total: number; page: number; limit: number } = {
