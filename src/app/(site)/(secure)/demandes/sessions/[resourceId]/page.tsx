@@ -4,11 +4,8 @@ import { getSessionPayload } from "@/lib/auth/sessionServer";
 import { resolveGestionnaireScope } from "@/lib/section/resolveGestionnaireScope";
 import { connectDB } from "@/lib/services/connectedDB";
 import { getGestionnaireSessionResourceAction } from "@/actions/gestionnaireSessionResources";
-import { listEtudiantResourceCommandesAction } from "@/actions/etudiantResourceCommandes";
-import type { SujetCommandeListRow } from "@/actions/organisateurSujetResources";
-import EtudiantResourceCommandesClient from "@/components/secure/etudiant-resources/EtudiantResourceCommandesClient";
 import { CommandeModel } from "@/lib/models/Commande";
-import { OrderCard, OrderData } from "../../_components/OrderCard";
+import SessionOrdersClient from "./SessionOrdersClient";
 
 export const metadata: Metadata = {
   title: "Demandes - Session | INBTP",
@@ -30,99 +27,47 @@ export default async function DemandesSessionCommandesPage({ params }: PageProps
   const rid = String(resourceId ?? "").trim();
   if (!rid) redirect("/demandes");
 
+  // Récupérer la désignation de la session
+  let designation = rid;
+  try {
+    const detail = await getGestionnaireSessionResourceAction({ sectionSlug: scope.sectionSlug, id: rid });
+    designation = detail.designation || rid;
+  } catch {
+    // On garde le rid comme fallback
+  }
+
+  // Récupérer les commandes depuis MongoDB (côté serveur)
   const commandes = await CommandeModel.find({
     "ressource.categorie": "SESSION",
     "ressource.reference": rid,
   }).lean();
 
-  const sessionCommandes = commandes.length > 0 ? commandes.map(
-    (c: any) => {
-      const student = {
-        nom: c?.ressource?.metadata?.fullName ?? "N/A",
-        matricule: c?.student?.matricule ?? "N/A",
-        email: c?.student?.email ?? "N/A",
-      }
-
-      const transaction = {
-        _id: c?.transaction?.providerResponses?._id?.$_oid ?? "N/A",
-        categorie: c?.ressource?.categorie ?? "N/A",
-        orderNumber: c?.transaction?.orderNumber ?? "N/A",
-        amount: c?.transaction?.amount ?? 0,
-        currency: c?.transaction?.currency ?? "N/A",
-        phoneNumber: c?.transaction?.phoneNumber ?? "N/A",
-        providerInfo: c?.transaction?.providerResponses?.lastCheck?.message ?? "N/A",
-      }
-
-      return {
-        _id: c._id.toString(),
-        student,
-        transaction,
-        status: c.status,
-        createdAt: c.createdAt,
-        rechargeId: c.rechargeId,
-      }
-    }
-  ) : false;
-
-  if(sessionCommandes){
-    return (
-      <>
-      {
-        sessionCommandes.map((order: OrderData) => (
-          <OrderCard
-            key={order._id}
-            order={order}
-            renderActions={(order: OrderData) => (
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                onClick={() => {
-                  // Logique pour gérer les actions sur la commande, par exemple, afficher les détails ou permettre le remboursement
-                  alert(`Actions pour la commande ${order.transaction.orderNumber}`);
-                }}
-              >Gérer</button>
-            )}
-          />
-        ))
-      }
-      </>
-    )
-  };
-
-  let designation = rid;
-  let initialData: { rows: SujetCommandeListRow[]; total: number; page: number; limit: number } = {
-    rows: [],
-    total: 0,
-    page: 1,
-    limit: 20,
-  };
-  let initialError: string | undefined;
-
-  try {
-    const detail = await getGestionnaireSessionResourceAction({ sectionSlug: scope.sectionSlug, id: rid });
-    designation = detail.designation || rid;
-    initialData = await listEtudiantResourceCommandesAction({
-      context: "session-gestionnaire",
-      sectionSlug: scope.sectionSlug,
-      resourceId: rid,
-      page: 1,
-      limit: 20,
-    });
-  } catch (e) {
-    initialError = (e as Error).message;
-  }
+  const orders = commandes.map((c: any) => ({
+    _id: c._id.toString(),
+    student: {
+      nom: c?.ressource?.metadata?.fullName ?? "N/A",
+      matricule: c?.student?.matricule ?? "N/A",
+      email: c?.student?.email ?? "N/A",
+    },
+    transaction: {
+      _id: c?.transaction?.providerResponses?._id?.$_oid ?? "N/A",
+      categorie: c?.ressource?.categorie ?? "N/A",
+      orderNumber: c?.transaction?.orderNumber ?? "N/A",
+      amount: c?.transaction?.amount ?? 0,
+      currency: c?.transaction?.currency ?? "N/A",
+      phoneNumber: c?.transaction?.phoneNumber ?? "N/A",
+      providerInfo: c?.transaction?.providerResponses?.lastCheck?.message ?? "N/A",
+    },
+    status: c.status,
+    createdAt: c.createdAt,
+    rechargeId: c.rechargeId,
+  }));
 
   return (
-    <EtudiantResourceCommandesClient
-      context="session-gestionnaire"
-      sectionSlug={scope.sectionSlug}
+    <SessionOrdersClient
+      orders={orders}
+      designation={designation}
       resourceId={rid}
-      resourceDesignation={designation}
-      backHref="/demandes"
-      backLabel="Demandes"
-      initialData={initialData}
-      initialError={initialError}
-      toolbarTitle="Demandes enregistrées"
-      toolbarDescription="Demandes liées à cette session d'enrôlement (commandes de type « session », service étudiant)."
     />
   );
 }
