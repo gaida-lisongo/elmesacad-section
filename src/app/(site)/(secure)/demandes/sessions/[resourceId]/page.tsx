@@ -7,6 +7,7 @@ import { getGestionnaireSessionResourceAction } from "@/actions/gestionnaireSess
 import { listEtudiantResourceCommandesAction } from "@/actions/etudiantResourceCommandes";
 import type { SujetCommandeListRow } from "@/actions/organisateurSujetResources";
 import EtudiantResourceCommandesClient from "@/components/secure/etudiant-resources/EtudiantResourceCommandesClient";
+import { CommandeModel } from "@/lib/models/Commande";
 
 export const metadata: Metadata = {
   title: "Demandes - Session | INBTP",
@@ -28,6 +29,12 @@ export default async function DemandesSessionCommandesPage({ params }: PageProps
   const rid = String(resourceId ?? "").trim();
   if (!rid) redirect("/demandes");
 
+  const commandes = await CommandeModel().find({
+    "ressource.categorie": "SESSION",
+    "ressource.reference": rid,
+  }).lean();
+
+  console.log("all commandes of Session: ", commandes);
   let designation = rid;
   let initialData: { rows: SujetCommandeListRow[]; total: number; page: number; limit: number } = {
     rows: [],
