@@ -120,7 +120,12 @@ export default function EnrollementPaymentWizard({
               existingCommande: {
                 id: String(cmd.id ?? ""),
                 status,
-                transaction: cmd.transaction as WizardViews["existingCommande"]["transaction"],
+                transaction: cmd.transaction as {
+                  orderNumber?: string;
+                  amount?: number;
+                  currency?: string;
+                  phoneNumber?: string;
+                },
               },
             }));
             setInfo("Un paiement est déjà enregistré pour cet étudiant sur cette session.");
