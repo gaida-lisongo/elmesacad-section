@@ -212,9 +212,11 @@ export default function EnrollementPaymentWizard({
 
   const commandeId =
     wizardViews.createdCommande?.id ?? wizardViews.existingCommande?.id ?? "";
-
-  const generateMacaron = (id: string) =>
-    router.push(`/paiement?commandeId=${encodeURIComponent(id)}`);
+  
+  const generateMacaron = (id: string) => {
+    const url = `/paiement?commandeId=${encodeURIComponent(id)}`;
+    window.open(url, "_blank");
+  };
 
   const handleGenerateMacaron = useCallback(async () => {
     if (!commandeId) return;
