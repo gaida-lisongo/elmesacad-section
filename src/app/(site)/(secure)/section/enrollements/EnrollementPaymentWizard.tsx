@@ -308,7 +308,7 @@ export default function EnrollementPaymentWizard({
       }
 
       //redirection vers /paiement?commandeId=... pour générer le macaron via backofficeMacaronGenerateAction (même workflow que PaiementMetierSessionPanel)
-      generateMacaron(commande?._id ?? commande.id ?? commandeId);
+      generateMacaron(commandeId.toString());
       // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
     //   const payload = buildDocumentMacaronPayload({
     //     commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
