@@ -12,6 +12,7 @@ import {
 import ResourceWorkspaceShell from "@/components/secure/etudiant-resources/ResourceWorkspaceShell";
 import type { ResourceWorkspaceMode } from "@/components/secure/etudiant-resources/types";
 import GestionnaireSessionResourceForm, { type ChefSectionDefaults } from "./GestionnaireSessionResourceForm";
+import EnrollementPaymentWizard from "./EnrollementPaymentWizard";
 
 type ProgrammeOption = { id: string; slug: string; designation: string; credits: number };
 
@@ -391,12 +392,25 @@ export default function GestionnaireSessionResourcesClient({
     />
   );
 
-  const paymentSlot = (
+  const paymentSlot = row ? (
+    <EnrollementPaymentWizard
+      resourceRow={row}
+      sectionSlug={sectionSlug}
+      onDone={() => {
+        setRow(null);
+        setUiMode("list");
+      }}
+      onCancel={() => {
+        setRow(null);
+        setUiMode("list");
+      }}
+    />
+  ) : (
     <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-gray-200/80 bg-gray-50/90 px-8 py-16 text-center dark:border-gray-700 dark:bg-gray-900/40">
       <Icon icon="solar:wallet-money-bold-duotone" className="h-14 w-14 text-primary" />
       <p className="text-lg font-bold text-midnight_text dark:text-white">Frais à payer</p>
       <p className="max-w-md text-sm text-gray-600 dark:text-gray-400">
-        Cette section permettra bientôt de consulter et gérer les paiements liés aux sessions d&apos;enrôlement.
+        Veuillez d&apos;abord sélectionner une session d&apos;enrôlement pour gérer les paiements.
       </p>
     </div>
   );
