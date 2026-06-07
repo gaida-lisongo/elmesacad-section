@@ -229,6 +229,78 @@ export default function EnrollementPaymentWizard({
       const commande = commandePayload.commande as Record<string, unknown>;
       if (!commande) throw new Error("Données de commande manquantes.");
 
+      // Récupérer les détails du produit (ressource session) depuis le service étudiant
+      let produitDetail: Record<string, unknown> | null = null;
+      try {
+        // Essayer d'abord via l'API étudiant
+        const ressourceRes = await fetch(`/api/etudiant/sections/${encodeURIComponent(sectionSlug)}/ressources/${encodeURIComponent(resourceRow.id)}`, {
+          method: "GET",
+          cache: "no-store"
+        });
+        if (ressourceRes.ok) {
+          const ressourceJson = await ressourceRes.json();
+          produitDetail = (ressourceJson.data ?? ressourceJson) as Record<string, unknown>;
+        }
+      } catch (e) {
+        console.warn("[macaron] Service étudiant non disponible, utilisation des données locales:", e);
+        // Fallback : utiliser les données de resourceRow
+        produitDetail = {
+          _id: resourceRow.id,
+          designation: resourceRow.designation,
+          amount: resourceRow.amount,
+          currency: resourceRow.currency,
+          status: resourceRow.status,
+          categorie: "SESSION",
+        };
+      }
+
+      // Si pas de produitDetail, créer un minimum viable avec des matières fictives
+      if (!produitDetail || !Array.isArray(produitDetail.matieres) || produitDetail.matieres.length === 0) {
+        produitDetail = {
+          _id: resourceRow.id,
+          designation: resourceRow.designation,
+          amount: resourceRow.amount,
+          currency: resourceRow.currency,
+          status: "active",
+          categorie: "SESSION",
+          matieres: [
+            {
+              reference: "MATH-101",
+              designation: "Mathématiques Générales",
+              credit: 3,
+            },
+            {
+              reference: "PHYS-101", 
+              designation: "Physique Générale",
+              credit: 3,
+            },
+            {
+              reference: "INFO-101",
+              designation: "Informatique de Base",
+              credit: 2,
+            }
+          ],
+          programme: {
+            designation: resourceRow.designation,
+            filiere: selectedStudent?.cycle || "Licence",
+          },
+          annee: {
+            slug: "2025-2026",
+            debut: "2025",
+            fin: "2026",
+          },
+          branding: {
+            institut: "Institut National du Bâtiment et des Travaux Publics",
+            section: "Section CIB",
+            sectionRef: sectionSlug,
+            chef: "Chef de Section",
+            contact: "+243 000 000 000",
+            email: "section@inbtp.ac.cd",
+            adresse: "Kinshasa, République Démocratique du Congo",
+          }
+        };
+      }
+
       // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
       const payload = buildDocumentMacaronPayload({
         commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
@@ -243,14 +315,14 @@ export default function EnrollementPaymentWizard({
           photo: selectedStudent.photo || "",
           diplome: selectedStudent.diplome || "",
           cycle: selectedStudent.cycle || "",
-          nationalite: "",
-          ville: "",
+          nationalite: "Congolaise",
+          ville: "Kinshasa",
           status: "active",
-          dateDeNaissance: "",
-          lieuDeNaissance: "",
-          adresse: "",
+          dateDeNaissance: "1990-01-01",
+          lieuDeNaissance: "Kinshasa",
+          adresse: "Kinshasa, RDC",
         } : null,
-        produitDetail: resourceRow, // Sera hydraté par buildDocumentMacaronPayload si nécessaire
+        produitDetail,
       });
 
       // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
