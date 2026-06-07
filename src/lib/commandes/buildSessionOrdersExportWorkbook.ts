@@ -219,7 +219,7 @@ export async function buildSessionOrdersExportWorkbook(args: {
   for (const { label, items, bg } of statRows) {
     const amount = items.reduce((s, o) => s + (Number(o.transaction.amount) || 0), 0);
     const pct = orders.length > 0 ? ((items.length / orders.length) * 100).toFixed(1) : "0.0";
-    const vals = [label, "", items.length, amount, items[0]?.transaction?.currency ?? "—", `${pct}%"];
+const vals = [label, "", items.length, amount, items[0]?.transaction?.currency ?? "—", pct + "%"];
     vals.forEach((v, i) => {
       const cell = synth.getCell(r, i + 1);
       cell.value = v;
@@ -369,7 +369,7 @@ export async function buildSessionOrdersExportWorkbook(args: {
     "",
     orders.reduce((s, o) => s + (Number(o.transaction.amount) || 0), 0),
     orders[0]?.transaction?.currency ?? "",
-    `${orders.length} commandes`,
+    orders.length + " commandes",
     "",
   ]);
   totalRow.eachCell((cell, col) => {
