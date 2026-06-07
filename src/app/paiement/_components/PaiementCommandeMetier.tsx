@@ -212,8 +212,8 @@ export default function PaiementCommandeMetier({ commande, commandeId, metierCon
   if (fullBleedQuestionnaire) {
     return (
       <div className="mt-6 w-full min-w-0 max-w-none">
-        {contextBlock}
-        <div className="border-b border-emerald-200/70 pb-4 dark:border-emerald-900/45">{header}</div>
+        {/* {contextBlock}
+        <div className="border-b border-emerald-200/70 pb-4 dark:border-emerald-900/45">{header}</div> */}
         <div className="mt-6 w-full min-w-0">
           <MetierBody
             commande={commande}
