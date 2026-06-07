@@ -11,6 +11,7 @@ import { generateMacaronPdfAction } from "@/actions/macaronGenerate";
 import {
   buildDocumentMacaronPayload,
 } from "@/lib/paiement/sessionEnrollementContext";
+import { useRouter } from "next/navigation";
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -87,6 +88,8 @@ export default function EnrollementPaymentWizard({
 
   // Macaron generation state
   const [generating, setGenerating] = useState(false);
+
+  const router = useRouter();
 
   // ───── Step 1 : Vérifier existence commande ─────────────────────
 
@@ -210,6 +213,8 @@ export default function EnrollementPaymentWizard({
   const commandeId =
     wizardViews.createdCommande?.id ?? wizardViews.existingCommande?.id ?? "";
 
+ const generateMacaron = (commandeId: string) => router.push(`/paiement?commandeId=${encodeURIComponent(commandeId)}`, undefined, { shallow: true });
+
   const handleGenerateMacaron = useCallback(async () => {
     if (!commandeId) return;
     setGenerating(true);
@@ -301,47 +306,49 @@ export default function EnrollementPaymentWizard({
         };
       }
 
+      //redirection vers /paiement?commandeId=... pour générer le macaron via backofficeMacaronGenerateAction (même workflow que PaiementMetierSessionPanel)
+      generateMacaron(commandeId);
       // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
-      const payload = buildDocumentMacaronPayload({
-        commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
-        commandeId,
-        etudiant: selectedStudent ? {
-          id: selectedStudent.id,
-          name: selectedStudent.name,
-          email: selectedStudent.email,
-          matricule: selectedStudent.matricule,
-          sexe: "M", // Valeur par défaut
-          telephone: phoneNumber || "",
-          photo: selectedStudent.photo || "",
-          diplome: selectedStudent.diplome || "",
-          cycle: selectedStudent.cycle || "",
-          nationalite: "Congolaise",
-          ville: "Kinshasa",
-          status: "active",
-          dateDeNaissance: "1990-01-01",
-          lieuDeNaissance: "Kinshasa",
-          adresse: "Kinshasa, RDC",
-        } : null,
-        produitDetail,
-      });
+    //   const payload = buildDocumentMacaronPayload({
+    //     commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
+    //     commandeId,
+    //     etudiant: selectedStudent ? {
+    //       id: selectedStudent.id,
+    //       name: selectedStudent.name,
+    //       email: selectedStudent.email,
+    //       matricule: selectedStudent.matricule,
+    //       sexe: "M", // Valeur par défaut
+    //       telephone: phoneNumber || "",
+    //       photo: selectedStudent.photo || "",
+    //       diplome: selectedStudent.diplome || "",
+    //       cycle: selectedStudent.cycle || "",
+    //       nationalite: "Congolaise",
+    //       ville: "Kinshasa",
+    //       status: "active",
+    //       dateDeNaissance: "1990-01-01",
+    //       lieuDeNaissance: "Kinshasa",
+    //       adresse: "Kinshasa, RDC",
+    //     } : null,
+    //     produitDetail,
+    //   });
 
-      // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
-      const result = await generateMacaronPdfAction(payload);
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
+    //   // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
+    //   const result = await generateMacaronPdfAction(payload);
+    //   if (!result.ok) {
+    //     setError(result.message);
+    //     return;
+    //   }
 
-      setWizardViews((prev) => ({
-        ...prev,
-        macaronResult: {
-          filename: result.filename,
-          pdfBase64: result.pdfBase64,
-        },
-      }));
+    //   setWizardViews((prev) => ({
+    //     ...prev,
+    //     macaronResult: {
+    //       filename: result.filename,
+    //       pdfBase64: result.pdfBase64,
+    //     },
+    //   }));
 
-      downloadPdfFromBase64(result.pdfBase64, result.filename);
-      setInfo("Macaron généré et téléchargé !");
+    //   downloadPdfFromBase64(result.pdfBase64, result.filename);
+    //   setInfo("Macaron généré et téléchargé !");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur lors de la génération.");
     } finally {
