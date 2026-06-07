@@ -7,6 +7,10 @@ import { UserDatabaseSearch } from "@/components/secure/UserDatabaseSearch";
 import type { StudentListItem } from "@/lib/services/UserManager";
 import { downloadPdfFromBase64 } from "@/lib/paiement/downloadPdfFromBase64";
 import { backofficeMacaronGenerateAction } from "@/actions/backofficeMacaronGenerate";
+import { generateMacaronPdfAction } from "@/actions/macaronGenerate";
+import {
+  buildDocumentMacaronPayload,
+} from "@/lib/paiement/sessionEnrollementContext";
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
@@ -212,11 +216,45 @@ export default function EnrollementPaymentWizard({
     setError(null);
 
     try {
-      const result = await backofficeMacaronGenerateAction({
+      // Récupérer d'abord les données de la commande pour construire le payload
+      const { ok: commandeOk, payload: commandePayload } = await postCommande({
+        action: "getById",
         commandeId,
-        sectionSlug,
       });
 
+      if (!commandeOk || commandePayload.success === false) {
+        throw new Error(String(commandePayload.message ?? "Impossible de récupérer la commande."));
+      }
+
+      const commande = commandePayload.commande as Record<string, unknown>;
+      if (!commande) throw new Error("Données de commande manquantes.");
+
+      // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
+      const payload = buildDocumentMacaronPayload({
+        commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
+        commandeId,
+        etudiant: selectedStudent ? {
+          id: selectedStudent.id,
+          name: selectedStudent.name,
+          email: selectedStudent.email,
+          matricule: selectedStudent.matricule,
+          sexe: "M", // Valeur par défaut
+          telephone: phoneNumber || "",
+          photo: selectedStudent.photo || "",
+          diplome: selectedStudent.diplome || "",
+          cycle: selectedStudent.cycle || "",
+          nationalite: "",
+          ville: "",
+          status: "active",
+          dateDeNaissance: "",
+          lieuDeNaissance: "",
+          adresse: "",
+        } : null,
+        produitDetail: null, // Sera hydraté par buildDocumentMacaronPayload si nécessaire
+      });
+
+      // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
+      const result = await generateMacaronPdfAction(payload);
       if (!result.ok) {
         setError(result.message);
         return;
@@ -237,7 +275,7 @@ export default function EnrollementPaymentWizard({
     } finally {
       setGenerating(false);
     }
-  }, [commandeId, sectionSlug]);
+  }, [commandeId, selectedStudent, phoneNumber]);
 
   // ───── Commande existante → directement step 3 ─────────────────
   //  Si en step 3 sans createdCommande, on vient d'une commande existante
@@ -264,27 +302,9 @@ export default function EnrollementPaymentWizard({
         }
       }
 
-      // 2. Générer le macaron
-      const result = await backofficeMacaronGenerateAction({
-        commandeId,
-        sectionSlug,
-      });
-
-      if (!result.ok) {
-        setError(result.message);
-        return;
-      }
-
-      setWizardViews((prev) => ({
-        ...prev,
-        macaronResult: {
-          filename: result.filename,
-          pdfBase64: result.pdfBase64,
-        },
-      }));
-
-      downloadPdfFromBase64(result.pdfBase64, result.filename);
-      setInfo("Commande complétée et macaron généré !");
+      // 2. Générer le macaron avec le même workflow
+      await handleGenerateMacaron();
+      return; // handleGenerateMacaron gère déjà l'UI
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur.");
     } finally {
