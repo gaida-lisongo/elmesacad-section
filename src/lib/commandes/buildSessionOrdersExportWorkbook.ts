@@ -233,7 +233,7 @@ export async function buildSessionOrdersExportWorkbook(args: {
 
   // Ligne totale
   const totalPct = orders.length > 0 ? "100.0" : "0.0";
-  const totalVals = ["TOTAL", "", orders.length, totalAmount, orders[0]?.transaction?.currency ?? "—", `${totalPct}%`];
+  const totalVals = ["TOTAL", "", orders.length, totalAmount, orders[0]?.transaction?.currency ?? "—", totalPct + "%"];
   totalVals.forEach((v, i) => {
     const cell = synth.getCell(r, i + 1);
     cell.value = v;
