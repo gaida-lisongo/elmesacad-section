@@ -213,7 +213,7 @@ export default function EnrollementPaymentWizard({
   const commandeId =
     wizardViews.createdCommande?.id ?? wizardViews.existingCommande?.id ?? "";
 
- const generateMacaron = (commandeId: string) => router.push(`/paiement?commandeId=${encodeURIComponent(commandeId)}`, undefined, { shallow: true });
+ const generateMacaron = (id: string) => router.push(`/paiement?commandeId=${encodeURIComponent(id)}`, undefined, { shallow: true });
 
   const handleGenerateMacaron = useCallback(async () => {
     if (!commandeId) return;
@@ -307,7 +307,7 @@ export default function EnrollementPaymentWizard({
       }
 
       //redirection vers /paiement?commandeId=... pour générer le macaron via backofficeMacaronGenerateAction (même workflow que PaiementMetierSessionPanel)
-      generateMacaron(commandeId);
+      generateMacaron(commande?._id ?? commande.id ?? commandeId);
       // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
     //   const payload = buildDocumentMacaronPayload({
     //     commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
