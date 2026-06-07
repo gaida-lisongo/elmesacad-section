@@ -268,18 +268,19 @@ export default function SessionOrdersClient({ orders, designation, resourceId }:
 
       {/* ── Orders grid (4 columns) ───────────────────────────────── */}
       {filteredOrders.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredOrders.map((order) => (
             <OrderCard
               key={order._id}
               order={order}
               renderActions={(o: OrderData) => (
                 <button
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98]"
                   onClick={() => {
-                    alert(`Actions pour la commande ${o.transaction.orderNumber}`);
+                    console.log("Gérer la commande", o);
                   }}
                 >
+                  <Icon icon="solar:settings-bold-duotone" className="h-4 w-4" aria-hidden />
                   Gérer
                 </button>
               )}
