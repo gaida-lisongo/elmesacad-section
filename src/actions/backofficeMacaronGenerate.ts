@@ -103,6 +103,10 @@ export async function backofficeMacaronGenerateAction(input: {
           cycle: String(etudiant.cycle ?? ""),
           nationalite: String(etudiant.nationalite ?? ""),
           ville: String(etudiant.ville ?? ""),
+          status: String(etudiant.status ?? "active"),
+          dateDeNaissance: etudiant.dateDeNaissance ? etudiant.dateDeNaissance.toISOString() : "",
+          lieuDeNaissance: String(etudiant.lieuDeNaissance ?? ""),
+          adresse: String(etudiant.adresse ?? ""),
         }
       : null;
 
