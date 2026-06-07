@@ -134,10 +134,6 @@ export default function EnrollementPaymentWizard({
           }
         }
 
-        // Pré-remplir le téléphone si dispo
-        if (selectedStudent.telephone) {
-          setPhoneNumber(selectedStudent.telephone);
-        }
         setStep(2);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Erreur réseau.");
