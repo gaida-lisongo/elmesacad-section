@@ -367,20 +367,20 @@ export default function EnrollementPaymentWizard({
     setError(null);
 
     try {
-      // 1. Compléter la commande (si pas déjà completed)
-      const { ok, payload } = await postCommande({
-        action: "complete",
-        commandeId,
-      });
+    //   // 1. Compléter la commande (si pas déjà completed)
+    //   const { ok, payload } = await postCommande({
+    //     action: "complete",
+    //     commandeId,
+    //   });
 
-      if (!ok && payload.success === false) {
-        // Si déjà completed, ce n'est pas bloquant
-        if (String(payload.message).includes("Paiement non validé")) {
-          setError("Le paiement doit être validé avant de compléter.");
-          setGenerating(false);
-          return;
-        }
-      }
+    //   if (!ok && payload.success === false) {
+    //     // Si déjà completed, ce n'est pas bloquant
+    //     if (String(payload.message).includes("Paiement non validé")) {
+    //       setError("Le paiement doit être validé avant de compléter.");
+    //       setGenerating(false);
+    //       return;
+    //     }
+    //   }
 
       // 2. Générer le macaron avec le même workflow
       await handleGenerateMacaron();
