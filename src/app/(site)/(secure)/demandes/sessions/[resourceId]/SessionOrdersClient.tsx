@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
 import type { OrderData } from "../../_components/OrderCard";
 import { OrderCard } from "../../_components/OrderCard";
+import InvoiceModal from "../../_components/InvoiceModal";
 
 type Props = {
   orders: OrderData[];
@@ -31,6 +32,7 @@ export default function SessionOrdersClient({ orders, designation, resourceId }:
   const [customEnd, setCustomEnd] = useState("");
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [invoiceOrder, setInvoiceOrder] = useState<OrderData | null>(null);
 
   // ── Filtres ──────────────────────────────────────────────────
   const filteredOrders = useMemo(() => {
@@ -276,12 +278,10 @@ export default function SessionOrdersClient({ orders, designation, resourceId }:
               renderActions={(o: OrderData) => (
                 <button
                   className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-primary/90 hover:shadow-md active:scale-[0.98]"
-                  onClick={() => {
-                    console.log("Gérer la commande", o);
-                  }}
+                  onClick={() => setInvoiceOrder(o)}
                 >
-                  <Icon icon="solar:settings-bold-duotone" className="h-4 w-4" aria-hidden />
-                  Gérer
+                  <Icon icon="solar:bill-check-bold-duotone" className="h-4 w-4" aria-hidden />
+                  Facture
                 </button>
               )}
             />
@@ -310,6 +310,15 @@ export default function SessionOrdersClient({ orders, designation, resourceId }:
             </button>
           )}
         </div>
+      )}
+
+      {/* ── Invoice Modal ──────────────────────────────────────────── */}
+      {invoiceOrder && (
+        <InvoiceModal
+          order={invoiceOrder}
+          open={!!invoiceOrder}
+          onClose={() => setInvoiceOrder(null)}
+        />
       )}
     </div>
   );
