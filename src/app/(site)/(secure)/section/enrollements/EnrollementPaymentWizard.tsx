@@ -250,7 +250,7 @@ export default function EnrollementPaymentWizard({
           lieuDeNaissance: "",
           adresse: "",
         } : null,
-        produitDetail: null, // Sera hydraté par buildDocumentMacaronPayload si nécessaire
+        produitDetail: resourceRow, // Sera hydraté par buildDocumentMacaronPayload si nécessaire
       });
 
       // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
