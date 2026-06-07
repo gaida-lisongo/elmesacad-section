@@ -40,6 +40,7 @@ export default function GestionnaireSessionResourcesClient({
   initialError,
 }: Props) {
   const [rows, setRows] = useState<SessionResourceRow[]>(initialData.rows);
+  const [row, setRow] = useState<SessionResourceRow | null>(null);
   const [total, setTotal] = useState(initialData.total);
   const [page, setPage] = useState(initialData.page);
   const [limit] = useState(initialData.limit);
@@ -128,8 +129,8 @@ export default function GestionnaireSessionResourcesClient({
     <p className="flex flex-wrap items-center gap-2">
       <Icon icon="solar:buildings-3-bold-duotone" className="h-4 w-4 shrink-0 text-gray-400" />
       Section : <strong>{sectionDesignation}</strong>
-      <span className="hidden sm:inline">—</span>
-      <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">sectionRef = {sectionSlug}</code>
+      {/* <span className="hidden sm:inline">—</span> */}
+      {/* <code className="rounded bg-gray-100 px-1 text-xs dark:bg-gray-800">sectionRef = {sectionSlug}</code> */}
     </p>
   );
 
@@ -312,6 +313,18 @@ export default function GestionnaireSessionResourcesClient({
                       <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
                       Modifier
                     </button>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        setRow(r);
+                        setUiMode("payment");
+                      }}
+                      className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-transparent bg-primary/10 px-3 py-2 text-xs font-semibold text-primary dark:bg-primary/20"
+                    >
+                      {/* Icone banque */}
+                      <Icon icon="solar:wallet-money-bold-duotone" className="h-4 w-4 text-primary" />
+                      Paiement
+                    </button>
                     <button
                       type="button"
                       onClick={() => onDelete(r)}
@@ -378,6 +391,16 @@ export default function GestionnaireSessionResourcesClient({
     />
   );
 
+  const paymentSlot = (
+    <div className="flex flex-col items-center justify-center gap-6 rounded-2xl border border-gray-200/80 bg-gray-50/90 px-8 py-16 text-center dark:border-gray-700 dark:bg-gray-900/40">
+      <Icon icon="solar:wallet-money-bold-duotone" className="h-14 w-14 text-primary" />
+      <p className="text-lg font-bold text-midnight_text dark:text-white">Frais à payer</p>
+      <p className="max-w-md text-sm text-gray-600 dark:text-gray-400">
+        Cette section permettra bientôt de consulter et gérer les paiements liés aux sessions d&apos;enrôlement.
+      </p>
+    </div>
+  );
+
   return (
     <ResourceWorkspaceShell
       title="Enrollements"
@@ -386,6 +409,7 @@ export default function GestionnaireSessionResourcesClient({
       mode={uiMode}
       listSlot={listSlot}
       formSlot={formSlot}
+      paymentSlot={paymentSlot}
     />
   );
 }
