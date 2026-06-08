@@ -78,7 +78,7 @@ export async function listParcoursStudentService(input: {
     annee: input.anneeSlug.trim(),
     filiere: input.filiereSlug.trim(),
     page: String(Math.max(1, input.page ?? 1)),
-    limit: String(Math.max(1, Math.min(200, input.limit ?? 10))),
+    limit: String(input.limit ?? 1300),
   });
   if (input.classeSlug?.trim()) sp.set("classe", input.classeSlug.trim());
   if (input.search?.trim()) sp.set("search", input.search.trim());
