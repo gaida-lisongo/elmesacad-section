@@ -33,5 +33,6 @@ export async function getOrganisateurStageBureauSection(
     isChefSection: true,
     isChargeEnseignement: false,
     isChargeRecherche: false,
+    isSecretaire: false,
   };
 }

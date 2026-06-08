@@ -17,7 +17,7 @@ export default async function SectionProgrammeParcoursPage({
   
     //Scope
     const session = await getSessionPayload();
-    if (!session || session.type !== "Agent" || session.role !== "gestionnaire") {
+    if (!session || session.type !== "Agent" || session.role !== "organisateur") {
       return (
         <div className="flex items-center justify-center h-screen bg-slate-50">
           <h1 className="text-xl font-bold text-slate-800 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
@@ -99,7 +99,7 @@ export default async function SectionProgrammeParcoursPage({
       programme={programme}
       annee={annee}
       autorizations={{
-        canCreateDelete: (scope.isAppariteur || scope.isChefSection) ?? false,
+        canCreateDelete: (scope.isSecretaire || scope.isChefSection) ?? false,
         canUpdateStatus: (scope.isSecretaire || scope.isChefSection) ?? false,
       }}
       parcours={parcours}

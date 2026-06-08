@@ -15,6 +15,8 @@ type Props = {
   listSlot: ReactNode;
   /** Contenu mode création / édition (formulaire multi-étapes ou fiche). */
   formSlot: ReactNode;
+  /** Contenu mode paiement (optionnel, à utiliser pour les ressources payantes). */
+  paymentSlot?: ReactNode;
 };
 
 /**
@@ -28,8 +30,10 @@ export default function ResourceWorkspaceShell({
   mode,
   listSlot,
   formSlot,
+  paymentSlot,
 }: Props) {
   const showForm = mode === "create" || mode === "edit";
+  const showPayment = mode === "payment";
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -42,7 +46,7 @@ export default function ResourceWorkspaceShell({
           <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</div>
         ) : null}
       </header>
-      {showForm ? formSlot : listSlot}
+      {showPayment ? paymentSlot : showForm ? formSlot : listSlot}
     </div>
   );
 }

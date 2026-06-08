@@ -11,8 +11,8 @@ async function resolveGuard() {
   if (!session || session.type !== "Agent") {
     return { ok: false as const, response: NextResponse.json({ message: "Non authentifié" }, { status: 401 }) };
   }
-  if (session.role !== "gestionnaire") {
-    return { ok: false as const, response: NextResponse.json({ message: "Réservé aux gestionnaires" }, { status: 403 }) };
+  if (session.role !== "gestionnaire" && session.role !== "organisateur") {
+    return { ok: false as const, response: NextResponse.json({ message: "Réservé aux gestionnaires/organisateurs" }, { status: 403 }) };
   }
   await connectDB();
   const scope = await resolveGestionnaireScope(session.sub);
@@ -20,7 +20,7 @@ async function resolveGuard() {
     return {
       ok: false as const,
       response: NextResponse.json(
-        { message: "Aucune section locale trouvée pour ce gestionnaire (appariteur/secrétaire)." },
+        { message: "Aucune section locale trouvée pour ce gestionnaire." },
         { status: 403 }
       ),
     };

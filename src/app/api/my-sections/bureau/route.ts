@@ -30,6 +30,7 @@ export async function GET() {
         { "bureau.chefSection": oid },
         { "bureau.chargeEnseignement": oid },
         { "bureau.chargeRecherche": oid },
+        { "bureau.secretaire": oid },
       ],
     })
       .select("_id designation slug cycle")

@@ -9,6 +9,7 @@ export type OrganisateurBureauSectionContext = {
   isChefSection: boolean;
   isChargeEnseignement: boolean;
   isChargeRecherche: boolean;
+  isSecretaire: boolean;
 };
 
 /**
@@ -16,9 +17,7 @@ export type OrganisateurBureauSectionContext = {
  * (chef, chargé d’enseignement ou chargé de recherche).
  * Aligné sur `GET /api/my-sections/bureau`.
  */
-export async function getOrganisateurPrimaryBureauSection(
-  agentSub: string
-): Promise<OrganisateurBureauSectionContext | null> {
+export async function getOrganisateurPrimaryBureauSection(agentSub: string): Promise<OrganisateurBureauSectionContext | null> {
   if (!Types.ObjectId.isValid(agentSub)) return null;
   const oid = new Types.ObjectId(agentSub);
   await connectDB();
@@ -27,6 +26,7 @@ export async function getOrganisateurPrimaryBureauSection(
       { "bureau.chefSection": oid },
       { "bureau.chargeEnseignement": oid },
       { "bureau.chargeRecherche": oid },
+      { "bureau.secretaire": oid },
     ],
   })
     .select("_id designation slug bureau")
@@ -42,6 +42,8 @@ export async function getOrganisateurPrimaryBureauSection(
     row.bureau?.chargeEnseignement ? String(row.bureau.chargeEnseignement) === agentSub : false;
   const isChargeRecherche =
     row.bureau?.chargeRecherche ? String(row.bureau.chargeRecherche) === agentSub : false;
+  const isSecretaire =
+    row.bureau?.secretaire ? String(row.bureau.secretaire) === agentSub : false;
 
   return {
     sectionId: String(row._id),
@@ -50,5 +52,6 @@ export async function getOrganisateurPrimaryBureauSection(
     isChefSection,
     isChargeEnseignement,
     isChargeRecherche,
+    isSecretaire,
   };
 }

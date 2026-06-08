@@ -26,11 +26,11 @@ const AUTHORIZATION_BY_ROLE: Record<string, AuthorizationItem[]> = {
     { designation: "Chef de section", code: "CS" },
     { designation: "Charge de l'Enseignement", code: "CE" },
     { designation: "Charge de la recherche", code: "CR" },
+    { designation: "Secretaire", code: "SEC" },
   ],
   gestionnaire: [
     { designation: "Appariteur", code: "APP" },
-    { designation: "Secretaire", code: "SEC" },
-    { designation: "Super-Admin", code: "SA" },
+    { designation: "Opérateur de Saisie", code: "OS" },
   ],
   titulaire: [
     { designation: "Responsable", code: "RES" },

@@ -46,6 +46,7 @@ export function resolveSectionDashboardFlags(
   const codes = new Set(authorizations.map((a) => a.code));
 
   const bureauHats: SectionBureauHat[] = [];
+  let isSecretaireInBureau = false;
   if (bureau?.chefSection && String(bureau.chefSection) === agentId) bureauHats.push("chefSection");
   if (bureau?.chargeEnseignement && String(bureau.chargeEnseignement) === agentId) {
     bureauHats.push("chargeEnseignement");
@@ -53,8 +54,12 @@ export function resolveSectionDashboardFlags(
   if (bureau?.chargeRecherche && String(bureau.chargeRecherche) === agentId) {
     bureauHats.push("chargeRecherche");
   }
+  if (bureau?.secretaire && String(bureau.secretaire) === agentId) {
+    isSecretaireInBureau = true;
+  }
 
-  const inBureau = bureauHats.length > 0;
+  const inBureau = bureauHats.length > 0 || isSecretaireInBureau;
+
   const isChef = bureauHats.includes("chefSection");
   const isEns = bureauHats.includes("chargeEnseignement");
   const isRech = bureauHats.includes("chargeRecherche");

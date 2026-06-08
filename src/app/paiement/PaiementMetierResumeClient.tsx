@@ -48,11 +48,11 @@ export default function PaiementMetierResumeClient({
 }: Props) {
   return (
     <div className="w-full min-w-0 max-w-none">
-      <PaiementProduitAvantMetier
+     {produitError && <PaiementProduitAvantMetier
         produit={produit}
         produitDetail={produitDetail ?? null}
         produitError={produitError}
-      />
+      />}
       <PaiementCommandeMetier
         commandeId={commandeId}
         commande={commande}

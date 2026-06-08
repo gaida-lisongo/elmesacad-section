@@ -27,6 +27,9 @@ type LocalSectionAssignments = {
   sectionSlug: string;
   gestionnaires: {
     appariteur: AgentRef | null;
+    operateurSaisie: AgentRef | null;
+  };
+  bureau: {
     secretaire: AgentRef | null;
   };
   jury: {
@@ -95,7 +98,8 @@ function many(tab: SectionAuthorizationTab, agents: AgentRef[], juryKind: JuryKi
 function flattenAssignments(section: LocalSectionAssignments): SectionAuthorizationItem[] {
   const items: SectionAuthorizationItem[] = [];
   items.push(...one("appariteur", section.gestionnaires.appariteur));
-  items.push(...one("secretaire", section.gestionnaires.secretaire));
+  items.push(...one("operateurSaisie", section.gestionnaires.operateurSaisie));
+  items.push(...one("secretaire", section.bureau.secretaire));
   items.push(...one("president", section.jury.cours.president, "cours"));
   items.push(...one("president", section.jury.recherche.president, "recherche"));
   items.push(...one("secretaire-jury", section.jury.cours.secretaire, "cours"));

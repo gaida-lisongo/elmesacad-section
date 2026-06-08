@@ -32,9 +32,10 @@ type SectionRaw = {
     chefSection?: AgentLite | null;
     chargeEnseignement?: AgentLite | null;
     chargeRecherche?: AgentLite | null;
+    secretaire?: AgentLite | null;
   };
   gestionnaires?: {
-    secretaire?: AgentLite | null;
+    operateurSaisie?: AgentLite | null;
     appariteur?: AgentLite | null;
   };
   jury?: {
@@ -139,6 +140,15 @@ function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
       matricule: row.bureau?.chargeRecherche?.matricule?.trim() ?? "",
       photo: row.bureau?.chargeRecherche?.photo?.trim() ?? "",
     },
+    {
+      id: String(row.bureau?.secretaire?._id ?? ""),
+      role: "Secrétaire",
+      name: row.bureau?.secretaire?.name?.trim() ?? "",
+      email: row.bureau?.secretaire?.email?.trim() ?? "",
+      telephone: row.bureau?.secretaire?.telephone?.trim() ?? "",
+      matricule: row.bureau?.secretaire?.matricule?.trim() ?? "",
+      photo: row.bureau?.secretaire?.photo?.trim() ?? "",
+    },
   ].filter((member) => member.name.length > 0);
   const contactMembers = [
     ...bureauMembers
@@ -153,13 +163,13 @@ function mapPublicSectionRow(row: SectionRaw): PublicSectionCard {
         photo: member.photo,
       })),
     {
-      id: String(row.gestionnaires?.secretaire?._id ?? ""),
+      id: String(row.gestionnaires?.operateurSaisie?._id ?? ""),
       group: "Gestionnaire" as const,
-      role: "Secretaire",
-      name: row.gestionnaires?.secretaire?.name?.trim() ?? "",
-      email: row.gestionnaires?.secretaire?.email?.trim() ?? "",
-      telephone: row.gestionnaires?.secretaire?.telephone?.trim() ?? "",
-      photo: row.gestionnaires?.secretaire?.photo?.trim() ?? "",
+      role: "Opérateur de saisie",
+      name: row.gestionnaires?.operateurSaisie?.name?.trim() ?? "",
+      email: row.gestionnaires?.operateurSaisie?.email?.trim() ?? "",
+      telephone: row.gestionnaires?.operateurSaisie?.telephone?.trim() ?? "",
+      photo: row.gestionnaires?.operateurSaisie?.photo?.trim() ?? "",
     },
     {
       id: String(row.gestionnaires?.appariteur?._id ?? ""),
@@ -259,8 +269,9 @@ export async function listPublicSections(): Promise<PublicSectionCard[]> {
       .populate("jury.recherche.president", "name email photo")
       .populate("jury.recherche.secretaire", "name email photo")
       .populate("jury.recherche.membres", "name email photo")
-      .populate("gestionnaires.secretaire", "name email telephone matricule photo")
+      .populate("bureau.secretaire", "name email telephone matricule photo")
       .populate("gestionnaires.appariteur", "name email telephone matricule photo")
+      .populate("gestionnaires.operateurSaisie", "name email telephone matricule photo")
       .populate("bureau.chefSection", "name email telephone matricule photo")
       .populate("bureau.chargeEnseignement", "name email telephone matricule photo")
       .populate("bureau.chargeRecherche", "name email telephone matricule photo")
@@ -288,8 +299,9 @@ export async function getPublicSectionBySlug(slug: string): Promise<PublicSectio
       .populate("jury.recherche.president", "name email photo")
       .populate("jury.recherche.secretaire", "name email photo")
       .populate("jury.recherche.membres", "name email photo")
-      .populate("gestionnaires.secretaire", "name email telephone matricule photo")
+      .populate("bureau.secretaire", "name email telephone matricule photo")
       .populate("gestionnaires.appariteur", "name email telephone matricule photo")
+      .populate("gestionnaires.operateurSaisie", "name email telephone matricule photo")
       .populate("bureau.chefSection", "name email telephone matricule photo")
       .populate("bureau.chargeEnseignement", "name email telephone matricule photo")
       .populate("bureau.chargeRecherche", "name email telephone matricule photo")
