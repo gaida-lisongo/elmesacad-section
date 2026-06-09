@@ -32,7 +32,10 @@ export default async function MacaronVerificationPage({ params }: { params: Prom
   }
 
   // Vérification de la cohérence : payé mais avec une erreur de microservice (parcours suspendu)
-  const hasAcademicIssue = data.transaction.microserviceResponse?.body && (data.transaction.microserviceResponse.body as any).success === false;
+  const microserviceResponse = data.transaction.microserviceResponse as
+    | { body?: { success?: boolean; error?: string } }
+    | undefined;
+  const hasAcademicIssue = microserviceResponse?.body?.success === false;
   const isFullyValid = data.status === "paid" && !hasAcademicIssue;
 
   return (
@@ -114,7 +117,7 @@ export default async function MacaronVerificationPage({ params }: { params: Prom
                 <div>
                   <h4 className="text-sm font-bold text-red-800">Blocage Pédagogique</h4>
                   <p className="text-xs text-red-700 mt-1">
-                    {data.transaction.microserviceResponse.body.error}
+                    {microserviceResponse?.body?.error}
                   </p>
                 </div>
               </div>
