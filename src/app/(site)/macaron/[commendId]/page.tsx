@@ -65,7 +65,7 @@ export default async function MacaronVerificationPage({ params }: { params: Prom
   }
 
   // Vérification de la cohérence : payé mais avec une erreur de microservice (parcours suspendu)
-  const hasAcademicIssue = data.transaction.microserviceResponse?.body?.success === false;
+  const hasAcademicIssue = data.transaction.microserviceResponse?.body && (data.transaction.microserviceResponse.body as any).success === false;
   const isFullyValid = data.status === "paid" && !hasAcademicIssue;
 
   return (
