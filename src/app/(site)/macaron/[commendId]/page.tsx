@@ -1,57 +1,24 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CommandeModel } from '@/lib/models/Commande';
+import { CommandeDoc, CommandeModel } from '@/lib/models/Commande';
 
 // Simulation de la base de données basée sur l'objet fourni
-async function getCommandeData(commandeId: string) {
+async function getCommandeData(commandeId: string): Promise<CommandeDoc | null> {
   // Ici vous ferez votre appel Mongoose : await db.connect(); const data = await Commande.findById(commandeId);
   const commande = await CommandeModel.findById(commandeId).lean().exec();
   if (commande) {
     return commande;
   }
 
-  return {
-    _id: commandeId,
-    student: {
-      matricule: "2024.1.3978",
-      email: "yekpale.18@inbtp.ac.cd"
-    },
-    ressource: {
-      categorie: "SESSION",
-      reference: "6a27f0a8a1451c63a8272f73",
-      produit: "session",
-      metadata: {
-        fullName: "YEKPALE",
-        productTitle: "Session Principal L2 PC - S1"
-      }
-    },
-    transaction: {
-      orderNumber: "BORD-001-011",
-      amount: 10,
-      currency: "USD",
-      phoneNumber: "0853102426",
-      microserviceResponse: {
-        success: false,
-        httpStatus: 500,
-        marketplaceSync: true,
-        error: "etudiant_commandes_post_failed",
-        body: {
-          success: false,
-          error: "Impossible de commander avec un parcours au statut : suspendu"
-        },
-        etudiantOrderSyncDone: true
-      }
-    },
-    status: "paid", // Statut principal de la transaction
-    createdAt: "2026-06-09T10:55:43.516Z",
-    updatedAt: "2026-06-09T10:55:44.903Z"
-  };
+  return null;
 }
 
 export default async function MacaronVerificationPage({ params }: { params: Promise<{ commandeId: string }> }) {
   const { commandeId } = await params;
   const data = await getCommandeData(commandeId);
+
+  console.log("Données de la commande récupérées pour le macaron :", data);
 
   if (!data) {
     return (
