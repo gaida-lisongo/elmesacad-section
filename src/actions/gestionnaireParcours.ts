@@ -80,7 +80,7 @@ export async function listParcoursStudentService(input: {
     page: String(Math.max(1, input.page ?? 1)),
     limit: String(input.limit ?? 1300),
   });
-  if (input.classeSlug?.trim()) sp.set("programmeClasse", input.classeSlug.trim());
+  if (input.classeSlug?.trim()) sp.set("classe", input.classeSlug.trim());
   if (input.search?.trim()) sp.set("search", input.search.trim());
   if (input.status?.trim() && ALLOWED_STATUS.has(input.status.trim())) sp.set("status", input.status.trim());
 
