@@ -543,7 +543,7 @@ export async function POST(request: Request) {
           student: { email, matricule },
           ressource: { categorie, reference, produit, metadata },
           transaction: { orderNumber, amount, currency, phoneNumber },
-          status: "pending", // On crée d'abord en pending pour que les hooks de création (ex. email) soient déclenchés, puis on passe à paid après
+          status: "ok", // On crée d'abord en pending pour que les hooks de création (ex. email) soient déclenchés, puis on passe à paid après
         });
       }
 

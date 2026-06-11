@@ -31,7 +31,7 @@ export interface CommandeDoc {
   };
   /** Recharge liée (suivi admin) lorsque l’étudiant est en base. */
   rechargeId?: string;
-  status: "pending" | "paid" | "failed" | "completed";
+  status: "pending" | "ok" | "paid" | "failed" | "completed";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,7 +68,7 @@ const commandeSchema = new Schema<CommandeDoc>(
       microserviceResponse: { type: Schema.Types.Mixed, required: false },
     },
     rechargeId: { type: String, required: false, sparse: true, index: true },
-    status: { type: String, required: true, enum: ["pending", "paid", "failed", "completed"] },
+    status: { type: String, required: true, enum: ["pending", "ok", "paid", "failed", "completed"] },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
   },
