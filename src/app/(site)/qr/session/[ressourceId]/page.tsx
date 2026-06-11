@@ -46,8 +46,8 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
           <EnrollementPaymentWizard
             resourceRow={row}
             sectionSlug={data?.branding?.sectionSlug}
-            onDone={() => {console.log("Current Ressource : ", data)}}
-            onCancel={() => {console.log("Current Ressource : ", data)}}
+            onDone={() => {}}
+            onCancel={() => {}}
           />
           <pre className="bg-gray-100 p-4 rounded">{JSON.stringify(data, null, 2)}</pre>
         </div>
