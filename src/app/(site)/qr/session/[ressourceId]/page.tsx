@@ -42,7 +42,7 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
         <div className="p-4">
           <h1 className="text-xl font-bold mb-4">Détails de la ressource QR session</h1>
           <EnrollementPaymentWizard
-            ressourceRow={row}
+            resourceRow={row}
             sectionSlug={data?.branding?.sectionSlug}
             onDone={() => console.log("Current Ressource : ", data)}
             onCancel={() => console.log("Current Ressource : ", data)}
