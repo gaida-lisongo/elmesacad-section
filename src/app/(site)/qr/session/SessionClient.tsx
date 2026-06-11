@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SessionResourceRow } from "@/actions/gestionnaireSessionResources";
 import EnrollementPaymentWizard from "@/app/(site)/(secure)/section/enrollements/EnrollementPaymentWizard";
+import Breadcrumb from "@/components/Common/Breadcrumb";
 
 
 export default function SessionClient({ resource }: { resource: any }) {
@@ -21,7 +22,13 @@ export default function SessionClient({ resource }: { resource: any }) {
     console.log("SessionResourceRow construite :", row);
 
     return (
-        <div className="mt-5 mb-5 p-4 border rounded-lg bg-white shadow-sm">
+        <>
+          <Breadcrumb
+            pageName={row ? `Session d'enrôlement : ${row.designation}` : "Session d'enrôlement"}
+            pageDescription="Gérez les enrôlements pour cette session"
+            trail={[{ label: "Enrollements", href: `/etudes/${resource?.branding?.sectionSlug}` }]}
+          />
+          <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
           {row && (
             <EnrollementPaymentWizard
               resourceRow={row}
@@ -31,7 +38,8 @@ export default function SessionClient({ resource }: { resource: any }) {
               onCancel={() => {}}
             />
           )}
+          </div>
           
-        </div>
+        </>
     )
 }
