@@ -118,6 +118,8 @@ export default function EnrollementPaymentWizard({
           throw new Error(String(payload.message ?? "Vérification impossible."));
         }
 
+        console.log("Réponse de l'API ensure :", payload);
+
         const exists = Boolean(payload.exists);
         const cmd = payload.commande as Record<string, unknown> | undefined;
         console.log("Vérification commande existante :", { exists, cmd });
