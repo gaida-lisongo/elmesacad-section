@@ -16,7 +16,7 @@ import { getTitulaireServiceBase } from "@/lib/service-auth/upstreamFetch";
 import { summarizeCommandeForClient } from "@/lib/commande/summarizeCommandeForClient";
 import { createEtudiantOrderAfterMarketplacePaid } from "@/lib/commande/createEtudiantOrderAfterMarketplacePaid";
 
-type CommandeStatus = "pending" | "paid" | "failed" | "completed";
+type CommandeStatus = "pending" | "paid" | "ok" | "failed" | "completed";
 
 type BaseBody = {
   action: "ensure" | "pay" | "check" | "reset" | "complete" | "manual-pay" | "student-pay" | "get" | "getById";
