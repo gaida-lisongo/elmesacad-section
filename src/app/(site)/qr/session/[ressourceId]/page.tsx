@@ -38,14 +38,16 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
         matieresSummary: data?.matieres.map((m: any) => m.designation).join(", ") || "",
       }
 
+      console.log("SessionResourceRow construite :", row);
+
       return (
         <div className="p-4">
           <h1 className="text-xl font-bold mb-4">Détails de la ressource QR session</h1>
           <EnrollementPaymentWizard
             resourceRow={row}
             sectionSlug={data?.branding?.sectionSlug}
-            onDone={() => console.log("Current Ressource : ", data)}
-            onCancel={() => console.log("Current Ressource : ", data)}
+            onDone={() => {console.log("Current Ressource : ", data)}}
+            onCancel={() => {console.log("Current Ressource : ", data)}}
           />
           <pre className="bg-gray-100 p-4 rounded">{JSON.stringify(data, null, 2)}</pre>
         </div>
