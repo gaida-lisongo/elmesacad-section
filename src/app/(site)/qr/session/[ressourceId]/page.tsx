@@ -8,7 +8,7 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
     try {
       await connectDB();
 
-      const res = await fetchEtudiantApi(`/ressources/${ressourceId}`, {
+      const res = await fetchEtudiantApi(`/resources/${ressourceId}`, {
         method: "GET",
       });
 
