@@ -21,7 +21,7 @@ export default function SessionClient({ resource }: { resource: any }) {
     console.log("SessionResourceRow construite :", row);
 
     return (
-        <div className="mt-25">
+        <div className="mt-5 mb-5">
           {row && (
             <EnrollementPaymentWizard
               resourceRow={row}
