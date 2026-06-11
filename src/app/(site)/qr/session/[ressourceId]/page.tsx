@@ -3,6 +3,7 @@ import { fetchEtudiantApi } from "@/lib/etudiant-service/etudiantRemote";
 
 export default async function QRSessionRessourcePage({ params }: { params: Promise<{ ressourceId: string }> }) {
     const ressourceId = await params.then(p => p.ressourceId);
+    console.log("Chargement de la ressource QR session avec ID :", ressourceId);
 
     try {
       await connectDB();
