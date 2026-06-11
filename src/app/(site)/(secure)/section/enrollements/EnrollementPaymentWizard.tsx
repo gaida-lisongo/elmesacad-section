@@ -401,7 +401,7 @@ export default function EnrollementPaymentWizard({
   return (
     <div className="mx-auto w-full max-w-2xl space-y-6">
       {/* Steps indicator */}
-      <div className="flex items-center gap-2">
+      <div className="flex justify-center items-center gap-2">
         {([1, 2, 3] as const).map((s) => {
           const active = step >= s;
           const done = step > s;
