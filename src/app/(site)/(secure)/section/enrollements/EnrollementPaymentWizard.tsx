@@ -120,6 +120,7 @@ export default function EnrollementPaymentWizard({
 
         const exists = Boolean(payload.exists);
         const cmd = payload.commande as Record<string, unknown> | undefined;
+        console.log("Vérification commande existante :", { exists, cmd });
 
         if (exists && cmd && typeof cmd === "object") {
           const status = String(cmd.status ?? "");
