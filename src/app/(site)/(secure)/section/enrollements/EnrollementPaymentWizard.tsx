@@ -123,7 +123,7 @@ export default function EnrollementPaymentWizard({
 
         if (exists && cmd && typeof cmd === "object") {
           const status = String(cmd.status ?? "");
-          if (status === "paid" || status === "completed") {
+          if (status === "paid" || status === "ok" || status === "completed") {
             setWizardViews((prev) => ({
               ...prev,
               existingCommande: {
