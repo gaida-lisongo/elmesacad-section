@@ -34,8 +34,11 @@ export default function SessionClient({ resource }: { resource: any }) {
               resourceRow={row}
               sectionSlug={resource?.branding?.sectionSlug}
               type="student"
-              onDone={() => {}}
-              onCancel={() => {}}
+              onDone={() => {
+                // Après paiement réussi, on peut rafraîchir la page
+                window.location.reload();
+              }}
+              onCancel={() => window.location.reload()}
             />
           )}
           </div>
