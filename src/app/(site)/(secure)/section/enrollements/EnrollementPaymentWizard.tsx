@@ -56,6 +56,7 @@ async function postCommande(body: Record<string, unknown>): Promise<{
 type Props = {
   resourceRow: SessionResourceRow;
   sectionSlug: string;
+  type?: "manual" | "student"; // "manual" = paiement enregistré manuellement par le gestionnaire, "student" = paiement effectué par l'étudiant lui-même via le marketplace (différents workflows de création + complétion de la commande)
   /** Appelé après succès complet (commande créée + macaron généré) */
   onDone: () => void;
   /** Annuler / revenir à la liste */
@@ -67,6 +68,7 @@ type Props = {
 export default function EnrollementPaymentWizard({
   resourceRow,
   sectionSlug,
+  type = "manual",
   onDone,
   onCancel,
 }: Props) {
@@ -169,7 +171,7 @@ export default function EnrollementPaymentWizard({
     startTransition(async () => {
       try {
         const { ok, payload } = await postCommande({
-          action: "manual-pay",
+          action: type === "student" ? "student-pay" : "manual-pay",
           matricule: selectedStudent.matricule,
           email: selectedStudent.email.toLowerCase(),
           categorie: "SESSION",

@@ -21,17 +21,17 @@ export default function SessionClient({ resource }: { resource: any }) {
     console.log("SessionResourceRow construite :", row);
 
     return (
-        <div className="p-4">
-          <h1 className="text-xl font-bold mb-4">Détails de la ressource QR session</h1>
+        <div className="mt-25">
           {row && (
             <EnrollementPaymentWizard
               resourceRow={row}
               sectionSlug={resource?.branding?.sectionSlug}
+              type="student"
               onDone={() => {}}
               onCancel={() => {}}
             />
           )}
-          <pre className="bg-gray-100 p-4 rounded">{JSON.stringify(row, null, 2)}</pre>
+          
         </div>
     )
 }

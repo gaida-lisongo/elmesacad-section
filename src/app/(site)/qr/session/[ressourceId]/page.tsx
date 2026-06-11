@@ -26,8 +26,6 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
         throw new Error(`Erreur lors de la récupération de la ressource : ${data.message}`);
       }
 
-
-
       return (
         <SessionClient resource={data} />
       );

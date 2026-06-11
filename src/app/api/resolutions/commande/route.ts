@@ -19,7 +19,7 @@ import { createEtudiantOrderAfterMarketplacePaid } from "@/lib/commande/createEt
 type CommandeStatus = "pending" | "paid" | "failed" | "completed";
 
 type BaseBody = {
-  action: "ensure" | "pay" | "check" | "reset" | "complete" | "manual-pay" | "get" | "getById";
+  action: "ensure" | "pay" | "check" | "reset" | "complete" | "manual-pay" | "student-pay" | "get" | "getById";
   matricule?: string;
   email?: string;
   /** Activités : QCM | TP. Ressources : ligne SUJET, STAGE, … (cohérent avec `produit`). */
@@ -485,6 +485,76 @@ export async function POST(request: Request) {
         if (reloaded) commande = reloaded;
       } catch (e) {
         console.error("[manual-pay] createEtudiantOrderAfterMarketplacePaid error:", e);
+      }
+
+      return NextResponse.json({
+        success: true,
+        commande: summarizeCommandeForClient(commande.toObject()),
+      }, { status: 200 });
+    }
+
+    if (action === "student-pay") {
+      const email = normalizeString(body.email).toLowerCase();
+      const matricule = normalizeString(body.matricule);
+      const categorie = resolveRessourceCategorie(body);
+      const reference = normalizeString(body.reference);
+      const phoneNumber = normalizeString(body.phoneNumber);
+      const orderNumber = normalizeString(body.orderNumber);
+      const amount = Number(body.amount ?? 0);
+      const currency = body.currency === "CDF" ? "CDF" : "USD";
+
+      if (!email || !matricule || !categorie || !reference || !phoneNumber || !orderNumber || amount <= 0) {
+        return NextResponse.json({ success: false, message: "Paramètres manquants ou invalides." }, { status: 400 });
+      }
+
+      const produit: CommandeProduit = isCommandeProduit(body.produit)
+        ? body.produit
+        : defaultProduitFromLine(categorie);
+      const metadata = normalizeMetadata(body.metadata);
+
+      // Chercher une commande existante (non failed)
+      let commande = await CommandeModel.findOne({
+        "student.email": email,
+        "student.matricule": matricule,
+        "ressource.categorie": categorie,
+        "ressource.reference": reference,
+        status: { $ne: "failed" },
+      });
+
+      if (commande) {
+        // Mettre à jour la transaction et forcer paid
+        commande.transaction = {
+          ...commande.transaction,
+          orderNumber,
+          amount,
+          currency,
+          phoneNumber,
+        } as CommandeDoc["transaction"];
+        commande.status = "paid";
+        commande.ressource = {
+          ...commande.ressource,
+          produit: commande.ressource?.produit ?? produit,
+          metadata: { ...(commande.ressource?.metadata ?? {}), ...metadata },
+        } as CommandeDoc["ressource"];
+        await commande.save();
+      } else {
+        // Créer une nouvelle commande directement paid
+        commande = await CommandeModel.create({
+          student: { email, matricule },
+          ressource: { categorie, reference, produit, metadata },
+          transaction: { orderNumber, amount, currency, phoneNumber },
+          status: "pending", // On crée d'abord en pending pour que les hooks de création (ex. email) soient déclenchés, puis on passe à paid après
+        });
+      }
+
+      // Lancer la sync vers le service étudiant (en arrière-plan / ne pas bloquer)
+      try {
+        await createEtudiantOrderAfterMarketplacePaid(commande as HydratedDocument<CommandeDoc>);
+        // Recharger pour avoir le microserviceResponse
+        const reloaded = await CommandeModel.findById(commande._id);
+        if (reloaded) commande = reloaded;
+      } catch (e) {
+        console.error("[student-pay] createEtudiantOrderAfterMarketplacePaid error:", e);
       }
 
       return NextResponse.json({
