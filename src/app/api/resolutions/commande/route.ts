@@ -150,7 +150,7 @@ async function getActiveCommande(input: {
     "student.email": input.email,
     "ressource.categorie": input.categorie,
     "ressource.reference": input.reference,
-    status: { $in: ["pending", "paid", "completed"] satisfies CommandeStatus[] },
+    status: { $in: ["pending", "ok", "paid", "completed"] satisfies CommandeStatus[] },
   }).sort({ createdAt: -1 });
 }
 
