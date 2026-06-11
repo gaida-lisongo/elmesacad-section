@@ -12,6 +12,8 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
         method: "GET",
       });
 
+      console.log("Réponse de l'API pour la ressource QR session :", res);
+
       if (!res.ok) {
         throw new Error(`Erreur ${res.status} : ${res.statusText}`);
       }
