@@ -25,6 +25,7 @@ export default async function QRSessionRessourcePage({ params }: { params: Promi
         </div>
       );
     } catch (e: any) {
+      console.error("Erreur lors du chargement de la ressource :", e);
       return <div className="p-4 text-red-500">Erreur lors du chargement de la ressource : {(e as Error).message}</div>;
     }
 }
