@@ -22,7 +22,7 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
         </div>
       </div>
       {/* ── Corps ─────────────────────────────────── */}
-      <div className="px-10 py-8 space-y-8">
+      <div className="px-10 py-8 space-y-4">
         {/* Introduction */}
         <div className="bg-blue-50 border-l-4 border-[#2b6cb0] rounded-r-xl p-5">
           <p className="text-base leading-relaxed text-gray-800">
@@ -40,7 +40,7 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
 
         {/* Étapes */}
         <div>
-          <h2 className="text-lg font-bold text-[#1a365d] mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-bold text-[#1a365d] mb-0 flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2b6cb0] text-white text-xs font-bold">i</span>
             Procédure à suivre
           </h2>
@@ -81,8 +81,8 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
         </div>
 
         {/* QR Code */}
-        <div className="flex flex-col items-center pt-4 border-t border-gray-200">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 inline-flex flex-col items-center">
+        <div className="flex flex-col items-center border-t border-gray-200">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 inline-flex flex-col items-center">
             <QRCodeSVG
               value={qrValue}
               size={220}
@@ -90,11 +90,8 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
               includeMargin
               className="rounded-lg"
             />
-            <p className="mt-4 text-[10px] font-mono text-gray-400 bg-gray-50 px-3 py-1 rounded-full">
-              {r.id}
-            </p>
           </div>
-          <p className="mt-3 text-xs text-gray-500 text-center max-w-xs">
+          <p className="mt-1 text-xs text-gray-500 text-center max-w-xs">
             Scannez ce code avec votre téléphone pour accéder à la plateforme de paiement sécurisée.
           </p>
         </div>
