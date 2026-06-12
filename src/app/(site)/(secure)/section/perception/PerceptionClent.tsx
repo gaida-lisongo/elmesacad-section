@@ -263,7 +263,7 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
   /* ── Charger stats ────────────────────────────────── */
   const loadStats = useCallback(async (resId: string) => {
     const res = await getPerceptionStatsAction(resId);
-    if (res.success) setStats(res.data);
+    if (res.success) setStats(res.data || null);
   }, []);
 
   /* ── Charger commandes ────────────────────────────── */
