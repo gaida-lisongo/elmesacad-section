@@ -36,6 +36,20 @@ export interface CommandeDoc {
   updatedAt: Date;
 }
 
+export interface PercepteurDoc {
+  _id: Types.ObjectId;
+  ressources: [{
+    categorie: string;
+    reference: string;
+    produit: CommandeProduit;
+    metadata?: Record<string, unknown>;
+  }];
+  agent: Types.ObjectId;
+  commandes: Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 const commandeSchema = new Schema<CommandeDoc>(
   {
     student: {
@@ -75,6 +89,27 @@ const commandeSchema = new Schema<CommandeDoc>(
   { timestamps: true }
 );
 
+const percepteurSchema = new Schema<PercepteurDoc>(
+  {
+    ressources: [{
+      categorie: { type: String, required: true },
+      reference: { type: String, required: true },
+      produit: {
+        type: String,
+        required: true,
+        enum: COMMANDE_PRODUIT_VALUES,
+        default: "activite",
+      },
+      metadata: { type: Schema.Types.Mixed, default: {} },
+    }],
+    agent: { type: Schema.Types.ObjectId, ref: "Agent", required: true },
+    commandes: [{ type: Schema.Types.ObjectId, ref: "Commande" }],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+);
+
 commandeSchema.index({
   "transaction.orderNumber": 1,
   "student.email": 1,
@@ -95,3 +130,7 @@ commandeSchema.index({ "ressource.produit": 1, status: 1 });
 export const CommandeModel =
   (mongoose.models.Commande as mongoose.Model<CommandeDoc>) ||
   mongoose.model<CommandeDoc>("Commande", commandeSchema);
+
+export const PercepteurModel =
+  (mongoose.models.Percepteur as mongoose.Model<PercepteurDoc>) ||
+  mongoose.model<PercepteurDoc>("Percepteur", percepteurSchema);
