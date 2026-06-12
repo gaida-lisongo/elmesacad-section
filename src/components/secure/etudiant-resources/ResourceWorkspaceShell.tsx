@@ -17,6 +17,8 @@ type Props = {
   formSlot: ReactNode;
   /** Contenu mode paiement (optionnel, à utiliser pour les ressources payantes). */
   paymentSlot?: ReactNode;
+  /** Contenu mode percepteur (optionnel, à utiliser pour gérer les percepteurs). */
+  percepteurSlot?: ReactNode;
 };
 
 /**
@@ -31,9 +33,11 @@ export default function ResourceWorkspaceShell({
   listSlot,
   formSlot,
   paymentSlot,
+  percepteurSlot
 }: Props) {
   const showForm = mode === "create" || mode === "edit";
   const showPayment = mode === "payment";
+  const showPercepteur = mode === "percepteurs";
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -42,11 +46,11 @@ export default function ResourceWorkspaceShell({
           {titleIcon ? <Icon icon={titleIcon} className="h-8 w-8 shrink-0 text-primary" aria-hidden /> : null}
           {title}
         </h1>
-        {!showForm && description ? (
+        {!showForm && !showPercepteur && description ? (
           <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</div>
         ) : null}
       </header>
-      {showPayment ? paymentSlot : showForm ? formSlot : listSlot}
+      {showPayment ? paymentSlot : showForm ? formSlot : showPercepteur ? percepteurSlot : listSlot}
     </div>
   );
 }

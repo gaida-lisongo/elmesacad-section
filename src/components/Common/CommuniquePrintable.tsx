@@ -19,7 +19,7 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
 
       <div className="mt-16 flex flex-col items-center">
         <QRCodeSVG 
-          value={`${process.env.NEXT_PUBLIC_APP_URL}/qr/session/${r.id}`} 
+          value={`https://sections.inbtp.net/qr/session/${r.id}`} 
           size={300} 
           level="H" 
         />

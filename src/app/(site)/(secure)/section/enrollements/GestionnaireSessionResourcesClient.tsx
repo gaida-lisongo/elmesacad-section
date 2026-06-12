@@ -248,15 +248,10 @@ export default function GestionnaireSessionResourcesClient({
               setUiMode={(mode: ResourceWorkspaceMode) => setUiMode(mode)}
               isPublicationActive={isPublicationActive}
               onGenerateReport={(r) => generate(r)}
-              onManageCollectors={(r) => (
-                <PercepteurCrud
-                  r={r}
-                  onBack={() => {
-                    setRow(null);
-                    setUiMode("list");
-                  }}
-                />
-              )}
+              onManageCollectors={(r) => {
+                setRow(r);
+                setUiMode("percepteurs");
+              }}
             />
           ))}
         </div>
@@ -289,6 +284,16 @@ export default function GestionnaireSessionResourcesClient({
       ) : null}
     </>
   );
+
+  const percepteurSlot = row ? (
+    <PercepteurCrud
+      r={row}
+      onBack={() => {
+        setRow(null);
+        setUiMode("list");
+      }}
+    />
+  ) : null;
 
   const formSlot = (
     <GestionnaireSessionResourceForm
@@ -343,6 +348,7 @@ export default function GestionnaireSessionResourcesClient({
       listSlot={listSlot}
       formSlot={formSlot}
       paymentSlot={paymentSlot}
+      percepteurSlot={percepteurSlot}
     />
   );
 }
