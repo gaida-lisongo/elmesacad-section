@@ -106,7 +106,6 @@ export async function listPendingOrdersAction(args: {
     const match: Record<string, any> = {
       "ressource.reference": args.resourceId,
       status: "ok",
-      _id: { $nin: args.commandesIds.map((id) => id) },
     };
 
     if (args.search?.trim()) {
