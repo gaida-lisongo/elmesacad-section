@@ -40,7 +40,10 @@ export async function deletePercepteur(id: string) {
 export async function findPercepteurs(criteria: any){
     try {
         await connectDB();
-        const percepteurs = await PercepteurModel.find(criteria);
+        const percepteurs = await PercepteurModel
+            .find(criteria)
+            .populate("agent") // Populate les infos de l'agent
+            .lean();
         return { success: true, data: JSON.parse(JSON.stringify(percepteurs)) };
     } catch (error: any) {
         console.error("Erreur lors de la recherche des percepteurs :", error);
