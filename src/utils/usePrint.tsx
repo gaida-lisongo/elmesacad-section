@@ -1,4 +1,6 @@
-// hooks/usePrint.ts
+// hooks/usePrint.tsx
+"use client";
+
 import { createRoot } from 'react-dom/client';
 import type { SessionResourceRow } from "@/actions/gestionnaireSessionResources";
 import CommuniquePrintable from "@/components/Common/CommuniquePrintable";
@@ -11,7 +13,9 @@ export const usePrintCommunique = () => {
     const root = createRoot(container);
 
     // Rendre le composant
-    root.render(<CommuniquePrintable r={r} />);
+    root.render(
+      <CommuniquePrintable r={r} />
+    );
 
     // Attendre un court instant que le SVG du QR code soit généré
     setTimeout(() => {
