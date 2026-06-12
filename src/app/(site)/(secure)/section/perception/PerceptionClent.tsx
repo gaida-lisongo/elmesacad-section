@@ -7,6 +7,7 @@ import {
   listPendingOrdersAction,
   listValidatedOrdersAction,
   validateOrderAction,
+  exportPerceptionOrdersAction,
   type PerceptionOrderRow,
 } from "@/actions/perceptionActions";
 
@@ -122,8 +123,15 @@ const PERIODS = [
   { value: "custom", label: "Personnalisé", icon: "solar:calendar-date-linear" },
 ] as const;
 
-function ExportDropdown({ resourceId }: { resourceId: string }) {
+function ExportDropdown({
+  resourceId,
+  commandesIds,
+}: {
+  resourceId: string;
+  commandesIds: string[];
+}) {
   const [open, setOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -136,28 +144,40 @@ function ExportDropdown({ resourceId }: { resourceId: string }) {
 
   const doExport = async (period: string) => {
     setOpen(false);
+    setExporting(true);
     try {
-      const params = new URLSearchParams({ resourceId, period });
+      const payload: {
+        resourceId: string;
+        commandesIds: string[];
+        period: "daily" | "weekly" | "monthly" | "custom";
+        start?: string;
+        end?: string;
+      } = { resourceId, commandesIds, period: period as any };
+
       if (period === "custom") {
         const start = prompt("Date début (YYYY-MM-DD) :");
         if (!start) return;
         const end = prompt("Date fin (YYYY-MM-DD) :");
         if (!end) return;
-        params.set("start", start);
-        params.set("end", end);
+        payload.start = start;
+        payload.end = end;
       }
-      const res = await fetch(`/api/sessions/orders/export?${params}`);
-      if (!res.ok) throw new Error("Erreur export");
-      const blob = await res.blob();
+
+      const res = await exportPerceptionOrdersAction(payload);
+      if (!res.success || !res.data) throw new Error(res.error || "Erreur export");
+
+      const blob = new Blob([res.data.csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `commandes-${period}-${resourceId}.xlsx`;
+      a.download = res.data.filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
       console.error(e);
       alert("Erreur lors de l'export.");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -165,7 +185,8 @@ function ExportDropdown({ resourceId }: { resourceId: string }) {
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold shadow-sm dark:border-gray-600 dark:bg-gray-900"
+        disabled={exporting}
+        className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-semibold shadow-sm disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900"
       >
         <Icon icon="solar:file-download-bold-duotone" className="h-4 w-4 text-primary" />
         Exporter
@@ -176,7 +197,8 @@ function ExportDropdown({ resourceId }: { resourceId: string }) {
             <button
               key={p.value}
               onClick={() => doExport(p.value)}
-              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-800"
+              disabled={exporting}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:hover:bg-gray-800"
             >
               <Icon icon={p.icon} className="h-4 w-4 text-gray-400" />
               {p.label}
@@ -290,54 +312,52 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     [resources, selectedResId]
   );
 
-  /* ── Charger toutes les commandes de la ressource ─ */
+  /* ── Charger les commandes de la ressource active ─ */
   const loadOrders = useCallback(
-    async (resId: string, currentPage: number, q: string) => {
+    async (resId: string, currentPage: number, q: string, currentTab: TabKey) => {
       if (!resId || !selectedResource) return;
       setLoading(true);
       try {
-        const [pendingRes, validatedRes, statsRes] = await Promise.all([
-          listPendingOrdersAction({
-            resourceId: resId,
-            percepteurId: selectedResource.perceptionId,
-            commandesIds,
-            page: currentPage,
-            limit: 1500,
-            search: q,
-          }),
-          listValidatedOrdersAction({
-            resourceId: resId,
-            commandesIds,
-            page: currentPage,
-            limit: 1500,
-            search: q,
-          }),
+        const [listRes, statsRes] = await Promise.all([
+          currentTab === "pending"
+            ? listPendingOrdersAction({
+                resourceId: resId,
+                percepteurId: selectedResource.perceptionId,
+                commandesIds,
+                page: currentPage,
+                limit: PAGE_SIZE,
+                search: q,
+              })
+            : listValidatedOrdersAction({
+                resourceId: resId,
+                commandesIds,
+                page: currentPage,
+                limit: PAGE_SIZE,
+                search: q,
+              }),
           getPerceptionStatsAction({ resourceId: resId, commandesIds }),
         ]);
 
-        const pendingRows = pendingRes.success ? pendingRes.rows : [];
-        const validatedRows = validatedRes.success ? validatedRes.rows : [];
-        const merged = tab === "pending" ? pendingRows : validatedRows;
-
-        setOrders(merged);
-        setTotal(tab === "pending" ? pendingRes.total ?? 0 : validatedRes.total ?? 0);
+        setOrders(listRes.success ? listRes.rows : []);
+        setTotal(listRes.success ? listRes.total ?? 0 : 0);
         if (statsRes.success) setStats(statsRes.data || null);
       } finally {
         setLoading(false);
       }
     },
-    [commandesIds, selectedResource, tab]
+    [commandesIds, selectedResource]
   );
 
-  /* ── Recharger quand la ressource/tab/page/recherche change ─ */
-  useEffect(() => {
-    if (!selectedResource) return;
-    loadOrders(selectedResource.reference, page, searchApplied);
-  }, [selectedResource, tab, page, searchApplied, loadOrders]);
-
+  /* ── Reset page quand ressource/tab/recherche change ─ */
   useEffect(() => {
     setPage(1);
   }, [selectedResId, tab, searchApplied]);
+
+  /* ── Charger quand nécessaire ─ */
+  useEffect(() => {
+    if (!selectedResource) return;
+    loadOrders(selectedResource.reference, page, searchApplied, tab);
+  }, [selectedResource, tab, page, searchApplied, loadOrders]);
 
   /* ── Validation d'une commande ──────────────────── */
   const handleValidate = useCallback(
@@ -347,7 +367,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
       if (res.success) {
         setOrders((prev) => prev.filter((o) => o._id !== orderId));
         setTotal((prev) => Math.max(0, prev - 1));
-        if (selectedResource) loadOrders(selectedResource.reference, page, searchApplied);
+        if (selectedResource) loadOrders(selectedResource.reference, page, searchApplied, tab);
       } else {
         alert(res.error || "Erreur lors de la validation.");
       }
@@ -394,7 +414,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
               ))}
             </select>
           </div>
-          {selectedResId && <ExportDropdown resourceId={selectedResId} />}
+          {selectedResource && <ExportDropdown resourceId={selectedResource.reference} commandesIds={commandesIds} />}
         </div>
       </div>
 
@@ -433,7 +453,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
           <div className="flex items-center gap-2">
             <input
               type="search"
-              placeholder="Rechercher par matricule, email, référence ou nom…"
+              placeholder="Rechercher par matricule, email, nom, référence ou produit…"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {

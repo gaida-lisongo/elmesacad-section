@@ -10,14 +10,15 @@ import { Types } from "mongoose";
 export type PerceptionOrderRow = {
   _id: string;
   student: { matricule: string; email: string };
-  ressource: { 
-    categorie: string; 
-    reference: string; 
+  ressource: {
+    categorie: string;
+    reference: string;
     produit: string;
     metadata?: {
-      fullName: string;
-      productTitle: string
-    }
+      fullName?: string;
+      productTitle?: string;
+      [key: string]: unknown;
+    };
   };
   transaction: {
     orderNumber?: string;
@@ -106,6 +107,7 @@ export async function listPendingOrdersAction(args: {
     const match: Record<string, any> = {
       "ressource.reference": args.resourceId,
       status: "ok",
+      _id: { $nin: args.commandesIds.map((id) => id) },
     };
 
     if (args.search?.trim()) {
@@ -113,6 +115,8 @@ export async function listPendingOrdersAction(args: {
       match.$or = [
         { "student.matricule": { $regex: s, $options: "i" } },
         { "student.email": { $regex: s, $options: "i" } },
+        { "ressource.metadata.fullName": { $regex: s, $options: "i" } },
+        { "transaction.orderNumber": { $regex: s, $options: "i" } },
       ];
     }
 
@@ -126,7 +130,12 @@ export async function listPendingOrdersAction(args: {
     const rows: PerceptionOrderRow[] = docs.map((c: any) => ({
       _id: c._id.toString(),
       student: c.student,
-      ressource: { categorie: c.ressource.categorie, reference: c.ressource.reference, produit: c.ressource.produit },
+      ressource: {
+        categorie: c.ressource.categorie,
+        reference: c.ressource.reference,
+        produit: c.ressource.produit,
+        metadata: c.ressource.metadata,
+      },
       transaction: {
         orderNumber: c.transaction?.orderNumber ?? "",
         amount: c.transaction?.amount ?? 0,
@@ -172,6 +181,8 @@ export async function listValidatedOrdersAction(args: {
       match.$or = [
         { "student.matricule": { $regex: s, $options: "i" } },
         { "student.email": { $regex: s, $options: "i" } },
+        { "ressource.metadata.fullName": { $regex: s, $options: "i" } },
+        { "transaction.orderNumber": { $regex: s, $options: "i" } },
       ];
     }
 
@@ -185,7 +196,12 @@ export async function listValidatedOrdersAction(args: {
     const rows: PerceptionOrderRow[] = docs.map((c: any) => ({
       _id: c._id.toString(),
       student: c.student,
-      ressource: { categorie: c.ressource.categorie, reference: c.ressource.reference, produit: c.ressource.produit },
+      ressource: {
+        categorie: c.ressource.categorie,
+        reference: c.ressource.reference,
+        produit: c.ressource.produit,
+        metadata: c.ressource.metadata,
+      },
       transaction: {
         orderNumber: c.transaction?.orderNumber ?? "",
         amount: c.transaction?.amount ?? 0,
@@ -199,6 +215,88 @@ export async function listValidatedOrdersAction(args: {
     return { success: true, rows, total, page: args.page, limit: args.limit };
   } catch (e: any) {
     return { success: false, error: e.message, rows: [], total: 0, page: 1, limit: args.limit };
+  }
+}
+
+/* ─── Export des commandes d'une ressource (percepteur) ─ */
+export async function exportPerceptionOrdersAction(args: {
+  resourceId: string;
+  commandesIds: string[];
+  period: "daily" | "weekly" | "monthly" | "custom";
+  start?: string;
+  end?: string;
+}) {
+  try {
+    const session = await getSessionPayload();
+    if (!session || session.type !== "Agent") {
+      return { success: false, error: "Non autorisé." };
+    }
+    await connectDB();
+
+    const match: Record<string, any> = {
+      "ressource.reference": args.resourceId,
+    };
+
+    if (args.period === "custom" && args.start && args.end) {
+      match.createdAt = {
+        $gte: new Date(args.start + "T00:00:00.000Z"),
+        $lte: new Date(args.end + "T23:59:59.999Z"),
+      };
+    } else {
+      const now = new Date();
+      let from = new Date(now);
+      from.setHours(0, 0, 0, 0);
+      let to = new Date(now);
+      to.setHours(23, 59, 59, 999);
+
+      if (args.period === "weekly") {
+        const day = from.getDay() || 7;
+        from.setDate(from.getDate() - day + 1);
+      } else if (args.period === "monthly") {
+        from.setDate(1);
+      }
+
+      match.createdAt = { $gte: from, $lte: to };
+    }
+
+    const [pendingDocs, paidDocs] = await Promise.all([
+      CommandeModel.find({ ...match, status: "ok", _id: { $nin: args.commandesIds.map((id) => id) } }).lean(),
+      CommandeModel.find({ ...match, status: "paid", _id: { $in: args.commandesIds.map((id) => id) } }).lean(),
+    ]);
+
+    const all = [...pendingDocs, ...paidDocs].sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    const csvRows = [
+      ["ID", "Matricule", "Email", "Nom", "Produit", "Référence", "Order Number", "Montant", "Devise", "Téléphone", "Statut", "Date"].join(";"),
+      ...all.map((c: any) =>
+        [
+          c._id.toString(),
+          c.student?.matricule ?? "",
+          c.student?.email ?? "",
+          c.ressource?.metadata?.fullName ?? "",
+          c.ressource?.produit ?? "",
+          c.ressource?.reference ?? "",
+          c.transaction?.orderNumber ?? "",
+          c.transaction?.amount ?? 0,
+          c.transaction?.currency ?? "",
+          c.transaction?.phoneNumber ?? "",
+          c.status,
+          c.createdAt ? new Date(c.createdAt).toLocaleDateString("fr-FR") : "",
+        ].join(";")
+      ),
+    ];
+
+    return {
+      success: true,
+      data: {
+        csv: "\uFEFF" + csvRows.join("\n"),
+        filename: `commandes-${args.resourceId}-${args.period}.csv`,
+      },
+    };
+  } catch (e: any) {
+    return { success: false, error: e.message };
   }
 }
 
