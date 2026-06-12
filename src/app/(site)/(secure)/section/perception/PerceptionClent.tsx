@@ -26,7 +26,7 @@ type Props = {
 
 type TabKey = "pending" | "validated";
 
-const LIMIT = 4;
+const LIMIT = 100;
 
 /* ─── Utilitaires ───────────────────────────────────── */
 const fmt = (n: number, cur = "USD") =>
@@ -241,7 +241,7 @@ export default function PerceptionClient({ agent, resources, allCommandes, globa
   console.log("Ressources:", resources);
   console.log("Commandes:", allCommandes);
   console.log("Métriques globales:", globalMetrics);
-  
+
   const [selectedResId, setSelectedResId] = useState<string>(resources.length > 0 ? resources[0].id : "");
   const [tab, setTab] = useState<TabKey>("pending");
   const [searchInput, setSearchInput] = useState("");
@@ -475,7 +475,12 @@ export default function PerceptionClient({ agent, resources, allCommandes, globa
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {pagedOrders.map((order) => (
-                <OrderCard key={order._id} order={order} onValidate={handleValidate} validating={validatingId === order._id} />
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  onValidate={handleValidate}
+                  validating={validatingId === order._id}
+                />
               ))}
             </div>
           )}
