@@ -16,6 +16,15 @@ import { UserDatabaseSearch } from '../secure/UserDatabaseSearch';
 const defaultPhoto = '/images/user.jpg';
 
 /* ─── Types ─────────────────────────────────────────── */
+type CommandeStats = {
+  totalCommandes: number;
+  totalAmount: number;
+  pendingCount: number;
+  paidCount: number;
+  failedCount: number;
+  paidAmount: number;
+};
+
 type PercepteurWithAgent = {
   _id: string;
   agent: {
@@ -33,16 +42,36 @@ type PercepteurWithAgent = {
     reference: string;
     produit: string;
   }[];
-  commandes: string[];
+  commandes: any[];
+  stats: CommandeStats;
   createdAt: string;
 };
 
-/* ─── Petite carte de métriques ──────────────────────── */
-function StatBadge({ icon, label, value }: { icon: string; label: string; value: string | number }) {
+/* ─── Mini carte de stat ──────────────────────────────── */
+function StatCard({
+  icon,
+  label,
+  value,
+  color,
+}: {
+  icon: string;
+  label: string;
+  value: string | number;
+  color: 'primary' | 'emerald' | 'amber' | 'rose' | 'blue';
+}) {
+  const colorClasses: Record<string, string> = {
+    primary: 'bg-primary/5 text-primary',
+    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300',
+    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
+    rose: 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-300',
+    blue: 'bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300',
+  };
+
   return (
-    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-      <Icon icon={icon} className="h-3.5 w-3.5 shrink-0 text-primary/70" />
-      <span className="truncate">{label}&nbsp;:&nbsp;<strong className="font-semibold text-gray-700 dark:text-gray-200">{value}</strong></span>
+    <div className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 ${colorClasses[color] || colorClasses.primary}`}>
+      <Icon icon={icon} className="h-3.5 w-3.5 shrink-0" />
+      <span className="text-[11px] font-semibold whitespace-nowrap">{value}</span>
+      <span className="text-[10px] opacity-75 hidden sm:inline">{label}</span>
     </div>
   );
 }
@@ -57,7 +86,6 @@ function EditModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  /* États pour les champs éditables (on ne peut pas changer l'agent lui-même) */
   const [ressources, setRessources] = useState(percepteur.ressources);
 
   const handleSave = async () => {
@@ -170,10 +198,8 @@ export default function PercepteurCrud({
     loadPercepteurs();
   };
 
-  /* Métriques */
-  const total = percepteurs.length;
-  const actifs = percepteurs.filter((p) => p.agent.status !== 'inactive').length;
-  const totalCommandes = percepteurs.reduce((sum, p) => sum + (p.commandes?.length || 0), 0);
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
 
   return (
     <div className="space-y-6">
@@ -192,19 +218,15 @@ export default function PercepteurCrud({
           </div>
         </div>
 
-        {/* Mini métriques */}
-        <div className="flex flex-wrap gap-4 text-sm">
+        {/* Métriques globales */}
+        <div className="flex flex-wrap gap-2 text-sm">
           <span className="flex items-center gap-1.5 rounded-xl bg-primary/5 px-3 py-1.5 font-semibold text-primary">
             <Icon icon="solar:users-group-rounded-bold-duotone" className="h-4 w-4" />
-            {total} percepteur{total > 1 ? 's' : ''}
+            {percepteurs.length} percepteur{percepteurs.length > 1 ? 's' : ''}
           </span>
           <span className="flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
             <Icon icon="solar:check-circle-bold-duotone" className="h-4 w-4" />
-            {actifs} actif{actifs > 1 ? 's' : ''}
-          </span>
-          <span className="flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-            <Icon icon="solar:cart-bold-duotone" className="h-4 w-4" />
-            {totalCommandes} commande{totalCommandes > 1 ? 's' : ''}
+            {percepteurs.filter((p) => p.agent.status !== 'inactive').length} actif
           </span>
         </div>
       </div>
@@ -227,7 +249,7 @@ export default function PercepteurCrud({
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-48 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
+            <div key={i} className="h-56 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
           ))}
         </div>
       ) : percepteurs.length === 0 ? (
@@ -246,7 +268,7 @@ export default function PercepteurCrud({
               className="group relative flex flex-col rounded-2xl border border-gray-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800/60"
             >
               {/* Photo + infos principales */}
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-3">
                 <Image
                   src={p.agent.photo || defaultPhoto}
                   alt={p.agent.name}
@@ -258,7 +280,6 @@ export default function PercepteurCrud({
                   <p className="truncate font-semibold text-sm">{p.agent.name}</p>
                   <p className="truncate text-xs text-gray-400">{p.agent.email}</p>
                 </div>
-                {/* Badge statut */}
                 <span
                   className={`shrink-0 h-2.5 w-2.5 rounded-full ${
                     p.agent.status === 'active' ? 'bg-emerald-500' : 'bg-gray-300'
@@ -267,25 +288,49 @@ export default function PercepteurCrud({
                 />
               </div>
 
-              {/* Métriques */}
-              <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-4">
-                <StatBadge icon="solar:user-id-bold-duotone" label="Matricule" value={p.agent.matricule} />
-                {p.agent.role && (
-                  <StatBadge icon="solar:shield-user-bold-duotone" label="Rôle" value={p.agent.role} />
-                )}
-                {p.agent.telephone && (
-                  <StatBadge icon="solar:phone-bold-duotone" label="Tél" value={p.agent.telephone} />
-                )}
-                <StatBadge
+              {/* Stats commandes sur la carte */}
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                <StatCard
                   icon="solar:cart-large-minimalistic-bold-duotone"
-                  label="Commandes"
-                  value={p.commandes?.length || 0}
+                  label="commandes"
+                  value={p.stats.totalCommandes}
+                  color="primary"
                 />
+                <StatCard
+                  icon="solar:check-circle-bold-duotone"
+                  label="payées"
+                  value={p.stats.paidCount}
+                  color="emerald"
+                />
+                <StatCard
+                  icon="solar:clock-circle-bold-duotone"
+                  label="en attente"
+                  value={p.stats.pendingCount}
+                  color="amber"
+                />
+                {p.stats.failedCount > 0 && (
+                  <StatCard
+                    icon="solar:close-circle-bold-duotone"
+                    label="échouées"
+                    value={p.stats.failedCount}
+                    color="rose"
+                  />
+                )}
+              </div>
+
+              {/* Montants */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs mb-3">
+                <span className="font-semibold text-gray-700 dark:text-gray-200">
+                  Total : {formatCurrency(p.stats.totalAmount)}
+                </span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Collecté : {formatCurrency(p.stats.paidAmount)}
+                </span>
               </div>
 
               {/* Ressources */}
               {p.ressources?.length > 0 && (
-                <div className="mb-3 flex flex-wrap gap-1.5">
+                <div className="mb-2 flex flex-wrap gap-1">
                   {p.ressources.map((res, idx) => (
                     <span
                       key={idx}
@@ -303,7 +348,7 @@ export default function PercepteurCrud({
                 Créé le {new Date(p.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
 
-              {/* Actions (hover) */}
+              {/* Actions hover */}
               <div className="absolute right-3 top-3 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                 <button
                   onClick={() => setEditing(p)}
