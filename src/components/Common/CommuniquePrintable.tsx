@@ -4,7 +4,7 @@ import type { SessionResourceRow } from "@/actions/gestionnaireSessionResources"
 
 export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
   return (
-    <div className="hidden print:block p-10 w-[210mm] min-h-[297mm] bg-white text-black">
+    <div className="p-10 w-[210mm] min-h-[297mm] bg-white text-black mx-auto">
       <div className="text-center border-b border-black pb-8 mb-8">
         <h1 className="text-4xl font-bold uppercase">Communiqué</h1>
         <p className="text-xl mt-2">{r.designation}</p>
