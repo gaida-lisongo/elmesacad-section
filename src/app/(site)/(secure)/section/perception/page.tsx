@@ -19,6 +19,8 @@ export default async function PerceptionPage() {
 
   const { success, data, error } = await getMyPercepteur();
 
+  console.log("Résultat de getMyPercepteur:", { success, data, error });
+
   if (!success || !data || error) {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950">

@@ -237,6 +237,11 @@ function MetricsBar({
    COMPOSANT PRINCIPAL
    ════════════════════════════════════════════════════════ */
 export default function PerceptionClient({ agent, resources, allCommandes, globalMetrics }: Props) {
+  console.log("Agent:", agent);
+  console.log("Ressources:", resources);
+  console.log("Commandes:", allCommandes);
+  console.log("Métriques globales:", globalMetrics);
+  
   const [selectedResId, setSelectedResId] = useState<string>(resources.length > 0 ? resources[0].id : "");
   const [tab, setTab] = useState<TabKey>("pending");
   const [searchInput, setSearchInput] = useState("");
