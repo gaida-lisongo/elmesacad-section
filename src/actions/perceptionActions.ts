@@ -10,7 +10,15 @@ import { Types } from "mongoose";
 export type PerceptionOrderRow = {
   _id: string;
   student: { matricule: string; email: string };
-  ressource: { categorie: string; reference: string; produit: string };
+  ressource: { 
+    categorie: string; 
+    reference: string; 
+    produit: string;
+    metadata?: {
+      fullName: string;
+      productTitle: string
+    }
+  };
   transaction: {
     orderNumber?: string;
     amount: number;

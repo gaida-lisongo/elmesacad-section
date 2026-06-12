@@ -84,8 +84,8 @@ function OrderCard({
     <div className="flex h-full flex-col justify-between gap-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800/60">
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate font-semibold text-sm">{order.student.matricule || "N/A"}</span>
-          <StatusBadge status={order.status} />
+          <span className="truncate font-semibold text-sm">{order?.ressource?.metadata?.fullName || "N/A"}</span>
+          <StatusBadge status={order?.student?.matricule || "N/A" } />
         </div>
         <div className="flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1">
@@ -364,7 +364,24 @@ export default function PerceptionClient({ agent, resources, allCommandes, globa
             {agent?.name} — {agent?.matricule}
           </p>
         </div>
-        {selectedResId && <ExportDropdown resourceId={selectedResId} />}
+        <div>
+          {/* Sélection de ressource */}
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm font-medium">Ressource :</label>
+            <select
+              value={selectedResId}
+              onChange={(e) => setSelectedResId(e.target.value)}
+              className="min-w-[280px] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800"
+            >
+              {resources.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.categorie} / {r.reference} ({r.produit})
+                </option>
+              ))}
+            </select>
+          </div>          
+          {selectedResId && <ExportDropdown resourceId={selectedResId} />}
+        </div>
       </div>
 
       {/* Métriques globales */}
@@ -382,30 +399,6 @@ export default function PerceptionClient({ agent, resources, allCommandes, globa
           <p className="text-2xl font-bold">{globalMetrics.tRessources}</p>
         </div>
       </div>
-
-      {/* Sélection de ressource */}
-      <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium">Ressource :</label>
-        <select
-          value={selectedResId}
-          onChange={(e) => setSelectedResId(e.target.value)}
-          className="min-w-[280px] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800"
-        >
-          {resources.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.categorie} / {r.reference} ({r.produit})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Métriques globales + ressource */}
-      {selectedResource && (
-        <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
-          <MetricsBar label="Métriques globales" stats={globalStats} />
-          <MetricsBar label={`Métriques : ${selectedResource.categorie} / ${selectedResource.reference}`} stats={resourceStats} />
-        </div>
-      )}
 
       {/* Tabs */}
       {selectedResource && (
@@ -433,6 +426,12 @@ export default function PerceptionClient({ agent, resources, allCommandes, globa
                 </span>
               </button>
             ))}
+          </div>
+          
+
+        {/* Métriques globales + ressource */}
+          <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+            <MetricsBar label={`Métriques : ${selectedResource.categorie} / ${selectedResource.reference}`} stats={resourceStats} />
           </div>
 
           {/* Recherche */}
