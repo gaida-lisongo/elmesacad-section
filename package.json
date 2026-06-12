@@ -26,6 +26,7 @@
     "next-themes": "^0.3.0",
     "nextjs-toploader": "^3.7.15",
     "nodemailer": "^8.0.6",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.4.1",
@@ -35,8 +36,7 @@
     "remark": "^15.0.1",
     "remark-html": "^16.0.1",
     "slick-carousel": "^1.8.1",
-    "zustand": "^5.0.12",
-    "qrcode.react":"^4.2.0"
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.2",
