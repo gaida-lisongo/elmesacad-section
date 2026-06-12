@@ -17,31 +17,45 @@ export default async function PerceptionPage() {
 
   await connectDB();
 
-  // Récupérer le percepteur lié à l'agent connecté
-  const result = await getMyPercepteur();
+  const { success, data, error } = await getMyPercepteur();
 
-  if (!result.success || !result.data) {
+  if (!success || !data || error) {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950">
         <p className="font-semibold">Accès réservé aux percepteurs.</p>
-        <p className="mt-2">{result.error ?? "Aucun profil percepteur trouvé pour votre compte."}</p>
+        <p className="mt-2">{error ?? "Aucun profil percepteur trouvé pour votre compte."}</p>
       </div>
     );
   }
 
-  const percepteur = result.data;
+  // Transforme les perceptions en ressources sélectionnables.
+  // Chaque perception peut gérer plusieurs ressources.
+  const resources = data.perceptions.flatMap((perception: any) =>
+    (perception.ressources || []).map((r: any, idx: number) => ({
+      id: `${perception._id?.toString?.() ?? perception._id}-${idx}`,
+      perceptionId: perception._id?.toString?.() ?? perception._id,
+      categorie: r.categorie,
+      reference: r.reference,
+      produit: r.produit,
+    }))
+  );
 
-  // Construire les ressources à partir des ressources du percepteur
-  const resources = percepteur.ressources.map((r) => ({
-    id: r.reference,
-    categorie: r.categorie,
-    produit: r.produit,
-  }));
+  // Agrégats globaux
+  const globalMetrics = {
+    tCommandes: data.allCommandes.length,
+    amountCollected: data.allCommandes.reduce(
+      (sum: number, cmd: any) => sum + (cmd.transaction?.amount ?? 0),
+      0
+    ),
+    tRessources: resources.length,
+  };
 
   return (
     <PerceptionClient
-      percepteur={percepteur}
+      agent={data.agent}
       resources={resources}
+      allCommandes={data.allCommandes}
+      globalMetrics={globalMetrics}
     />
   );
 }

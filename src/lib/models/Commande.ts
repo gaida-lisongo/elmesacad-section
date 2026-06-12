@@ -38,12 +38,12 @@ export interface CommandeDoc {
 
 export interface PercepteurDoc {
   _id: Types.ObjectId;
-  ressources: [{
+  ressources: {
     categorie: string;
     reference: string;
     produit: CommandeProduit;
     metadata?: Record<string, unknown>;
-  }];
+  }[];
   agent: Types.ObjectId;
   commandes: Types.ObjectId[];
   createdAt: Date;

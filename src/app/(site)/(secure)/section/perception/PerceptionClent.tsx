@@ -1,28 +1,60 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import {
-  getPerceptionStatsAction,
-  listPendingOrdersAction,
-  listValidatedOrdersAction,
-  validateOrderAction,
-  type PerceptionOrderRow,
-  type MyPercepteurInfo,
-  type PercepteurRessource,
-} from "@/actions/perceptionActions";
+import { validateOrderAction, type PerceptionOrderRow } from "@/actions/perceptionActions";
 
-/* ─── Props ─────────────────────────────────────────── */
+/* ─── Types ─────────────────────────────────────────── */
+export type ResourceItem = {
+  id: string;
+  perceptionId: string;
+  categorie: string;
+  reference: string;
+  produit: string;
+};
+
 type Props = {
-  percepteur: MyPercepteurInfo;
-  resources: { id: string; categorie: string; produit: string }[];
+  agent: any;
+  resources: ResourceItem[];
+  allCommandes: any[];
+  globalMetrics: {
+    tCommandes: number;
+    amountCollected: number;
+    tRessources: number;
+  };
 };
 
 type TabKey = "pending" | "validated";
 
+const LIMIT = 4;
+
 /* ─── Utilitaires ───────────────────────────────────── */
 const fmt = (n: number, cur = "USD") =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: cur }).format(n);
+
+const normalize = (order: any): PerceptionOrderRow => {
+  const c = order || {};
+  return {
+    _id: c._id?.toString?.() ?? String(c._id),
+    student: {
+      matricule: c.student?.matricule ?? "",
+      email: c.student?.email ?? "",
+    },
+    ressource: {
+      categorie: c.ressource?.categorie ?? "",
+      reference: c.ressource?.reference ?? "",
+      produit: c.ressource?.produit ?? "",
+    },
+    transaction: {
+      orderNumber: c.transaction?.orderNumber ?? "",
+      amount: c.transaction?.amount ?? 0,
+      currency: c.transaction?.currency ?? "USD",
+      phoneNumber: c.transaction?.phoneNumber ?? "",
+    },
+    status: c.status ?? "pending",
+    createdAt: c.createdAt?.toISOString?.() ?? String(c.createdAt),
+  };
+};
 
 /* ─── Status badge ──────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
@@ -32,16 +64,14 @@ function StatusBadge({ status }: { status: string }) {
   };
   const m = map[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${m.cls}`}
-    >
+    <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${m.cls}`}>
       {m.label}
     </span>
   );
 }
 
-/* ─── Ligne de commande ─────────────────────────────── */
-function OrderRow({
+/* ─── Carte de commande ─────────────────────────────── */
+function OrderCard({
   order,
   onValidate,
   validating,
@@ -51,39 +81,36 @@ function OrderRow({
   validating: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800/60">
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <Icon icon="solar:user-id-bold-duotone" className="h-4 w-4 shrink-0 text-primary/70" />
-          <span className="truncate font-semibold text-sm">
-            {order.student.matricule || "N/A"}
-          </span>
+    <div className="flex h-full flex-col justify-between gap-3 rounded-xl border border-gray-200/80 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800/60">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="truncate font-semibold text-sm">{order.student.matricule || "N/A"}</span>
           <StatusBadge status={order.status} />
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex flex-col gap-0.5 text-xs text-gray-500 dark:text-gray-400">
           <span className="flex items-center gap-1">
-            <Icon icon="solar:letter-bold-duotone" className="h-3 w-3" />
+            <Icon icon="solar:letter-bold-duotone" className="h-3 w-3 shrink-0" />
             {order.student.email}
           </span>
           {order.transaction.orderNumber && (
             <span className="flex items-center gap-1">
-              <Icon icon="solar:bill-list-bold-duotone" className="h-3 w-3" />
+              <Icon icon="solar:bill-list-bold-duotone" className="h-3 w-3 shrink-0" />
               Réf. {order.transaction.orderNumber}
             </span>
           )}
           {order.transaction.phoneNumber && (
             <span className="flex items-center gap-1">
-              <Icon icon="solar:phone-bold-duotone" className="h-3 w-3" />
+              <Icon icon="solar:phone-bold-duotone" className="h-3 w-3 shrink-0" />
               {order.transaction.phoneNumber}
             </span>
           )}
           <span className="flex items-center gap-1">
-            <Icon icon="solar:calendar-bold-duotone" className="h-3 w-3" />
+            <Icon icon="solar:calendar-bold-duotone" className="h-3 w-3 shrink-0" />
             {new Date(order.createdAt).toLocaleDateString("fr-FR")}
           </span>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex items-center justify-between gap-3 pt-2">
         <span className="whitespace-nowrap font-bold text-midnight_text dark:text-white">
           {fmt(order.transaction.amount, order.transaction.currency)}
         </span>
@@ -91,7 +118,7 @@ function OrderRow({
           <button
             onClick={() => onValidate(order._id)}
             disabled={validating}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
           >
             <Icon icon="solar:check-circle-bold-duotone" className="h-4 w-4" />
             Valider
@@ -178,31 +205,30 @@ function ExportDropdown({ resourceId }: { resourceId: string }) {
 
 /* ─── Barre de métriques ────────────────────────────── */
 function MetricsBar({
+  label,
   stats,
 }: {
-  stats: {
-    pending: number;
-    paid: number;
-    total: number;
-    pendingAmount: number;
-    paidAmount: number;
-  } | null;
+  label: string;
+  stats: { pending: number; paid: number; total: number; pendingAmount: number; paidAmount: number } | null;
 }) {
   if (!stats) return null;
   return (
-    <div className="flex flex-wrap gap-3 text-xs">
-      <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary/5 px-3 py-1.5 font-semibold text-primary">
-        <Icon icon="solar:document-bold-duotone" className="h-3.5 w-3.5" />
-        Total {stats.total}
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
-        <Icon icon="solar:clock-circle-bold-duotone" className="h-3.5 w-3.5" />
-        {stats.pending} en attente · {fmt(stats.pendingAmount)}
-      </span>
-      <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
-        <Icon icon="solar:check-circle-bold-duotone" className="h-3.5 w-3.5" />
-        {stats.paid} validées · {fmt(stats.paidAmount)}
-      </span>
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</h3>
+      <div className="flex flex-wrap gap-3 text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary/5 px-3 py-1.5 font-semibold text-primary">
+          <Icon icon="solar:document-bold-duotone" className="h-3.5 w-3.5" />
+          Total {stats.total}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-1.5 font-semibold text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+          <Icon icon="solar:clock-circle-bold-duotone" className="h-3.5 w-3.5" />
+          {stats.pending} en attente · {fmt(stats.pendingAmount)}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+          <Icon icon="solar:check-circle-bold-duotone" className="h-3.5 w-3.5" />
+          {stats.paid} validées · {fmt(stats.paidAmount)}
+        </span>
+      </div>
     </div>
   );
 }
@@ -210,163 +236,119 @@ function MetricsBar({
 /* ════════════════════════════════════════════════════════
    COMPOSANT PRINCIPAL
    ════════════════════════════════════════════════════════ */
-export default function PerceptionClient({ percepteur, resources }: Props) {
-  const commandesIds = percepteur.commandes;
-
-  const [selectedResId, setSelectedResId] = useState<string>(
-    resources.length > 0 ? resources[0].id : ""
-  );
-
+export default function PerceptionClient({ agent, resources, allCommandes, globalMetrics }: Props) {
+  const [selectedResId, setSelectedResId] = useState<string>(resources.length > 0 ? resources[0].id : "");
   const [tab, setTab] = useState<TabKey>("pending");
-
-  /* Stats */
-  const [stats, setStats] = useState<{
-    pending: number;
-    paid: number;
-    total: number;
-    pendingAmount: number;
-    paidAmount: number;
-  } | null>(null);
-
-  /* Pending orders */
-  const [pendingOrders, setPendingOrders] = useState<PerceptionOrderRow[]>([]);
-  const [pendingTotal, setPendingTotal] = useState(0);
-  const [pendingPage, setPendingPage] = useState(1);
-  const [pendingSearchInput, setPendingSearchInput] = useState("");
-  const [pendingSearchApplied, setPendingSearchApplied] = useState("");
-  const [pendingLoading, setPendingLoading] = useState(false);
-
-  /* Validated orders */
-  const [paidOrders, setPaidOrders] = useState<PerceptionOrderRow[]>([]);
-  const [paidTotal, setPaidTotal] = useState(0);
-  const [paidPage, setPaidPage] = useState(1);
-  const [paidSearchInput, setPaidSearchInput] = useState("");
-  const [paidSearchApplied, setPaidSearchApplied] = useState("");
-  const [paidLoading, setPaidLoading] = useState(false);
-
+  const [searchInput, setSearchInput] = useState("");
+  const [searchApplied, setSearchApplied] = useState("");
+  const [page, setPage] = useState(1);
   const [validatingId, setValidatingId] = useState<string | null>(null);
+  const [orders, setOrders] = useState<PerceptionOrderRow[]>([]);
+  const [paidIds, setPaidIds] = useState<Set<string>>(() => new Set());
 
-  const LIMIT = 4;
-
-  /* ── Charger stats ────────────────────────────── */
-  const loadStats = useCallback(
-    async (resId: string) => {
-      const res = await getPerceptionStatsAction({
-        resourceId: resId,
-        commandesIds,
-      });
-      if (res.success) setStats(res.data || null);
-    },
-    [commandesIds]
+  const selectedResource = useMemo(
+    () => resources.find((r) => r.id === selectedResId) || null,
+    [resources, selectedResId]
   );
 
-  /* ── Charger commandes en attente ─────────────── */
-  const loadPending = useCallback(
-    async (resId: string, p: number, q: string) => {
-      setPendingLoading(true);
-      const res = await listPendingOrdersAction({
-        resourceId: resId,
-        percepteurId: percepteur._id,
-        commandesIds,
-        page: p,
-        limit: LIMIT,
-        search: q,
-      });
-      if (res.success) {
-        setPendingOrders(res.rows);
-        setPendingTotal(res.total);
-        setPendingPage(res.page);
-      }
-      setPendingLoading(false);
-    },
-    [percepteur._id, commandesIds]
-  );
-
-  /* ── Charger commandes validées ───────────────── */
-  const loadPaid = useCallback(
-    async (resId: string, p: number, q: string) => {
-      setPaidLoading(true);
-      const res = await listValidatedOrdersAction({
-        resourceId: resId,
-        commandesIds,
-        page: p,
-        limit: LIMIT,
-        search: q,
-      });
-      if (res.success) {
-        setPaidOrders(res.rows);
-        setPaidTotal(res.total);
-        setPaidPage(res.page);
-      }
-      setPaidLoading(false);
-    },
-    [commandesIds]
-  );
-
-  /* ── Recharger quand la ressource change ──────── */
+  /* ── Initialiser la liste locale à partir de allCommandes ─ */
   useEffect(() => {
-    if (!selectedResId) return;
-    loadStats(selectedResId);
-    loadPending(selectedResId, 1, "");
-    loadPaid(selectedResId, 1, "");
-    setPendingPage(1);
-    setPaidPage(1);
-    setPendingSearchInput("");
-    setPendingSearchApplied("");
-    setPaidSearchInput("");
-    setPaidSearchApplied("");
-  }, [selectedResId, loadStats, loadPending, loadPaid]);
+    const normalized = (allCommandes || []).map(normalize);
+    setOrders(normalized);
+    const paid = new Set<string>();
+    normalized.forEach((o) => {
+      if (o.status === "paid") paid.add(o._id);
+    });
+    setPaidIds(paid);
+  }, [allCommandes]);
 
-  /* ── Validation d'une commande ────────────────── */
-  const handleValidate = async (orderId: string) => {
+  /* ── Filtrage côté client ───────────────────────── */
+  const filteredOrders = useMemo(() => {
+    let list = orders;
+
+    if (selectedResource) {
+      list = list.filter((o) => o.ressource.reference === selectedResource.reference);
+    }
+
+    if (tab === "pending") {
+      list = list.filter((o) => o.status === "ok" && !paidIds.has(o._id));
+    } else {
+      list = list.filter((o) => o.status === "paid" || paidIds.has(o._id));
+    }
+
+    const q = searchApplied.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (o) =>
+          o.student.matricule.toLowerCase().includes(q) ||
+          o.student.email.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [orders, selectedResource, tab, searchApplied, paidIds]);
+
+  /* ── Métriques ──────────────────────────────────── */
+  const globalStats = useMemo(() => {
+    const pending = orders.filter((o) => o.status === "ok" && !paidIds.has(o._id));
+    const paid = orders.filter((o) => o.status === "paid" || paidIds.has(o._id));
+    return {
+      pending: pending.length,
+      paid: paid.length,
+      total: orders.length,
+      pendingAmount: pending.reduce((s, o) => s + o.transaction.amount, 0),
+      paidAmount: paid.reduce((s, o) => s + o.transaction.amount, 0),
+    };
+  }, [orders, paidIds]);
+
+  const resourceStats = useMemo(() => {
+    if (!selectedResource) return null;
+    const resourceOrders = orders.filter((o) => o.ressource.reference === selectedResource.reference);
+    const pending = resourceOrders.filter((o) => o.status === "ok" && !paidIds.has(o._id));
+    const paid = resourceOrders.filter((o) => o.status === "paid" || paidIds.has(o._id));
+    return {
+      pending: pending.length,
+      paid: paid.length,
+      total: resourceOrders.length,
+      pendingAmount: pending.reduce((s, o) => s + o.transaction.amount, 0),
+      paidAmount: paid.reduce((s, o) => s + o.transaction.amount, 0),
+    };
+  }, [orders, selectedResource, paidIds]);
+
+  /* ── Pagination ─────────────────────────────────── */
+  const total = filteredOrders.length;
+  const pageCount = Math.max(1, Math.ceil(total / LIMIT));
+  const safePage = Math.min(page, pageCount);
+  const pagedOrders = filteredOrders.slice((safePage - 1) * LIMIT, safePage * LIMIT);
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedResId, tab, searchApplied]);
+
+  /* ── Validation d'une commande ──────────────────── */
+  const handleValidate = useCallback(async (orderId: string) => {
     setValidatingId(orderId);
     const res = await validateOrderAction(orderId);
     if (res.success) {
-      // Retirer de pending
-      setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
-      setPendingTotal((prev) => Math.max(0, prev - 1));
-      // Recharger tab validées + stats
-      if (selectedResId) loadPaid(selectedResId, 1, "");
-      if (selectedResId) loadStats(selectedResId);
-      setPaidPage(1);
+      setPaidIds((prev) => new Set(prev).add(orderId));
+      setOrders((prev) =>
+        prev.map((o) => (o._id === orderId ? { ...o, status: "paid" } : o))
+      );
     } else {
       alert(res.error || "Erreur lors de la validation.");
     }
     setValidatingId(null);
-  };
+  }, []);
 
-  /* ── Pagination ───────────────────────────────── */
-  const orders = tab === "pending" ? pendingOrders : paidOrders;
-  const total = tab === "pending" ? pendingTotal : paidTotal;
-  const page = tab === "pending" ? pendingPage : paidPage;
-  const loading = tab === "pending" ? pendingLoading : paidLoading;
-  const pageCount = Math.max(1, Math.ceil(total / LIMIT));
-
-  const goToPage = (next: number) => {
-    if (!selectedResId) return;
-    const q =
-      tab === "pending" ? pendingSearchApplied : paidSearchApplied;
-    if (tab === "pending") loadPending(selectedResId, next, q);
-    else loadPaid(selectedResId, next, q);
-  };
-
-  /* ── Recherche ────────────────────────────────── */
+  /* ── Recherche ──────────────────────────────────── */
   const doSearch = () => {
-    if (!selectedResId) return;
-    const q =
-      tab === "pending"
-        ? pendingSearchInput.trim()
-        : paidSearchInput.trim();
-    if (tab === "pending") {
-      setPendingSearchApplied(q);
-      loadPending(selectedResId, 1, q);
-    } else {
-      setPaidSearchApplied(q);
-      loadPaid(selectedResId, 1, q);
-    }
+    setSearchApplied(searchInput);
+    setPage(1);
   };
 
-  /* ── Render ───────────────────────────────────── */
+  const goToPage = (next: number) => setPage(next);
+
+  /* ── Render ─────────────────────────────────────── */
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       {/* Header */}
@@ -374,10 +356,26 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Perception</h1>
           <p className="text-sm text-gray-500">
-            {percepteur.agent.name} — {percepteur.agent.matricule}
+            {agent?.name} — {agent?.matricule}
           </p>
         </div>
         {selectedResId && <ExportDropdown resourceId={selectedResId} />}
+      </div>
+
+      {/* Métriques globales */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+          <p className="text-xs text-gray-500">Commandes totales</p>
+          <p className="text-2xl font-bold">{globalMetrics.tCommandes}</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+          <p className="text-xs text-gray-500">Montant collecté</p>
+          <p className="text-2xl font-bold">{fmt(globalMetrics.amountCollected)}</p>
+        </div>
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800/60">
+          <p className="text-xs text-gray-500">Ressources gérées</p>
+          <p className="text-2xl font-bold">{globalMetrics.tRessources}</p>
+        </div>
       </div>
 
       {/* Sélection de ressource */}
@@ -390,31 +388,28 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
         >
           {resources.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.categorie} / {r.id}
+              {r.categorie} / {r.reference} ({r.produit})
             </option>
           ))}
         </select>
       </div>
 
-      {/* Stats */}
-      {selectedResId && stats && <MetricsBar stats={stats} />}
+      {/* Métriques globales + ressource */}
+      {selectedResource && (
+        <div className="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+          <MetricsBar label="Métriques globales" stats={globalStats} />
+          <MetricsBar label={`Métriques : ${selectedResource.categorie} / ${selectedResource.reference}`} stats={resourceStats} />
+        </div>
+      )}
 
       {/* Tabs */}
-      {selectedResId && (
+      {selectedResource && (
         <>
           <div className="flex gap-1 rounded-2xl bg-gray-100 p-1 dark:bg-gray-800">
             {(
               [
-                {
-                  key: "pending" as TabKey,
-                  label: "En attente",
-                  icon: "solar:clock-circle-bold-duotone",
-                },
-                {
-                  key: "validated" as TabKey,
-                  label: "Validées",
-                  icon: "solar:check-circle-bold-duotone",
-                },
+                { key: "pending" as TabKey, label: "En attente", icon: "solar:clock-circle-bold-duotone" },
+                { key: "validated" as TabKey, label: "Validées", icon: "solar:check-circle-bold-duotone" },
               ] as const
             ).map((t) => (
               <button
@@ -429,7 +424,7 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
                 <Icon icon={t.icon} className="h-4 w-4" />
                 {t.label}
                 <span className="ml-1 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] dark:bg-gray-600">
-                  {t.key === "pending" ? stats?.pending ?? 0 : stats?.paid ?? 0}
+                  {t.key === "pending" ? resourceStats?.pending ?? 0 : resourceStats?.paid ?? 0}
                 </span>
               </button>
             ))}
@@ -440,14 +435,8 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
             <input
               type="search"
               placeholder="Rechercher par matricule ou email…"
-              value={
-                tab === "pending" ? pendingSearchInput : paidSearchInput
-              }
-              onChange={(e) => {
-                if (tab === "pending")
-                  setPendingSearchInput(e.target.value);
-                else setPaidSearchInput(e.target.value);
-              }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") doSearch();
               }}
@@ -455,7 +444,6 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
             />
             <button
               onClick={doSearch}
-              disabled={loading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm dark:border-gray-600 dark:bg-gray-900"
             >
               <Icon icon="solar:magnifer-bold-duotone" className="h-4 w-4 text-primary" />
@@ -464,29 +452,14 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
           </div>
 
           {/* Liste */}
-          {loading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800"
-                />
-              ))}
-            </div>
-          ) : orders.length === 0 ? (
+          {pagedOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center dark:border-gray-600 dark:bg-gray-900/40">
               <Icon
-                icon={
-                  tab === "pending"
-                    ? "solar:inbox-archive-bold-duotone"
-                    : "solar:check-circle-bold-duotone"
-                }
+                icon={tab === "pending" ? "solar:inbox-archive-bold-duotone" : "solar:check-circle-bold-duotone"}
                 className="mb-3 h-14 w-14 text-gray-300 dark:text-gray-600"
               />
               <p className="font-semibold text-gray-700 dark:text-gray-300">
-                {tab === "pending"
-                  ? "Aucune commande en attente"
-                  : "Aucune commande validée"}
+                {tab === "pending" ? "Aucune commande en attente" : "Aucune commande validée"}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {tab === "pending"
@@ -495,14 +468,9 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {orders.map((order) => (
-                <OrderRow
-                  key={order._id}
-                  order={order}
-                  onValidate={handleValidate}
-                  validating={validatingId === order._id}
-                />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {pagedOrders.map((order) => (
+                <OrderCard key={order._id} order={order} onValidate={handleValidate} validating={validatingId === order._id} />
               ))}
             </div>
           )}
@@ -511,20 +479,19 @@ export default function PerceptionClient({ percepteur, resources }: Props) {
           {total > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-gray-600 dark:text-gray-400">
               <span>
-                {total} commande{total > 1 ? "s" : ""} — page {page} /{" "}
-                {pageCount}
+                {total} commande{total > 1 ? "s" : ""} — page {safePage} / {pageCount}
               </span>
               <div className="flex gap-2">
                 <button
-                  disabled={page <= 1 || loading}
-                  onClick={() => goToPage(page - 1)}
+                  disabled={safePage <= 1}
+                  onClick={() => goToPage(safePage - 1)}
                   className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
                 >
                   Précédent
                 </button>
                 <button
-                  disabled={page >= pageCount || loading}
-                  onClick={() => goToPage(page + 1)}
+                  disabled={safePage >= pageCount}
+                  onClick={() => goToPage(safePage + 1)}
                   className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
                 >
                   Suivant

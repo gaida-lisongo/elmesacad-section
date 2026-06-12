@@ -22,17 +22,17 @@ export type PerceptionOrderRow = {
 };
 
 export type PercepteurRessource = {
-  _id: string;
+  _id?: string;
   categorie: string;
   reference: string;
   produit: string;
 };
 
 export type MyPercepteurInfo = {
-  _id: string;
-  agent: { _id: string; name: string; email: string; matricule: string };
-  ressources: PercepteurRessource[];
-  commandes: string[];
+  perceptions: any[];
+  agent: any;
+  allCommandes: any[];
+  allRessources: any[];
 };
 
 /* ─── Récupérer le percepteur de l'agent connecté ──── */
@@ -47,28 +47,32 @@ export async function getMyPercepteur(): Promise<{
       return { success: false, error: "Non autorisé." };
     }
     await connectDB();
-    const doc = await PercepteurModel.findOne({ agent: session.sub }).populate("agent").lean();
-    if (!doc) {
+    const docs = await PercepteurModel.find({ agent: session.sub })
+    .populate("agent")
+    .populate("commandes")
+    .lean();
+    if (!docs.length) {
       return { success: false, error: "Aucun profil percepteur trouvé pour votre compte." };
     }
-    const p = doc as any;
+
+    const agent = docs[0].agent as any;
+    if (!agent) {
+      return { success: false, error: "Données de l'agent introuvables." };
+    }
+
+    //FlatMap des commandes de tous les percepteurs de l'agent (normalement 1 seul percepteur par agent, mais on couvre le cas où il y en aurait plusieurs)
+    const commandes = docs.flatMap((doc) => doc.commandes || []);
+    
+    //FlatMap des ressources de tous les percepteurs de l'agent (normalement 1 seul percepteur par agent, mais on couvre le cas où il y en aurait plusieurs)
+    const ressources = docs.flatMap((doc) => doc.ressources || []);
+
     return {
       success: true,
       data: {
-        _id: p._id.toString(),
-        agent: {
-          _id: p.agent?._id?.toString?.() ?? p.agent?.toString?.() ?? session.sub,
-          name: p.agent?.name ?? "N/A",
-          email: p.agent?.email ?? "N/A",
-          matricule: p.agent?.matricule ?? "N/A",
-        },
-        ressources: (p.ressources || []).map((r: any) => ({
-          _id: r._id?.toString?.() ?? "",
-          categorie: r.categorie,
-          reference: r.reference,
-          produit: r.produit,
-        })),
-        commandes: (p.commandes || []).map((c: any) => c.toString?.() ?? String(c)),
+        perceptions: docs,
+        agent,
+        allCommandes: commandes,
+        allRessources: ressources,
       },
     };
   } catch (e: any) {
