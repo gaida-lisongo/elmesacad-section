@@ -3,7 +3,7 @@
 import { connectDB } from "@/lib/services/connectedDB";
 import { PercepteurModel, type PercepteurDoc } from "@/lib/models/Commande";
 
-export async function createPercepteur(data: Partial<PercepteurDoc>) {
+export async function createPercepteur(data: any) {
     try {
         await connectDB();
         const percepteur = await PercepteurModel.create(data);

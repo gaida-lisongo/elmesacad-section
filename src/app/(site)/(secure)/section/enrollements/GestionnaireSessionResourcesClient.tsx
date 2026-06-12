@@ -14,6 +14,8 @@ import type { ResourceWorkspaceMode } from "@/components/secure/etudiant-resourc
 import GestionnaireSessionResourceForm, { type ChefSectionDefaults } from "./GestionnaireSessionResourceForm";
 import EnrollementPaymentWizard from "./EnrollementPaymentWizard";
 import RessourceExamen from "./RessourceExamen";
+import PercepteurCrud from "@/components/Common/PercepteurCrud";
+import { usePrintCommunique } from "@/utils/usePrint";
 
 type ProgrammeOption = { id: string; slug: string; designation: string; credits: number };
 
@@ -54,6 +56,8 @@ export default function GestionnaireSessionResourcesClient({
   const [statusToggleId, setStatusToggleId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+
+  const { generate } = usePrintCommunique();
 
   const loadList = useCallback(
     (nextPage: number, search: string) => {
@@ -243,8 +247,16 @@ export default function GestionnaireSessionResourcesClient({
               setRow={setRow}
               setUiMode={(mode: ResourceWorkspaceMode) => setUiMode(mode)}
               isPublicationActive={isPublicationActive}
-              onGenerateReport={(r) => console.log("Générer rapport pour", r)}
-              onManageCollectors={(r) => console.log("Gérer collecteurs pour", r)}
+              onGenerateReport={(r) => generate(r)}
+              onManageCollectors={(r) => (
+                <PercepteurCrud
+                  r={r}
+                  onBack={() => {
+                    setRow(null);
+                    setUiMode("list");
+                  }}
+                />
+              )}
             />
           ))}
         </div>
