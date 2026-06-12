@@ -39,6 +39,7 @@ export default async function PerceptionPage() {
       categorie: r.categorie,
       reference: r.reference,
       produit: r.produit,
+      commandes: perception.commandes || [],
     }))
   );
 
