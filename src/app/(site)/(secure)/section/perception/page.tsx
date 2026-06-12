@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSessionPayload } from "@/lib/auth/sessionServer";
-import { resolveGestionnaireScope } from "@/lib/section/resolveGestionnaireScope";
 import { connectDB } from "@/lib/services/connectedDB";
-import { listGestionnaireSessionResourcesAction } from "@/actions/gestionnaireSessionResources";
+import { getMyPercepteur } from "@/actions/perceptionActions";
 import PerceptionClient from "./PerceptionClent";
 
 export const metadata: Metadata = {
@@ -17,34 +16,31 @@ export default async function PerceptionPage() {
   }
 
   await connectDB();
-  const scope = await resolveGestionnaireScope(session.sub);
-  if (!scope) {
+
+  // Récupérer le percepteur lié à l'agent connecté
+  const result = await getMyPercepteur();
+
+  if (!result.success || !result.data) {
     return (
       <div className="mx-auto max-w-xl rounded-xl border border-amber-200 bg-amber-50/80 p-6 text-sm text-amber-950">
-        <p className="font-semibold">Accès réservé aux agents de section.</p>
+        <p className="font-semibold">Accès réservé aux percepteurs.</p>
+        <p className="mt-2">{result.error ?? "Aucun profil percepteur trouvé pour votre compte."}</p>
       </div>
     );
   }
 
-  // Récupérer les sessions disponibles pour la section
-  const resourcesData = await listGestionnaireSessionResourcesAction({
-    sectionSlug: scope.sectionSlug,
-    page: 1,
-    limit: 200,
-    search: "",
-  });
+  const percepteur = result.data;
 
-  const resources = resourcesData.rows.map((r) => ({
-    id: r.id,
-    designation: r.designation,
-    amount: r.amount,
-    currency: r.currency,
+  // Construire les ressources à partir des ressources du percepteur
+  const resources = percepteur.ressources.map((r) => ({
+    id: r.reference,
+    categorie: r.categorie,
+    produit: r.produit,
   }));
 
   return (
     <PerceptionClient
-      sectionSlug={scope.sectionSlug}
-      sectionDesignation={scope.sectionDesignation}
+      percepteur={percepteur}
       resources={resources}
     />
   );

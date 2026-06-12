@@ -3,25 +3,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
 import {
-  getMyPercepteur,
   getPerceptionStatsAction,
-  listPerceptionOrdersAction,
+  listPendingOrdersAction,
+  listValidatedOrdersAction,
   validateOrderAction,
   type PerceptionOrderRow,
+  type MyPercepteurInfo,
+  type PercepteurRessource,
 } from "@/actions/perceptionActions";
 
-/* ─── Types ─────────────────────────────────────────── */
-type ResourceBrief = { id: string; designation: string; amount: number; currency: string };
-
+/* ─── Props ─────────────────────────────────────────── */
 type Props = {
-  sectionSlug: string;
-  sectionDesignation: string;
-  resources: ResourceBrief[];
+  percepteur: MyPercepteurInfo;
+  resources: { id: string; categorie: string; produit: string }[];
 };
 
 type TabKey = "pending" | "validated";
 
-/* ─── Format monnaie ────────────────────────────────── */
+/* ─── Utilitaires ───────────────────────────────────── */
 const fmt = (n: number, cur = "USD") =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: cur }).format(n);
 
@@ -32,7 +31,13 @@ function StatusBadge({ status }: { status: string }) {
     paid: { label: "Payé", cls: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300" },
   };
   const m = map[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
-  return <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${m.cls}`}>{m.label}</span>;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-0.5 text-xs font-semibold ${m.cls}`}
+    >
+      {m.label}
+    </span>
+  );
 }
 
 /* ─── Ligne de commande ─────────────────────────────── */
@@ -50,7 +55,9 @@ function OrderRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex items-center gap-2">
           <Icon icon="solar:user-id-bold-duotone" className="h-4 w-4 shrink-0 text-primary/70" />
-          <span className="truncate font-semibold text-sm">{order.student.matricule || "N/A"}</span>
+          <span className="truncate font-semibold text-sm">
+            {order.student.matricule || "N/A"}
+          </span>
           <StatusBadge status={order.status} />
         </div>
         <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
@@ -95,7 +102,7 @@ function OrderRow({
   );
 }
 
-/* ─── Sélecteur de période (export Excel) ───────────── */
+/* ─── Export dropdown ───────────────────────────────── */
 const PERIODS = [
   { value: "daily", label: "Journalier", icon: "solar:calendar-linear" },
   { value: "weekly", label: "Hebdomadaire", icon: "solar:calendar-mark-linear" },
@@ -103,13 +110,7 @@ const PERIODS = [
   { value: "custom", label: "Personnalisé", icon: "solar:calendar-date-linear" },
 ] as const;
 
-function ExportDropdown({
-  resourceId,
-  onExporting,
-}: {
-  resourceId: string;
-  onExporting: (v: boolean) => void;
-}) {
+function ExportDropdown({ resourceId }: { resourceId: string }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -123,15 +124,13 @@ function ExportDropdown({
 
   const doExport = async (period: string) => {
     setOpen(false);
-    onExporting(true);
     try {
       const params = new URLSearchParams({ resourceId, period });
-      // Si custom, demander les dates
       if (period === "custom") {
         const start = prompt("Date début (YYYY-MM-DD) :");
-        if (!start) { onExporting(false); return; }
+        if (!start) return;
         const end = prompt("Date fin (YYYY-MM-DD) :");
-        if (!end) { onExporting(false); return; }
+        if (!end) return;
         params.set("start", start);
         params.set("end", end);
       }
@@ -148,7 +147,6 @@ function ExportDropdown({
       console.error(e);
       alert("Erreur lors de l'export.");
     }
-    onExporting(false);
   };
 
   return (
@@ -178,11 +176,17 @@ function ExportDropdown({
   );
 }
 
-/* ─── Section de métriques ──────────────────────────── */
+/* ─── Barre de métriques ────────────────────────────── */
 function MetricsBar({
   stats,
 }: {
-  stats: { pending: number; paid: number; total: number; pendingAmount: number; paidAmount: number } | null;
+  stats: {
+    pending: number;
+    paid: number;
+    total: number;
+    pendingAmount: number;
+    paidAmount: number;
+  } | null;
 }) {
   if (!stats) return null;
   return (
@@ -206,18 +210,14 @@ function MetricsBar({
 /* ════════════════════════════════════════════════════════
    COMPOSANT PRINCIPAL
    ════════════════════════════════════════════════════════ */
-export default function PerceptionClient({ sectionSlug, sectionDesignation, resources }: Props) {
-  /* Resource sélectionnée */
-  const [selectedResource, setSelectedResource] = useState<ResourceBrief | null>(
-    resources.length === 1 ? resources[0] : null
+export default function PerceptionClient({ percepteur, resources }: Props) {
+  const commandesIds = percepteur.commandes;
+
+  const [selectedResId, setSelectedResId] = useState<string>(
+    resources.length > 0 ? resources[0].id : ""
   );
 
-  /* Tab */
   const [tab, setTab] = useState<TabKey>("pending");
-  const tabs: { key: TabKey; label: string; icon: string }[] = [
-    { key: "pending", label: "En attente", icon: "solar:clock-circle-bold-duotone" },
-    { key: "validated", label: "Validées", icon: "solar:check-circle-bold-duotone" },
-  ];
 
   /* Stats */
   const [stats, setStats] = useState<{
@@ -228,91 +228,106 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
     paidAmount: number;
   } | null>(null);
 
-  /* Commandes tab1 (pending) */
+  /* Pending orders */
   const [pendingOrders, setPendingOrders] = useState<PerceptionOrderRow[]>([]);
   const [pendingTotal, setPendingTotal] = useState(0);
   const [pendingPage, setPendingPage] = useState(1);
-  const [pendingSearch, setPendingSearch] = useState("");
+  const [pendingSearchInput, setPendingSearchInput] = useState("");
+  const [pendingSearchApplied, setPendingSearchApplied] = useState("");
   const [pendingLoading, setPendingLoading] = useState(false);
 
-  /* Commandes tab2 (validées) */
+  /* Validated orders */
   const [paidOrders, setPaidOrders] = useState<PerceptionOrderRow[]>([]);
   const [paidTotal, setPaidTotal] = useState(0);
   const [paidPage, setPaidPage] = useState(1);
-  const [paidSearch, setPaidSearch] = useState("");
+  const [paidSearchInput, setPaidSearchInput] = useState("");
+  const [paidSearchApplied, setPaidSearchApplied] = useState("");
   const [paidLoading, setPaidLoading] = useState(false);
 
   const [validatingId, setValidatingId] = useState<string | null>(null);
 
-  /* Percepteur check */
-  const [percepteurOk, setPercepteurOk] = useState(true);
-  const [percepteurChecking, setPercepteurChecking] = useState(true);
-
   const LIMIT = 4;
 
-  /* ── Vérification percepteur ──────────────────────── */
+  /* ── Charger stats ────────────────────────────── */
+  const loadStats = useCallback(
+    async (resId: string) => {
+      const res = await getPerceptionStatsAction({
+        resourceId: resId,
+        commandesIds,
+      });
+      if (res.success) setStats(res.data || null);
+    },
+    [commandesIds]
+  );
+
+  /* ── Charger commandes en attente ─────────────── */
+  const loadPending = useCallback(
+    async (resId: string, p: number, q: string) => {
+      setPendingLoading(true);
+      const res = await listPendingOrdersAction({
+        resourceId: resId,
+        percepteurId: percepteur._id,
+        commandesIds,
+        page: p,
+        limit: LIMIT,
+        search: q,
+      });
+      if (res.success) {
+        setPendingOrders(res.rows);
+        setPendingTotal(res.total);
+        setPendingPage(res.page);
+      }
+      setPendingLoading(false);
+    },
+    [percepteur._id, commandesIds]
+  );
+
+  /* ── Charger commandes validées ───────────────── */
+  const loadPaid = useCallback(
+    async (resId: string, p: number, q: string) => {
+      setPaidLoading(true);
+      const res = await listValidatedOrdersAction({
+        resourceId: resId,
+        commandesIds,
+        page: p,
+        limit: LIMIT,
+        search: q,
+      });
+      if (res.success) {
+        setPaidOrders(res.rows);
+        setPaidTotal(res.total);
+        setPaidPage(res.page);
+      }
+      setPaidLoading(false);
+    },
+    [commandesIds]
+  );
+
+  /* ── Recharger quand la ressource change ──────── */
   useEffect(() => {
-    (async () => {
-      setPercepteurChecking(true);
-      const res = await getMyPercepteur();
-      if (!res.success) setPercepteurOk(false);
-      setPercepteurChecking(false);
-    })();
-  }, []);
-
-  /* ── Charger stats ────────────────────────────────── */
-  const loadStats = useCallback(async (resId: string) => {
-    const res = await getPerceptionStatsAction(resId);
-    if (res.success) setStats(res.data || null);
-  }, []);
-
-  /* ── Charger commandes ────────────────────────────── */
-  const loadPending = useCallback(async (resId: string, p: number, q: string) => {
-    setPendingLoading(true);
-    const res = await listPerceptionOrdersAction({ resourceId: resId, status: "ok", page: p, limit: LIMIT, search: q });
-    if (res.success) {
-      setPendingOrders(res.rows);
-      setPendingTotal(res.total);
-      setPendingPage(res.page);
-    }
-    setPendingLoading(false);
-  }, []);
-
-  const loadPaid = useCallback(async (resId: string, p: number, q: string) => {
-    setPaidLoading(true);
-    const res = await listPerceptionOrdersAction({ resourceId: resId, status: "paid", page: p, limit: LIMIT, search: q });
-    if (res.success) {
-      setPaidOrders(res.rows);
-      setPaidTotal(res.total);
-      setPaidPage(res.page);
-    }
-    setPaidLoading(false);
-  }, []);
-
-  /* ── Quand la ressource change, recharger tout ────── */
-  useEffect(() => {
-    if (!selectedResource) return;
-    loadStats(selectedResource.id);
-    loadPending(selectedResource.id, 1, "");
-    loadPaid(selectedResource.id, 1, "");
+    if (!selectedResId) return;
+    loadStats(selectedResId);
+    loadPending(selectedResId, 1, "");
+    loadPaid(selectedResId, 1, "");
     setPendingPage(1);
     setPaidPage(1);
-    setPendingSearch("");
-    setPaidSearch("");
-  }, [selectedResource, loadStats, loadPending, loadPaid]);
+    setPendingSearchInput("");
+    setPendingSearchApplied("");
+    setPaidSearchInput("");
+    setPaidSearchApplied("");
+  }, [selectedResId, loadStats, loadPending, loadPaid]);
 
-  /* ── Validation ───────────────────────────────────── */
+  /* ── Validation d'une commande ────────────────── */
   const handleValidate = async (orderId: string) => {
     setValidatingId(orderId);
     const res = await validateOrderAction(orderId);
     if (res.success) {
-      // Retirer de la liste pending
+      // Retirer de pending
       setPendingOrders((prev) => prev.filter((o) => o._id !== orderId));
       setPendingTotal((prev) => Math.max(0, prev - 1));
-
-      // Recharger les paid pour inclure la nouvelle
-      if (selectedResource) loadPaid(selectedResource.id, 1, "");
-      if (selectedResource) loadStats(selectedResource.id);
+      // Recharger tab validées + stats
+      if (selectedResId) loadPaid(selectedResId, 1, "");
+      if (selectedResId) loadStats(selectedResId);
       setPaidPage(1);
     } else {
       alert(res.error || "Erreur lors de la validation.");
@@ -320,81 +335,88 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
     setValidatingId(null);
   };
 
-  /* ── Search handlers ──────────────────────────────── */
-  const [pendingSearchInput, setPendingSearchInput] = useState("");
-  const [paidSearchInput, setPaidSearchInput] = useState("");
-
-  const doPendingSearch = () => {
-    if (!selectedResource) return;
-    setPendingSearch(pendingSearchInput.trim());
-    loadPending(selectedResource.id, 1, pendingSearchInput.trim());
-  };
-
-  const doPaidSearch = () => {
-    if (!selectedResource) return;
-    setPaidSearch(paidSearchInput.trim());
-    loadPaid(selectedResource.id, 1, paidSearchInput.trim());
-  };
-
+  /* ── Pagination ───────────────────────────────── */
   const orders = tab === "pending" ? pendingOrders : paidOrders;
   const total = tab === "pending" ? pendingTotal : paidTotal;
   const page = tab === "pending" ? pendingPage : paidPage;
   const loading = tab === "pending" ? pendingLoading : paidLoading;
   const pageCount = Math.max(1, Math.ceil(total / LIMIT));
 
-  /* ── Render ───────────────────────────────────────── */
+  const goToPage = (next: number) => {
+    if (!selectedResId) return;
+    const q =
+      tab === "pending" ? pendingSearchApplied : paidSearchApplied;
+    if (tab === "pending") loadPending(selectedResId, next, q);
+    else loadPaid(selectedResId, next, q);
+  };
+
+  /* ── Recherche ────────────────────────────────── */
+  const doSearch = () => {
+    if (!selectedResId) return;
+    const q =
+      tab === "pending"
+        ? pendingSearchInput.trim()
+        : paidSearchInput.trim();
+    if (tab === "pending") {
+      setPendingSearchApplied(q);
+      loadPending(selectedResId, 1, q);
+    } else {
+      setPaidSearchApplied(q);
+      loadPaid(selectedResId, 1, q);
+    }
+  };
+
+  /* ── Render ───────────────────────────────────── */
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      {/* ── Header ──────────────────────────────────── */}
+      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Perception</h1>
-          <p className="text-sm text-gray-500">{sectionDesignation}</p>
+          <p className="text-sm text-gray-500">
+            {percepteur.agent.name} — {percepteur.agent.matricule}
+          </p>
         </div>
-
-        {selectedResource && (
-          <div className="flex items-center gap-2">
-            <ExportDropdown resourceId={selectedResource.id} onExporting={() => {}} />
-          </div>
-        )}
+        {selectedResId && <ExportDropdown resourceId={selectedResId} />}
       </div>
 
-      {/* ── Alert percepteur manquant ───────────────── */}
-      {!percepteurChecking && !percepteurOk && (
-        <div className="flex gap-3 rounded-xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-          <Icon icon="solar:danger-triangle-bold-duotone" className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>Vous n&apos;avez pas de profil percepteur. Contactez le chef de section.</p>
-        </div>
-      )}
-
-      {/* ── Sélection de ressource ──────────────────── */}
+      {/* Sélection de ressource */}
       <div className="flex flex-wrap items-center gap-3">
-        <label className="text-sm font-medium">Session :</label>
+        <label className="text-sm font-medium">Ressource :</label>
         <select
-          value={selectedResource?.id ?? ""}
-          onChange={(e) => {
-            const res = resources.find((r) => r.id === e.target.value) ?? null;
-            setSelectedResource(res);
-          }}
-          className="min-w-[220px] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800"
+          value={selectedResId}
+          onChange={(e) => setSelectedResId(e.target.value)}
+          className="min-w-[280px] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800"
         >
-          <option value="">Sélectionnez une session…</option>
           {resources.map((r) => (
             <option key={r.id} value={r.id}>
-              {r.designation} — {fmt(r.amount, r.currency)}
+              {r.categorie} / {r.id}
             </option>
           ))}
         </select>
       </div>
 
-      {/* ── Stats ───────────────────────────────────── */}
-      {selectedResource && stats && <MetricsBar stats={stats} />}
+      {/* Stats */}
+      {selectedResId && stats && <MetricsBar stats={stats} />}
 
-      {/* ── Tabs ────────────────────────────────────── */}
-      {selectedResource && (
+      {/* Tabs */}
+      {selectedResId && (
         <>
           <div className="flex gap-1 rounded-2xl bg-gray-100 p-1 dark:bg-gray-800">
-            {tabs.map((t) => (
+            {(
+              [
+                {
+                  key: "pending" as TabKey,
+                  label: "En attente",
+                  icon: "solar:clock-circle-bold-duotone",
+                },
+                {
+                  key: "validated" as TabKey,
+                  label: "Validées",
+                  icon: "solar:check-circle-bold-duotone",
+                },
+              ] as const
+            ).map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
@@ -407,31 +429,32 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
                 <Icon icon={t.icon} className="h-4 w-4" />
                 {t.label}
                 <span className="ml-1 rounded-full bg-gray-200 px-2 py-0.5 text-[10px] dark:bg-gray-600">
-                  {tab === t.key && (tab === "pending" ? stats?.pending ?? 0 : stats?.paid ?? 0)}
+                  {t.key === "pending" ? stats?.pending ?? 0 : stats?.paid ?? 0}
                 </span>
               </button>
             ))}
           </div>
 
-          {/* ── Barre de recherche ──────────────────── */}
+          {/* Recherche */}
           <div className="flex items-center gap-2">
             <input
               type="search"
               placeholder="Rechercher par matricule ou email…"
-              value={tab === "pending" ? pendingSearchInput : paidSearchInput}
+              value={
+                tab === "pending" ? pendingSearchInput : paidSearchInput
+              }
               onChange={(e) => {
-                if (tab === "pending") setPendingSearchInput(e.target.value);
+                if (tab === "pending")
+                  setPendingSearchInput(e.target.value);
                 else setPaidSearchInput(e.target.value);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  tab === "pending" ? doPendingSearch() : doPaidSearch();
-                }
+                if (e.key === "Enter") doSearch();
               }}
               className="flex-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800 dark:text-white"
             />
             <button
-              onClick={tab === "pending" ? doPendingSearch : doPaidSearch}
+              onClick={doSearch}
               disabled={loading}
               className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold shadow-sm dark:border-gray-600 dark:bg-gray-900"
             >
@@ -440,26 +463,35 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
             </button>
           </div>
 
-          {/* ── Liste des commandes (4 par page) ────── */}
+          {/* Liste */}
           {loading ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+                <div
+                  key={i}
+                  className="h-20 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800"
+                />
               ))}
             </div>
           ) : orders.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50/50 px-8 py-16 text-center dark:border-gray-600 dark:bg-gray-900/40">
               <Icon
-                icon={tab === "pending" ? "solar:inbox-archive-bold-duotone" : "solar:check-circle-bold-duotone"}
+                icon={
+                  tab === "pending"
+                    ? "solar:inbox-archive-bold-duotone"
+                    : "solar:check-circle-bold-duotone"
+                }
                 className="mb-3 h-14 w-14 text-gray-300 dark:text-gray-600"
               />
               <p className="font-semibold text-gray-700 dark:text-gray-300">
-                {tab === "pending" ? "Aucune commande en attente" : "Aucune commande validée"}
+                {tab === "pending"
+                  ? "Aucune commande en attente"
+                  : "Aucune commande validée"}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {tab === "pending"
                   ? "Les commandes des étudiants apparaîtront ici après le scan du QR code."
-                  : "Les commandes validées apparaîtront ici."}
+                  : "Les commandes que vous validez apparaîtront ici."}
               </p>
             </div>
           ) : (
@@ -475,31 +507,24 @@ export default function PerceptionClient({ sectionSlug, sectionDesignation, reso
             </div>
           )}
 
-          {/* ── Pagination ──────────────────────── */}
+          {/* Pagination */}
           {total > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-gray-600 dark:text-gray-400">
               <span>
-                {total} commande{total > 1 ? "s" : ""} — page {page} / {pageCount}
+                {total} commande{total > 1 ? "s" : ""} — page {page} /{" "}
+                {pageCount}
               </span>
               <div className="flex gap-2">
                 <button
                   disabled={page <= 1 || loading}
-                  onClick={() => {
-                    const next = page - 1;
-                    if (tab === "pending") loadPending(selectedResource!.id, next, pendingSearch);
-                    else loadPaid(selectedResource!.id, next, paidSearch);
-                  }}
+                  onClick={() => goToPage(page - 1)}
                   className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
                 >
                   Précédent
                 </button>
                 <button
                   disabled={page >= pageCount || loading}
-                  onClick={() => {
-                    const next = page + 1;
-                    if (tab === "pending") loadPending(selectedResource!.id, next, pendingSearch);
-                    else loadPaid(selectedResource!.id, next, paidSearch);
-                  }}
+                  onClick={() => goToPage(page + 1)}
                   className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm disabled:opacity-40 dark:border-gray-600 dark:bg-gray-900"
                 >
                   Suivant
