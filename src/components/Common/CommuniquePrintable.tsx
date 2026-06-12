@@ -21,10 +21,8 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
           </div>
         </div>
       </div>
-
       {/* ── Corps ─────────────────────────────────── */}
       <div className="px-10 py-8 space-y-8">
-
         {/* Introduction */}
         <div className="bg-blue-50 border-l-4 border-[#2b6cb0] rounded-r-xl p-5">
           <p className="text-base leading-relaxed text-gray-800">
