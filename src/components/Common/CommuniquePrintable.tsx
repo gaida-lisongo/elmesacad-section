@@ -44,7 +44,7 @@ export default function CommuniquePrintable({ r }: { r: SessionResourceRow }) {
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2b6cb0] text-white text-xs font-bold">i</span>
             Procédure à suivre
           </h2>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {[
               {
                 step: 1,
