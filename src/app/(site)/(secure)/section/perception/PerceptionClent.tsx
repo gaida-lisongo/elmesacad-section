@@ -407,9 +407,9 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
               onChange={(e) => setSelectedResId(e.target.value)}
               className="min-w-[280px] rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm shadow-sm dark:border-gray-600 dark:bg-gray-800"
             >
-              {resources.map((r) => (
+              {resources.map((r, idx) => (
                 <option key={r.id} value={r.id}>
-                  {r.categorie} / {r.reference} ({r.produit})
+                  {r.produit} ({idx + 1})
                 </option>
               ))}
             </select>
