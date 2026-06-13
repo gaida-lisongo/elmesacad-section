@@ -82,14 +82,6 @@ export default function PaiementMetierSessionPanel({
 
   return (
     <div className="space-y-4">
-      <PaiementMetierRessourceCore
-        commande={commande}
-        commandeId={id}
-        variant="session"
-        busy={busy}
-        onRecheck={onRecheck}
-      />
-
       <div
         className="grid min-h-[520px] grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-xl dark:bg-darklight lg:grid-cols-3"
         data-testid="paiement-metier-session-enrollement"
@@ -99,7 +91,7 @@ export default function PaiementMetierSessionPanel({
           {/* Image de fond */}
           <div className="absolute inset-0">
             <Image
-              src="/images/inbtp/img-14.jpg"
+              src="/images/inbtp/jpg/img-14.jpg"
               alt="INBTP"
               fill
               className="object-cover"
