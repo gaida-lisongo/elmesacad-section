@@ -54,6 +54,7 @@ export default function SessionClient({ resource }: { resource: any }) {
               resourceRow={row}
               sectionSlug={resource?.branding?.sectionSlug}
               type="student"
+              matieres={resource?.matieres || []}
               onDone={(data: any) => {
                 // Après paiement réussi, on peut rafraîchir la page
                 console.log("Data from generating macaron: ", data);

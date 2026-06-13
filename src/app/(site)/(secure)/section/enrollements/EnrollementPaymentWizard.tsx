@@ -53,10 +53,19 @@ async function postCommande(body: Record<string, unknown>): Promise<{
 
 // ─── Props ────────────────────────────────────────────────────────
 
+type MatiereItem = {
+  _id?: string;
+  reference?: string;
+  designation?: string;
+  credit?: number | string;
+};
+
 type Props = {
   resourceRow: SessionResourceRow;
   sectionSlug: string;
   type?: "manual" | "student"; // "manual" = paiement enregistré manuellement par le gestionnaire, "student" = paiement effectué par l'étudiant lui-même via le marketplace (différents workflows de création + complétion de la commande)
+  /** Matières réelles de la ressource session (pour générer le macaron si l'API étudiant ne répond pas). */
+  matieres?: MatiereItem[];
   /** Appelé après succès complet (commande créée + macaron généré) */
   onDone: (data: any) => void;
   /** Annuler / revenir à la liste */
@@ -69,6 +78,7 @@ export default function EnrollementPaymentWizard({
   resourceRow,
   sectionSlug,
   type = "manual",
+  matieres: matieresProp,
   onDone,
   onCancel,
 }: Props) {
@@ -267,8 +277,18 @@ export default function EnrollementPaymentWizard({
         };
       }
 
-      // Si pas de produitDetail, créer un minimum viable avec des matières fictives
-      if (!produitDetail || !Array.isArray(produitDetail.matieres) || produitDetail.matieres.length === 0) {
+      // Fallback minimal si le service étudiant ne répond pas.
+      // On ne crée PAS de matières fictives : le microservice /macaron/generate
+      // valide que chaque reference de cours est un ObjectId MongoDB valide.
+      const fallbackMatieres = (matieresProp || [])
+        .map((m) => ({
+          reference: m._id || m.reference || "",
+          designation: m.designation || "",
+          credit: typeof m.credit === "number" ? m.credit : Number(m.credit) || 0,
+        }))
+        .filter((m) => m.reference && m.reference.match(/^[0-9a-fA-F]{24}$/));
+
+      if (!produitDetail || typeof produitDetail !== "object" || Array.isArray(produitDetail)) {
         produitDetail = {
           _id: resourceRow.id,
           designation: resourceRow.designation,
@@ -276,23 +296,7 @@ export default function EnrollementPaymentWizard({
           currency: resourceRow.currency,
           status: "active",
           categorie: "SESSION",
-          matieres: [
-            {
-              reference: "MATH-101",
-              designation: "Mathématiques Générales",
-              credit: 3,
-            },
-            {
-              reference: "PHYS-101", 
-              designation: "Physique Générale",
-              credit: 3,
-            },
-            {
-              reference: "INFO-101",
-              designation: "Informatique de Base",
-              credit: 2,
-            }
-          ],
+          matieres: fallbackMatieres,
           programme: {
             designation: resourceRow.designation,
             filiere: selectedStudent?.cycle || "Licence",
@@ -312,6 +316,10 @@ export default function EnrollementPaymentWizard({
             adresse: "Kinshasa, République Démocratique du Congo",
           }
         };
+      } else if (!Array.isArray((produitDetail as any).matieres)) {
+        (produitDetail as any).matieres = fallbackMatieres;
+      } else if ((produitDetail as any).matieres.length === 0) {
+        (produitDetail as any).matieres = fallbackMatieres;
       }
 
       //redirection vers /paiement?commandeId=... pour générer le macaron via backofficeMacaronGenerateAction (même workflow que PaiementMetierSessionPanel)
