@@ -28,7 +28,7 @@ type Props = {
 
 type TabKey = "pending" | "validated";
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 1500;
 
 /* ─── Utilitaires ───────────────────────────────────── */
 const fmt = (n: number, cur = "USD") =>

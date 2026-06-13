@@ -58,7 +58,7 @@ type Props = {
   sectionSlug: string;
   type?: "manual" | "student"; // "manual" = paiement enregistré manuellement par le gestionnaire, "student" = paiement effectué par l'étudiant lui-même via le marketplace (différents workflows de création + complétion de la commande)
   /** Appelé après succès complet (commande créée + macaron généré) */
-  onDone: () => void;
+  onDone: (data: any) => void;
   /** Annuler / revenir à la liste */
   onCancel: () => void;
 };
@@ -317,28 +317,28 @@ export default function EnrollementPaymentWizard({
       //redirection vers /paiement?commandeId=... pour générer le macaron via backofficeMacaronGenerateAction (même workflow que PaiementMetierSessionPanel)
       generateMacaron(commandeId.toString());
       // Construire le payload du macaron directement (même logique que PaiementMetierSessionPanel)
-    //   const payload = buildDocumentMacaronPayload({
-    //     commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
-    //     commandeId,
-    //     etudiant: selectedStudent ? {
-    //       id: selectedStudent.id,
-    //       name: selectedStudent.name,
-    //       email: selectedStudent.email,
-    //       matricule: selectedStudent.matricule,
-    //       sexe: "M", // Valeur par défaut
-    //       telephone: phoneNumber || "",
-    //       photo: selectedStudent.photo || "",
-    //       diplome: selectedStudent.diplome || "",
-    //       cycle: selectedStudent.cycle || "",
-    //       nationalite: "Congolaise",
-    //       ville: "Kinshasa",
-    //       status: "active",
-    //       dateDeNaissance: "1990-01-01",
-    //       lieuDeNaissance: "Kinshasa",
-    //       adresse: "Kinshasa, RDC",
-    //     } : null,
-    //     produitDetail,
-    //   });
+      onDone({
+        commande: commande as Parameters<typeof buildDocumentMacaronPayload>[0]["commande"],
+        commandeId,
+        etudiant: selectedStudent ? {
+          id: selectedStudent.id,
+          name: selectedStudent.name,
+          email: selectedStudent.email,
+          matricule: selectedStudent.matricule,
+          sexe: "M", // Valeur par défaut
+          telephone: phoneNumber || "",
+          photo: selectedStudent.photo || "",
+          diplome: selectedStudent.diplome || "",
+          cycle: selectedStudent.cycle || "",
+          nationalite: "Congolaise",
+          ville: "Kinshasa",
+          status: "active",
+          dateDeNaissance: "1990-01-01",
+          lieuDeNaissance: "Kinshasa",
+          adresse: "Kinshasa, RDC",
+        } : null,
+        produitDetail,
+      });
 
     //   // Générer le PDF avec le même workflow que PaiementMetierSessionPanel
     //   const result = await generateMacaronPdfAction(payload);
@@ -713,7 +713,7 @@ export default function EnrollementPaymentWizard({
 
             <button
               type="button"
-              onClick={onDone}
+              onClick={() => window.location.reload()}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
             >
               <Icon icon="solar:check-circle-bold-duotone" className="h-5 w-5 text-emerald-500" />
