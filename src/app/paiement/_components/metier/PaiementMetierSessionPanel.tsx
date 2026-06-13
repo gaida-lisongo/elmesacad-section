@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { Icon } from "@iconify/react";
+import Image from "next/image";
 import type {
   PaiementCommandeClientPayload,
   PaiementEtudiantLocalView,
@@ -47,8 +48,15 @@ export default function PaiementMetierSessionPanel({
     return produitDetail as Record<string, unknown>;
   }, [produitDetail]);
 
-  const programme = detailRecord ? pickRecord(detailRecord.programme) : null;
-  const annee = detailRecord ? pickRecord(detailRecord.annee) : null;
+  const rawAnnee = detailRecord ? pickRecord(detailRecord.annee) : null;
+  const anneeSlug = rawAnnee ? String(rawAnnee.slug ?? "") : "";
+  const anneeDebut = rawAnnee ? String(rawAnnee.debut ?? "") : "";
+  const anneeFin = rawAnnee ? String(rawAnnee.fin ?? "") : "";
+
+  const amount = Number(detailRecord?.amount ?? commande.transaction?.amount ?? 0);
+  const currency = String(detailRecord?.currency ?? commande.transaction?.currency ?? "");
+  const designation = String(detailRecord?.designation ?? "Session d'examen");
+  const orderNumber = commande.transaction?.orderNumber;
 
   const handleGenerateMacaron = useCallback(async () => {
     const payload = buildDocumentMacaronPayload({
@@ -83,169 +91,152 @@ export default function PaiementMetierSessionPanel({
       />
 
       <div
-        className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-white via-white to-primary/[0.08] p-1 shadow-xl dark:border-primary/25 dark:from-darklight dark:via-darklight dark:to-primary/15 sm:p-2"
+        className="grid min-h-[520px] grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-xl dark:bg-darklight lg:grid-cols-3"
         data-testid="paiement-metier-session-enrollement"
       >
-        {/* Cercles décoratifs */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/10 blur-3xl dark:bg-primary/10" />
-        <div className="pointer-events-none -bottom-16 -left-16 h-48 w-48 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-500/10" />
-
-        <div className="relative rounded-[22px] bg-white/80 p-5 backdrop-blur-sm dark:bg-darklight/80 sm:p-8">
-          {/* Header */}
-          <div className="flex items-center gap-4 border-b border-primary/10 pb-4 dark:border-primary/20">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-indigo-600 text-white shadow-lg shadow-primary/30">
-              <Icon icon="solar:calendar-date-bold-duotone" className="h-7 w-7" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-midnight_text dark:text-white sm:text-xl">
-                Enrôlement — session d&apos;examen
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                Détail du produit, parcours et matières concernées par cette commande.
-              </p>
-            </div>
+        {/* Colonne A — Produit + image */}
+        <div className="relative flex flex-col justify-between p-6 lg:col-span-1 lg:p-8">
+          {/* Image de fond */}
+          <div className="absolute inset-0">
+            <Image
+              src="/images/inbtp/img-14.jpg"
+              alt="INBTP"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/40" />
           </div>
 
-          {/* Cartes infos */}
-          <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            <article className="group rounded-2xl border border-slate-200/80 bg-white p-5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon icon="solar:book-bold-duotone" className="h-4 w-4" />
-                </div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">Produit &amp; année</h4>
-              </div>
-              <ul className="space-y-2 text-slate-700 dark:text-slate-300">
-                <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                  <span className="text-slate-500">Désignation</span>
-                  <span className="font-semibold text-midnight_text dark:text-white">{String(detailRecord?.designation ?? "—")}</span>
-                </li>
-                <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                  <span className="text-slate-500">Montant</span>
-                  <span className="font-bold text-midnight_text dark:text-white">
-                    {String(detailRecord?.amount ?? commande.transaction?.amount ?? "—")}{" "}
-                    {String(detailRecord?.currency ?? commande.transaction?.currency ?? "")}
-                  </span>
-                </li>
-                {annee ? (
-                  <>
-                    <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                      <span className="text-slate-500">Année</span>
-                      <span className="font-mono text-xs font-semibold text-midnight_text dark:text-white">{String(annee.slug ?? "—")}</span>
-                    </li>
-                    {(annee.debut != null || annee.fin != null) && (
-                      <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                        <span className="text-slate-500">Période</span>
-                        <span className="font-semibold text-midnight_text dark:text-white">
-                          {String(annee.debut ?? "—")} — {String(annee.fin ?? "—")}
-                        </span>
-                      </li>
-                    )}
-                  </>
-                ) : (
-                  <li className="text-xs text-slate-500">Année académique non renseignée.</li>
-                )}
-              </ul>
-            </article>
+          {/* Contenu */}
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-white/80 backdrop-blur-sm">
+              <Icon icon="solar:calendar-date-bold-duotone" className="h-3.5 w-3.5" />
+              Enrôlement
+            </div>
+            <h2 className="mt-4 text-2xl font-bold text-white lg:text-3xl">{designation}</h2>
 
-            <article className="group rounded-2xl border border-slate-200/80 bg-white p-5 text-sm shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/60">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
-                  <Icon icon="solar:user-id-bold-duotone" className="h-4 w-4" />
-                </div>
-                <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">Promotion (étudiant)</h4>
+            <div className="mt-6 space-y-3 text-sm text-white/80">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <span>Montant</span>
+                <span className="font-bold text-white">
+                  {amount.toLocaleString("fr-FR")} {currency}
+                </span>
               </div>
-              {etudiant ? (
-                <ul className="space-y-2 text-slate-700 dark:text-slate-300">
-                  <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                    <span className="text-slate-500">Nom</span>
-                    <span className="font-semibold text-midnight_text dark:text-white">{etudiant.name}</span>
-                  </li>
-                  <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                    <span className="text-slate-500">Matricule</span>
-                    <span className="font-semibold text-midnight_text dark:text-white">{etudiant.matricule}</span>
-                  </li>
-                  <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                    <span className="text-slate-500">Cycle</span>
-                    <span className="font-semibold text-midnight_text dark:text-white">{etudiant.cycle || "—"}</span>
-                  </li>
-                  <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                    <span className="text-slate-500">Diplôme visé</span>
-                    <span className="font-semibold text-midnight_text dark:text-white">{etudiant.diplome || "—"}</span>
-                  </li>
-                  {programme ? (
-                    <li className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 dark:bg-black/20">
-                      <span className="text-slate-500">Programme</span>
-                      <span className="font-semibold text-midnight_text dark:text-white">{String(programme.designation ?? programme.filiere ?? "—")}</span>
-                    </li>
-                  ) : null}
-                </ul>
-              ) : (
-                <p className="text-slate-600 dark:text-slate-400">Profil étudiant local non chargé.</p>
+              {anneeSlug && (
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span>Année</span>
+                  <span className="font-medium text-white">{anneeSlug}</span>
+                </div>
               )}
-            </article>
+              {(anneeDebut || anneeFin) && (
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span>Période</span>
+                  <span className="font-medium text-white">
+                    {anneeDebut || "—"} — {anneeFin || "—"}
+                  </span>
+                </div>
+              )}
+              {orderNumber && (
+                <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                  <span>N° ordre</span>
+                  <span className="font-mono text-xs text-white">{orderNumber}</span>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Cours */}
-          <article className="mt-5 rounded-2xl border border-slate-200/80 bg-white p-5 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/60">
-            <div className="mb-3 flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-600">
-                <Icon icon="solar:notebook-bold-duotone" className="h-4 w-4" />
-              </div>
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-primary">
-                Cours concernés ({cours.length})
-              </h4>
-            </div>
-            {cours.length === 0 ? (
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Aucune matière listée sur cette ressource session.
-              </p>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-                <table className="min-w-full text-left text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-500 dark:bg-black/20 dark:text-slate-400">
-                      <th className="px-4 py-2.5 font-semibold">Réf.</th>
-                      <th className="px-4 py-2.5 font-semibold">Matière</th>
-                      <th className="px-4 py-2.5 font-semibold">Crédits</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cours.map((row, idx) => (
-                      <tr
-                        key={row.reference}
-                        className={`border-t border-slate-100 transition hover:bg-primary/[0.03] dark:border-slate-800 ${idx % 2 === 1 ? "bg-slate-50/50 dark:bg-black/10" : ""}`}
-                      >
-                        <td className="px-4 py-2.5 font-mono text-[11px] text-slate-600 dark:text-slate-400">
-                          {row.reference}
-                        </td>
-                        <td className="px-4 py-2.5 font-medium text-midnight_text dark:text-white">{row.designation || "—"}</td>
-                        <td className="px-4 py-2.5">
-                          <span className="inline-flex rounded-lg bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            {row.credit > 0 ? row.credit : "—"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </article>
-
-          {/* Bouton générer */}
-          <div className="mt-6 flex justify-end">
+          <div className="relative z-10 mt-8">
             <button
               type="button"
               onClick={() => void handleGenerateMacaron()}
               disabled={Boolean(busy) || generating}
-              className="group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-r from-primary to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-primary/30 transition-all hover:scale-[1.02] hover:shadow-primary/40 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-sm font-bold text-slate-900 shadow-lg transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform group-hover:translate-x-full" />
-              <Icon icon={generating ? "solar:spinner-bold-duotone" : "solar:document-add-bold-duotone"} className={`text-lg ${generating ? "animate-spin" : ""}`} aria-hidden />
-              {generating ? "Génération en cours…" : "Générer le macaron (PDF)"}
+              <Icon icon={generating ? "solar:spinner-bold-duotone" : "solar:document-add-bold-duotone"} className={`text-lg ${generating ? "animate-spin" : ""}`} />
+              {generating ? "Génération…" : "Générer le macaron"}
             </button>
+            <p className="mt-3 text-center text-[10px] text-white/50">
+              Le PDF sera téléchargé automatiquement.
+            </p>
           </div>
+        </div>
+
+        {/* Colonne B — Étudiant + cours */}
+        <div className="flex flex-col gap-6 bg-slate-50 p-6 dark:bg-slate-900/40 lg:col-span-2 lg:p-8">
+          {/* Étudiant */}
+          <section className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900/80">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                <Icon icon="solar:user-id-bold-duotone" className="h-4 w-4" />
+              </div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Informations de l&apos;étudiant
+              </h3>
+            </div>
+
+            {etudiant ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs text-slate-400">Nom complet</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{etudiant.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Matricule</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{etudiant.matricule}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Email</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">{etudiant.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-400">Cycle / Diplôme</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                    {etudiant.cycle || "—"} {etudiant.diplome ? `· ${etudiant.diplome}` : ""}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Profil étudiant non chargé.</p>
+            )}
+          </section>
+
+          {/* Cours */}
+          <section className="flex-1 rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-900/80">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                <Icon icon="solar:notebook-bold-duotone" className="h-4 w-4" />
+              </div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                Cours concernés ({cours.length})
+              </h3>
+            </div>
+
+            {cours.length === 0 ? (
+              <p className="text-sm text-slate-500">Aucune matière listée pour cette session.</p>
+            ) : (
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {cours.map((c) => (
+                  <li
+                    key={c.reference}
+                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3 transition hover:border-primary/20 hover:bg-primary/[0.03] dark:border-slate-800 dark:bg-slate-900/50"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-primary shadow-sm dark:bg-slate-800">
+                      <Icon icon="solar:check-circle-bold-duotone" className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900 dark:text-white">
+                        {c.designation || "—"}
+                      </p>
+                      {c.credit > 0 && (
+                        <p className="text-[10px] text-slate-400">{c.credit} crédit{c.credit > 1 ? "s" : ""}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </div>
