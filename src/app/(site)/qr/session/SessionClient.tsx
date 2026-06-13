@@ -6,6 +6,7 @@ import EnrollementPaymentWizard from "@/app/(site)/(secure)/section/enrollements
 import Breadcrumb from "@/components/Common/Breadcrumb";
 import { PaiementCommandeClientPayload, PaiementEtudiantLocalView, PaiementProduitDetailRecord } from "@/app/paiement/_components/commandeResumePayload";
 import PaiementMetierSessionPanel from "@/app/paiement/_components/metier/PaiementMetierSessionPanel";
+import PendingPaymentPanel from "./PendingPaymentPanel";
 
 
 export default function SessionClient({ resource }: { resource: any }) {
@@ -88,9 +89,10 @@ export default function SessionClient({ resource }: { resource: any }) {
           )}
 
           {(commande && ui === "pending") && (
-            <div>
-              <p>Votre commande est en {commande?.status || ''}</p>
-            </div>
+            <PendingPaymentPanel
+              commande={commande}
+              resourceDesignation={row?.designation}
+            />
           )}
           </div>
           
