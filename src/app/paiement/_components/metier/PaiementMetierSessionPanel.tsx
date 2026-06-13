@@ -56,7 +56,7 @@ export default function PaiementMetierSessionPanel({
       commandeId: id,
       etudiant,
       produitDetail,
-    });
+    }); 
     setGenerating(true);
     try {
       const result = await generateMacaronPdfAction(payload);
@@ -65,6 +65,8 @@ export default function PaiementMetierSessionPanel({
         return;
       }
       downloadPdfFromBase64(result.pdfBase64, result.filename);
+    } catch (e: any) {
+      console.error("Erreur lors de la generation: ", e);
     } finally {
       setGenerating(false);
     }
