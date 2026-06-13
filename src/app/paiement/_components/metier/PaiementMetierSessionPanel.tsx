@@ -74,13 +74,13 @@ export default function PaiementMetierSessionPanel({
 
   return (
     <div className="space-y-4">
-      <PaiementMetierRessourceCore
+      {/* <PaiementMetierRessourceCore
         commande={commande}
         commandeId={id}
         variant="session"
         busy={busy}
         onRecheck={onRecheck}
-      />
+      /> */}
 
       <div
         className="rounded-2xl border border-primary/20 bg-gradient-to-br from-white via-white to-primary/[0.06] p-4 shadow-sm dark:border-primary/25 dark:from-darklight dark:via-darklight dark:to-primary/10 sm:p-6"
