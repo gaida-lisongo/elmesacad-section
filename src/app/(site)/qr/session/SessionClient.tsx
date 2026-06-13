@@ -5,6 +5,7 @@ import type { SessionResourceRow } from "@/actions/gestionnaireSessionResources"
 import EnrollementPaymentWizard from "@/app/(site)/(secure)/section/enrollements/EnrollementPaymentWizard";
 import Breadcrumb from "@/components/Common/Breadcrumb";
 import { PaiementCommandeClientPayload, PaiementEtudiantLocalView, PaiementProduitDetailRecord } from "@/app/paiement/_components/commandeResumePayload";
+import PaiementMetierSessionPanel from "@/app/paiement/_components/metier/PaiementMetierSessionPanel";
 
 
 export default function SessionClient({ resource }: { resource: any }) {
@@ -56,10 +57,39 @@ export default function SessionClient({ resource }: { resource: any }) {
               onDone={(data: any) => {
                 // Après paiement réussi, on peut rafraîchir la page
                 console.log("Data from generating macaron: ", data);
+                const { commande: cmd, commandeId, etudiant: stud, produitDetail: prod} = data;
+
+                if(cmd?.status == "paid" || cmd?.status == "completed") {
+                  handleGenerate({
+                    commandeData: cmd as PaiementCommandeClientPayload,
+                    etudiantData: stud as PaiementEtudiantLocalView,
+                    produitData: prod as PaiementProduitDetailRecord
+                  });
+                } else {
+                  handlePending({
+                    commandeData: cmd as PaiementCommandeClientPayload,
+                    etudiantData: stud as PaiementEtudiantLocalView,
+                  });
+                }
                 
               }}
               onCancel={() => window.location.reload()}
             />
+          )}
+
+          {(commande && ui === "generated") && (
+            <PaiementMetierSessionPanel 
+              commande={commande}
+              commandeId={commande?.id || ''}
+              produitDetail={produitDetail}
+              etudiant={etudiant}
+            />
+          )}
+
+          {(commande && ui === "pending") && (
+            <div>
+              <p>Votre commande est en {commande?.status || ''}</p>
+            </div>
           )}
           </div>
           
