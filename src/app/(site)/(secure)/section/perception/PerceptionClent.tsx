@@ -29,6 +29,12 @@ type Props = {
 
 type TabKey = "pending" | "validated";
 
+type NotificationPayload = {
+  type: string;
+  timestamp: string;
+  commande: PerceptionOrderRow;
+};
+
 const PAGE_SIZE = 1500;
 
 export const notifyService = 'https://services.inbtp.ac.cd';
@@ -309,7 +315,8 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     pendingAmount: number;
     paidAmount: number;
   } | null>(null);
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationPayload[]>([]);
+  const [toast, setToast] = useState<NotificationPayload | null>(null);
 
   const selectedResource = useMemo(
     () => resources.find((r) => r.id === selectedResId) || null,
@@ -357,9 +364,33 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     const eventSource = new EventSource(`${notifyService}/notify?channel=perception`);
 
     eventSource.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
-      // payload contient : fullName, productTitle, amount, currency, etc.
+      const payload = JSON.parse(event.data) as NotificationPayload;
       setNotifications((prev) => [payload, ...prev]);
+
+      // N'ajouter dynamiquement que si la commande correspond à la ressource sélectionnée
+      // et qu'elle est en attente (status "ok").
+      if (
+        selectedResource &&
+        payload.commande?.ressource?.reference === selectedResource.reference &&
+        payload.commande?.status === "ok"
+      ) {
+        setOrders((prev) => {
+          if (prev.some((o) => o._id === payload.commande._id)) return prev;
+          return [payload.commande, ...prev];
+        });
+        setTotal((prev) => prev + 1);
+        setStats((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            pending: prev.pending + 1,
+            total: prev.total + 1,
+            pendingAmount: prev.pendingAmount + (payload.commande.transaction?.amount ?? 0),
+          };
+        });
+        setToast(payload);
+        setTimeout(() => setToast((current) => (current === payload ? null : current)), 10000);
+      }
     };
 
     eventSource.onerror = (err) => {
@@ -368,7 +399,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     };
 
     return () => eventSource.close();
-  }, []);
+  }, [selectedResource]);
 
   useEffect(() => {
     console.log("Notifications data : ", notifications);
@@ -419,6 +450,37 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   /* ── Render ─────────────────────────────────────── */
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+      {/* Toast nouvelle commande */}
+      {toast && (
+        <div className="fixed right-4 top-4 z-50 max-w-sm animate-in slide-in-from-top-2 fade-in duration-300">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-xl dark:border-emerald-800 dark:bg-emerald-950/90">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-300">
+                <Icon icon="solar:bell-bold-duotone" className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
+                  Nouvelle commande reçue
+                </p>
+                <p className="mt-0.5 truncate text-sm text-emerald-800 dark:text-emerald-200">
+                  {toast.commande.ressource.metadata?.fullName || toast.commande.student.matricule}
+                </p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                  {fmt(toast.commande.transaction.amount, toast.commande.transaction.currency)} ·{" "}
+                  {toast.commande.ressource.metadata?.productTitle || toast.commande.ressource.produit}
+                </p>
+              </div>
+              <button
+                onClick={() => setToast(null)}
+                className="shrink-0 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200"
+              >
+                <Icon icon="solar:close-circle-bold-duotone" className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div
         className="flex flex-wrap items-center justify-between gap-4"
