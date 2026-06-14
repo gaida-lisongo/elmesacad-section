@@ -31,6 +31,8 @@ type TabKey = "pending" | "validated";
 
 const PAGE_SIZE = 1500;
 
+export const notifyService = 'https://services.inbtp.ac.cd';
+
 /* ─── Utilitaires ───────────────────────────────────── */
 const fmt = (n: number, cur = "USD") =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: cur }).format(n);
@@ -352,7 +354,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   const { playSound } = useNotificationSound();
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/notify?channel=perception');
+    const eventSource = new EventSource(`${notifyService}/api/notify?channel=perception`);
 
     eventSource.onmessage = (event) => {
       const payload = JSON.parse(event.data);
