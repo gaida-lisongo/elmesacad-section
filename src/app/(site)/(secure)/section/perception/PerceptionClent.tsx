@@ -364,9 +364,8 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   }, []);
 
   useEffect(() => {
-
-  console.log("Notifications data : ", notifications)
-  if(notifications.length) playSound()
+    console.log("Notifications data : ", notifications)
+    if(notifications.length) playSound()
 
   }, [notifications])
 
