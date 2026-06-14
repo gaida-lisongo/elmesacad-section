@@ -1,4 +1,4 @@
-// /app/notify/route.ts
+// /api/notify/route.ts
 import { NextRequest } from 'next/server';
 import { Redis } from '@upstash/redis';
 
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
             { count: 10, blockMS: 1000 }
           );
 
-          if (results && results.length > 0) {
+          if (results && results.length > 0) {  
             const messages = results[0][1];
             for (const msg of messages) {
               lastId = msg[0]; // On met à jour l'ID pour ne pas relire le même message
@@ -42,9 +42,20 @@ export async function GET(req: NextRequest) {
           console.error("Erreur de lecture Redis Stream:", err);
         }
       }, 1000); // Vérification toutes les secondes (très léger sur Redis)
+      
+      // 2. SÉCURITÉ VERCEL : Fermeture propre au bout de 2 minutes (120 000 ms)
+      // Cela évite d'atteindre le timeout de Vercel.
+      const timeoutFallback = setTimeout(() => {
+        clearInterval(interval);
+        // On envoie un événement personnalisé pour dire au client de se reconnecter
+        controller.enqueue(`event: close\ndata: timeout_refresh\n\n`);
+        controller.close();
+      }, 120000); 
 
+      // Nettoyage si le client quitte la page de lui-même
       req.signal.addEventListener('abort', () => {
         clearInterval(interval);
+        clearTimeout(timeoutFallback);
         controller.close();
       });
     },

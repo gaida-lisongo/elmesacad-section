@@ -1,4 +1,4 @@
-// /app/notify/perception/route.ts
+// /api/notify/perception/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 

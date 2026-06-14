@@ -1,4 +1,4 @@
-// /app/notify/payment/route.ts
+// /api/notify/payment/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
 
