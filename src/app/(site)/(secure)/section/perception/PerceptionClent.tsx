@@ -351,7 +351,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     },
     [commandesIds, selectedResource]
   );
-  const { playSound } = useNotificationSound();
+  const { playSound, markInteracted } = useNotificationSound();
 
   useEffect(() => {
     const eventSource = new EventSource(`${notifyService}/notify?channel=perception`);
@@ -362,14 +362,18 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
       setNotifications((prev) => [payload, ...prev]);
     };
 
+    eventSource.onerror = (err) => {
+      console.error("Erreur EventSource :", err);
+      eventSource.close();
+    };
+
     return () => eventSource.close();
   }, []);
 
   useEffect(() => {
-    console.log("Notifications data : ", notifications)
-    if(notifications.length) playSound()
-
-  }, [notifications])
+    console.log("Notifications data : ", notifications);
+    if (notifications.length) playSound();
+  }, [notifications, playSound]);
 
   /* ── Reset page quand ressource/tab/recherche change ─ */
   useEffect(() => {
@@ -416,7 +420,10 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div
+        className="flex flex-wrap items-center justify-between gap-4"
+        onClick={markInteracted}
+      >
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Perception</h1>
           <p className="text-sm text-gray-500">
