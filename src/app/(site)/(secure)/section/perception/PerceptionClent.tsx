@@ -306,6 +306,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     pendingAmount: number;
     paidAmount: number;
   } | null>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const selectedResource = useMemo(
     () => resources.find((r) => r.id === selectedResId) || null,
@@ -348,6 +349,18 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     [commandesIds, selectedResource]
   );
 
+  useEffect(() => {
+    const eventSource = new EventSource('/notify?channel=perception');
+
+    eventSource.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+      // payload contient : fullName, productTitle, amount, currency, etc.
+      setNotifications((prev) => [payload, ...prev]);
+    };
+
+    return () => eventSource.close();
+  }, []);
+
   /* ── Reset page quand ressource/tab/recherche change ─ */
   useEffect(() => {
     setPage(1);
@@ -358,6 +371,8 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     if (!selectedResource) return;
     loadOrders(selectedResource.reference, page, searchApplied, tab);
   }, [selectedResource, tab, page, searchApplied, loadOrders]);
+
+  console.log("Notifications data : ", notifications)
 
   /* ── Validation d'une commande ──────────────────── */
   const handleValidate = useCallback(

@@ -12,6 +12,7 @@
   "dependencies": {
     "@iconify/icons-ion": "^1.2.10",
     "@iconify/react": "^5.0.1",
+    "@upstash/redis": "^1.38.0",
     "aos": "^2.3.4",
     "axios": "^1.7.2",
     "date-fns": "^3.4.0",
