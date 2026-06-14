@@ -10,6 +10,7 @@ import {
   exportPerceptionOrdersAction,
   type PerceptionOrderRow,
 } from "@/actions/perceptionActions";
+import { useNotificationSound } from "@/utils/useNotificationSound";
 
 /* ─── Types ─────────────────────────────────────────── */
 export type ResourceItem = {
@@ -348,6 +349,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     },
     [commandesIds, selectedResource]
   );
+  const { playSound } = useNotificationSound();
 
   useEffect(() => {
     const eventSource = new EventSource('/notify?channel=perception');
@@ -361,6 +363,13 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     return () => eventSource.close();
   }, []);
 
+  useEffect(() => {
+
+  console.log("Notifications data : ", notifications)
+  if(notifications.length) playSound()
+
+  }, [notifications])
+
   /* ── Reset page quand ressource/tab/recherche change ─ */
   useEffect(() => {
     setPage(1);
@@ -372,7 +381,6 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
     loadOrders(selectedResource.reference, page, searchApplied, tab);
   }, [selectedResource, tab, page, searchApplied, loadOrders]);
 
-  console.log("Notifications data : ", notifications)
 
   /* ── Validation d'une commande ──────────────────── */
   const handleValidate = useCallback(

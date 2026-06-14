@@ -25,8 +25,12 @@ export async function GET(req: NextRequest) {
       const interval = setInterval(async () => {
         try {
           // On lit les nouveaux messages arrivés dans le flux Redis depuis le dernier ID
-          const results = await redis.xread([{ key: `stream:${channel}`, id: lastId }], { count: 10, block: 0 });
-          
+          const results: any[] = await redis.xread(
+            [`stream:${channel}`],
+            [lastId],
+            { count: 10, blockMS: 1000 }
+          );
+
           if (results && results.length > 0) {
             const messages = results[0][1];
             for (const msg of messages) {
