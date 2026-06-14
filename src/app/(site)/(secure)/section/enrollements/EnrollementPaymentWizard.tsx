@@ -209,7 +209,7 @@ export default function EnrollementPaymentWizard({
         const cmd = payload.commande as Record<string, unknown> | undefined;
         if (!cmd) throw new Error("Réponse invalide.");
 
-        const reqNotify = await fetch(`${notifyService}/api/notify/perception`, {
+        const reqNotify = await fetch(`${notifyService}/notify/perception`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ commande: cmd }),

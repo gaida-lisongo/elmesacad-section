@@ -354,7 +354,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   const { playSound } = useNotificationSound();
 
   useEffect(() => {
-    const eventSource = new EventSource(`${notifyService}/api/notify?channel=perception`);
+    const eventSource = new EventSource(`${notifyService}/notify?channel=perception`);
 
     eventSource.onmessage = (event) => {
       const payload = JSON.parse(event.data);
