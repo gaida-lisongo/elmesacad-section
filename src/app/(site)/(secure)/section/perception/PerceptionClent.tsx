@@ -363,21 +363,56 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
   useEffect(() => {
     const eventSource = new EventSource(`${notifyService}/notify?channel=perception`);
 
+    // eventSource.onmessage = (event) => {
+    //   const payload = JSON.parse(event.data) as NotificationPayload;
+    //   setNotifications((prev) => [payload, ...prev]);
+
+    //   // N'ajouter dynamiquement que si la commande correspond à la ressource sélectionnée
+    //   // et qu'elle est en attente (status "ok").
+    //   if (
+    //     selectedResource &&
+    //     payload.commande?.ressource?.reference === selectedResource.reference &&
+    //     payload.commande?.status === "ok"
+    //   ) {
+    //     setOrders((prev) => {
+    //       if (prev.some((o) => o._id === payload.commande._id)) return prev;
+    //       return [payload.commande, ...prev];
+    //     });
+    //     setTotal((prev) => prev + 1);
+    //     setStats((prev) => {
+    //       if (!prev) return prev;
+    //       return {
+    //         ...prev,
+    //         pending: prev.pending + 1,
+    //         total: prev.total + 1,
+    //         pendingAmount: prev.pendingAmount + (payload.commande.transaction?.amount ?? 0),
+    //       };
+    //     });
+    //     setToast(payload);
+    //     setTimeout(() => setToast((current) => (current === payload ? null : current)), 10000);
+    //   }
+    // };
     eventSource.onmessage = (event) => {
       const payload = JSON.parse(event.data) as NotificationPayload;
       setNotifications((prev) => [payload, ...prev]);
 
-      // N'ajouter dynamiquement que si la commande correspond à la ressource sélectionnée
-      // et qu'elle est en attente (status "ok").
       if (
         selectedResource &&
         payload.commande?.ressource?.reference === selectedResource.reference &&
         payload.commande?.status === "ok"
       ) {
+        // 🛡️ CORRECTION : Sécuriser l'identifiant pour les Server Actions Next.js
+        const normalizedCommande = {
+          ...payload.commande,
+          _id: payload.commande._id || (payload.commande as any).id,
+          id: (payload.commande as any).id || payload.commande._id
+        };
+
         setOrders((prev) => {
-          if (prev.some((o) => o._id === payload.commande._id)) return prev;
-          return [payload.commande, ...prev];
+          if (prev.some((o) => o._id === normalizedCommande._id)) return prev;
+          return [normalizedCommande, ...prev];
         });
+        
         setTotal((prev) => prev + 1);
         setStats((prev) => {
           if (!prev) return prev;
@@ -385,11 +420,13 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
             ...prev,
             pending: prev.pending + 1,
             total: prev.total + 1,
-            pendingAmount: prev.pendingAmount + (payload.commande.transaction?.amount ?? 0),
+            pendingAmount: prev.pendingAmount + (normalizedCommande.transaction?.amount ?? 0),
           };
         });
-        setToast(payload);
-        setTimeout(() => setToast((current) => (current === payload ? null : current)), 10000);
+        
+        // On passe aussi l'objet corrigé au toast
+        setToast({ ...payload, commande: normalizedCommande });
+        setTimeout(() => setToast((current) => (current?.commande._id === normalizedCommande._id ? null : current)), 10000);
       }
     };
 
