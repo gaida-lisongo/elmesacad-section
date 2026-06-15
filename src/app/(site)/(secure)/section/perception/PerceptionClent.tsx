@@ -403,7 +403,10 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
 
   useEffect(() => {
     console.log("Notifications data : ", notifications);
-    if (notifications.length) playSound();
+    if (notifications.length) {
+      // Jouer le son seulement pour la dernière notification reçue
+      playSound();
+    }
   }, [notifications, playSound]);
 
   /* ── Reset page quand ressource/tab/recherche change ─ */
@@ -424,16 +427,20 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
       setValidatingId(orderId);
       const res = await validateOrderAction(orderId);
       if (res.success) {
-        const commandeData = orders.find((o) => o._id !== orderId);
-        const reqNotify = await fetch(`${notifyService}/notify/payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ commande: commandeData }),
-        })
-
-        const resNotify = await reqNotify.json()
-
-        if(!resNotify.success) console.log("Un problème inattendu est survenu lors de la notification")
+        const commandeData = orders.find((o) => o._id === orderId);
+        if (commandeData) {
+          try {
+            const reqNotify = await fetch(`${notifyService}/notify/payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ commande: commandeData }),
+            });
+            const resNotify = await reqNotify.json();
+            if (!resNotify.success) console.log("Un problème inattendu est survenu lors de la notification");
+          } catch (err) {
+            console.error("Erreur lors de la notification post-validation :", err);
+          }
+        }
 
         setOrders((prev) => prev.filter((o) => o._id !== orderId));
         setTotal((prev) => Math.max(0, prev - 1));
@@ -443,7 +450,7 @@ export default function PerceptionClient({ agent, resources, commandesIds }: Pro
       }
       setValidatingId(null);
     },
-    [loadOrders, page, searchApplied, selectedResource]
+    [loadOrders, orders, page, searchApplied, selectedResource]
   );
 
   /* ── Recherche ──────────────────────────────────── */
