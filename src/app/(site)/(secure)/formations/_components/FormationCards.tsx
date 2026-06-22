@@ -590,6 +590,16 @@ export function FormationCardCreate() {
 
         {error && <p className="md:col-span-2 text-xs text-rose-600">{error}</p>}
       </div>
+
+      <div className="flex items-center justify-end gap-3 border-t border-gray-100 pt-5 dark:border-gray-800">
+        <button
+          type="submit"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90"
+        >
+          <Icon icon="solar:check-circle-bold-duotone" className="h-4 w-4" />
+          Créer la formation
+        </button>
+      </div>
     </div>
   );
 }
