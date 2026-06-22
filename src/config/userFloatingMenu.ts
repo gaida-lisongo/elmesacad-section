@@ -37,6 +37,7 @@ export const userFloatingMenu: {
       { item: "Etudiants", path: "/etudiants" },
       { item: "Sections", path: "/sections" },
       { item: "Laboratoires", path: "/labo" },
+      { item: "Formations", path: "/formations"},
       { item: "Tickets", path: "/tickets" },
     ],
     coge: [
