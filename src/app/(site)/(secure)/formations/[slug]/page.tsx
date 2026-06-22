@@ -9,9 +9,6 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { QRCodeSVG } from "qrcode.react";
 import { resolvePublicOrigin } from "@/lib/ticket/buildTicketPublicUrl";
 
-const inputClass =
-  "w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm transition placeholder:text-gray-400 focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/15 dark:border-gray-600 dark:bg-gray-800/80 dark:text-white";
-
 type FormationDetail = {
   _id: string;
   slug: string;
@@ -31,6 +28,21 @@ type QuestionPayload = {
   points: number;
 };
 
+type ParticipantItem = {
+  _id: string;
+  note: number;
+  score: number;
+  mention: string;
+  completedAt?: string;
+  createdAt?: string;
+  user?: {
+    _id?: string;
+    name?: string;
+    email?: string;
+    matricule?: string;
+  };
+};
+
 function formatDate(iso?: string) {
   if (!iso) return "—";
   try {
@@ -46,22 +58,17 @@ function formatDate(iso?: string) {
   }
 }
 
-export default function FormationDetailPage() {
+export default function FormationViewPage() {
   const params = useParams();
   const slug = String(params.slug ?? "");
 
   const [data, setData] = useState<FormationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const [image, setImage] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [objectifs, setObjectifs] = useState<string[]>([""]);
-  const [questions, setQuestions] = useState<QuestionPayload[]>([
-    { question: "", propositions: ["", ""], bonneReponse: 0, points: 2 },
-  ]);
+  const [participants, setParticipants] = useState<ParticipantItem[]>([]);
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [generating, setGenerating] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,16 +81,7 @@ export default function FormationDetailPage() {
         setData(null);
         return;
       }
-      if (json.data) {
-        setData(json.data);
-        setImage(json.data.image);
-        setObjectifs(json.data.objectifs?.length ? json.data.objectifs : [""]);
-        setQuestions(
-          json.data.questionnaire?.length
-            ? json.data.questionnaire
-            : [{ question: "", propositions: ["", ""], bonneReponse: 0, points: 2 }]
-        );
-      }
+      if (json.data) setData(json.data);
     } catch {
       setError("Réseau");
     } finally {
@@ -91,108 +89,84 @@ export default function FormationDetailPage() {
     }
   }, [slug]);
 
+  const loadParticipants = useCallback(async () => {
+    if (!data) return;
+    setLoadingParticipants(true);
+    try {
+      const res = await fetch(`/api/formations/${data._id}/participants`);
+      const json = (await res.json()) as { data?: ParticipantItem[] };
+      setParticipants(json.data ?? []);
+    } catch {
+      setParticipants([]);
+    } finally {
+      setLoadingParticipants(false);
+    }
+  }, [data]);
+
   useEffect(() => {
     if (slug) load();
   }, [load, slug]);
+
+  useEffect(() => {
+    loadParticipants();
+  }, [loadParticipants]);
 
   const publicUrl = useMemo(() => {
     const origin = typeof window !== "undefined" ? window.location.origin : resolvePublicOrigin();
     return `${origin}/formations/${slug}`;
   }, [slug]);
 
-  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
-    setUploading(true);
+  const toggleSelection = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === participants.length && participants.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(participants.map((p) => p._id)));
+    }
+  };
+
+  const generateCertificatesBulk = async () => {
+    if (selectedIds.size === 0) {
+      window.alert("Sélectionnez au moins un participant.");
+      return;
+    }
+    setGenerating(true);
     try {
-      const fd = new FormData();
-      fd.set("file", file);
-      const res = await fetch("/api/formations/upload-image", { method: "POST", body: fd });
-      const json = (await res.json()) as { image?: string; message?: string };
-      if (!res.ok) {
-        setMessage(json.message ?? "Upload impossible");
+      const res = await fetch(`/api/formations/${data?._id}/certificats`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantIds: Array.from(selectedIds) }),
+      });
+      const json = (await res.json()) as { pdfBase64?: string; filename?: string; message?: string };
+      if (!res.ok || !json.pdfBase64) {
+        window.alert(json.message ?? "Génération impossible");
         return;
       }
-      if (json.image) setImage(json.image);
+      const bin = atob(json.pdfBase64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = json.filename?.toLowerCase().endsWith(".pdf") ? json.filename : `${json.filename ?? "certificats"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
     } catch {
-      setMessage("Upload impossible");
+      window.alert("Erreur réseau");
     } finally {
-      setUploading(false);
+      setGenerating(false);
     }
-  };
-
-  const updateObjectif = (i: number, value: string) => {
-    setObjectifs(objectifs.map((o, idx) => (idx === i ? value : o)));
-  };
-  const addObjectif = () => setObjectifs([...objectifs, ""]);
-  const removeObjectif = (i: number) => setObjectifs(objectifs.filter((_, idx) => idx !== i));
-
-  const updateQuestion = (i: number, patch: Partial<QuestionPayload>) => {
-    setQuestions(questions.map((q, idx) => (idx === i ? { ...q, ...patch } : q)));
-  };
-  const updateProposition = (qIdx: number, pIdx: number, value: string) => {
-    setQuestions(
-      questions.map((q, idx) =>
-        idx === qIdx
-          ? { ...q, propositions: q.propositions.map((p, pI) => (pI === pIdx ? value : p)) }
-          : q
-      )
-    );
-  };
-  const addProposition = (qIdx: number) => {
-    setQuestions(
-      questions.map((q, idx) => (idx === qIdx ? { ...q, propositions: [...q.propositions, ""] } : q))
-    );
-  };
-  const removeProposition = (qIdx: number, pIdx: number) => {
-    setQuestions(
-      questions.map((q, idx) =>
-        idx === qIdx
-          ? {
-              ...q,
-              propositions: q.propositions.filter((_, pI) => pI !== pIdx),
-              bonneReponse: q.bonneReponse >= q.propositions.length - 1 ? 0 : q.bonneReponse,
-            }
-          : q
-      )
-    );
-  };
-  const addQuestion = () => {
-    setQuestions([...questions, { question: "", propositions: ["", ""], bonneReponse: 0, points: 2 }]);
-  };
-  const removeQuestion = (i: number) => setQuestions(questions.filter((_, idx) => idx !== i));
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!data) return;
-    setSaving(true);
-    setMessage(null);
-
-    const fd = new FormData(e.currentTarget);
-    const body = {
-      titre: String(fd.get("titre") ?? "").trim(),
-      description: String(fd.get("description") ?? "").trim(),
-      dateFormation: String(fd.get("dateFormation") ?? "").trim(),
-      image: image.trim(),
-      actif: fd.get("actif") === "on",
-      objectifs: objectifs.filter((o) => o.trim()),
-      questionnaire: questions.filter((q) => q.question.trim()),
-    };
-
-    const res = await fetch(`/api/formations/${data._id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const json = (await res.json()) as { data?: FormationDetail; message?: string };
-    if (!res.ok) {
-      setMessage(json.message ?? "Erreur lors de l'enregistrement");
-    } else {
-      setMessage("Formation enregistrée.");
-      if (json.data) setData(json.data);
-    }
-    setSaving(false);
   };
 
   if (loading) {
@@ -228,225 +202,174 @@ export default function FormationDetailPage() {
         />
       </div>
 
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-midnight_text dark:text-white">Modifier la formation</h1>
-        <p className="mt-1 text-sm text-body-color">Mettez à jour les informations, l'image et le questionnaire.</p>
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-midnight_text dark:text-white">{data.titre}</h1>
+          <p className="mt-1 text-sm text-body-color">{data.description || "Aucune description"}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <span className="flex items-center gap-1">
+              <Icon icon="solar:calendar-bold-duotone" className="h-3.5 w-3.5 text-primary" />
+              {formatDate(data.dateFormation)}
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                data.actif
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+              }`}
+            >
+              {data.actif ? "Active" : "Inactive"}
+            </span>
+          </div>
+        </div>
+        <Link
+          href={`/formations/${slug}/edit`}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90"
+        >
+          <Icon icon="solar:pen-new-square-bold-duotone" className="h-4 w-4" />
+          Modifier
+        </Link>
       </header>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Titre *</label>
-            <input name="titre" required defaultValue={data.titre} className={inputClass} />
-          </div>
-
-          <div>
-            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">
-              Date de formation *
-            </label>
-            <input
-              name="dateFormation"
-              type="datetime-local"
-              required
-              defaultValue={data.dateFormation ? new Date(data.dateFormation).toISOString().slice(0, 16) : ""}
-              className={inputClass}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-gray-100 dark:bg-gray-800">
+            <Image
+              src={data.image || "/images/blog/blog_2.jpg"}
+              alt={data.titre}
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 66vw"
             />
           </div>
 
-          <div className="md:col-span-2">
-            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
-              <Icon icon="solar:gallery-round-bold-duotone" className="h-4 w-4 text-primary" />
-              Image
-            </label>
-            <div className="flex flex-wrap items-center gap-3">
-              {image && (
-                <div className="relative h-20 w-20 overflow-hidden rounded-xl ring-1 ring-gray-200 dark:ring-gray-600">
-                  <Image src={image} alt="Aperçu" fill className="object-cover" sizes="80px" />
-                </div>
-              )}
-              <input type="file" accept="image/*" onChange={onFile} disabled={uploading} className="text-xs" />
-              {uploading && <span className="text-xs text-gray-500">Envoi…</span>}
+          {data.objectifs.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-sm font-bold text-midnight_text dark:text-white">Objectifs</h2>
+              <ul className="space-y-2">
+                {data.objectifs.map((o, i) => (
+                  <li key={i} className="flex items-start gap-2 text-sm text-body-color">
+                    <Icon icon="solar:check-circle-bold-duotone" className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    {o}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
+          )}
 
-          <div className="md:col-span-2">
-            <label className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-gray-400">Description</label>
-            <textarea
-              name="description"
-              rows={4}
-              defaultValue={data.description}
-              className={inputClass}
-              placeholder="Description de la formation…"
-            />
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400">
-              Objectifs
-              <button type="button" onClick={addObjectif} className="text-primary hover:underline">
-                + Ajouter
-              </button>
-            </label>
-            <div className="space-y-2">
-              {objectifs.map((o, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    value={o}
-                    onChange={(e) => updateObjectif(i, e.target.value)}
-                    className={inputClass}
-                    placeholder={`Objectif ${i + 1}`}
-                  />
-                  {objectifs.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeObjectif(i)}
-                      className="text-rose-500 hover:text-rose-600"
-                    >
-                      <Icon icon="solar:trash-bin-minimalistic-bold" className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="mb-2 flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400">
-              Questionnaire QCM
-              <button type="button" onClick={addQuestion} className="text-primary hover:underline">
-                + Ajouter une question
-              </button>
-            </label>
-            <div className="space-y-4">
-              {questions.map((q, qIdx) => (
-                <div
-                  key={qIdx}
-                  className="rounded-2xl border border-gray-200/90 bg-white/60 p-4 dark:border-gray-700 dark:bg-gray-900/50"
-                >
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">
-                      Question {qIdx + 1}
-                    </span>
-                    {questions.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeQuestion(qIdx)}
-                        className="text-rose-500 hover:text-rose-600"
-                      >
-                        <Icon icon="solar:trash-bin-minimalistic-bold" className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <input
-                      value={q.question}
-                      onChange={(e) => updateQuestion(qIdx, { question: e.target.value })}
-                      className={inputClass}
-                      placeholder="Intitulé de la question"
-                    />
-                    <div className="grid gap-2 sm:grid-cols-2">
+          {data.questionnaire.length > 0 && (
+            <div>
+              <h2 className="mb-3 text-sm font-bold text-midnight_text dark:text-white">
+                Questionnaire ({data.questionnaire.length})
+              </h2>
+              <div className="space-y-3">
+                {data.questionnaire.map((q, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-gray-100 bg-gray-50/80 p-4 dark:border-gray-800 dark:bg-gray-900/40"
+                  >
+                    <p className="text-sm font-semibold text-midnight_text dark:text-white">
+                      {i + 1}. {q.question}
+                    </p>
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
                       {q.propositions.map((p, pIdx) => (
-                        <div key={pIdx} className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name={`bonne-${qIdx}`}
-                            checked={q.bonneReponse === pIdx}
-                            onChange={() => updateQuestion(qIdx, { bonneReponse: pIdx })}
-                            title="Bonne réponse"
-                            className="h-4 w-4 accent-primary"
+                        <div
+                          key={pIdx}
+                          className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${
+                            pIdx === q.bonneReponse
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                              : "bg-white text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                          }`}
+                        >
+                          <Icon
+                            icon={pIdx === q.bonneReponse ? "solar:check-circle-bold" : "solar:close-circle-bold"}
+                            className="h-3.5 w-3.5 shrink-0"
                           />
-                          <input
-                            value={p}
-                            onChange={(e) => updateProposition(qIdx, pIdx, e.target.value)}
-                            className={inputClass}
-                            placeholder={`Proposition ${pIdx + 1}`}
-                          />
-                          {q.propositions.length > 2 && (
-                            <button
-                              type="button"
-                              onClick={() => removeProposition(qIdx, pIdx)}
-                              className="text-rose-500 hover:text-rose-600"
-                            >
-                              <Icon icon="solar:close-circle-bold" className="h-5 w-5" />
-                            </button>
-                          )}
+                          {p}
                         </div>
                       ))}
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => addProposition(qIdx)}
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      + Ajouter une proposition
-                    </button>
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs text-gray-500">Points :</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={q.points}
-                        onChange={(e) => updateQuestion(qIdx, { points: Number(e.target.value) || 1 })}
-                        className={`${inputClass} w-24`}
-                      />
-                    </div>
+                    <p className="mt-2 text-[10px] text-gray-400">{q.points} point{q.points > 1 ? "s" : ""}</p>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 dark:border-primary/30 dark:bg-primary/5">
+            <p className="mb-3 text-sm font-semibold text-midnight_text dark:text-white">QR code de la formation</p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
+                <QRCodeSVG value={publicUrl} size={160} level="H" includeMargin />
+              </div>
+              <p className="max-w-xs break-all text-center text-xs text-gray-500 dark:text-gray-400">{publicUrl}</p>
             </div>
           </div>
 
-          <div className="md:col-span-2 flex items-center gap-2">
-            <input
-              id="actif"
-              name="actif"
-              type="checkbox"
-              defaultChecked={data.actif}
-              className="h-4 w-4 accent-primary"
-            />
-            <label htmlFor="actif" className="text-xs font-medium text-gray-600 dark:text-gray-300">
-              Formation active
-            </label>
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-midnight_text dark:text-white">
+                Participants ({participants.length})
+              </h2>
+              {participants.length > 0 && (
+                <button
+                  type="button"
+                  onClick={toggleAll}
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  {selectedIds.size === participants.length ? "Tout désélectionner" : "Tout sélectionner"}
+                </button>
+              )}
+            </div>
+
+            {loadingParticipants ? (
+              <p className="py-4 text-center text-xs text-gray-500">Chargement…</p>
+            ) : participants.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-gray-200 bg-gray-50/80 py-8 text-center text-xs text-gray-400 dark:border-gray-700 dark:bg-gray-900/40">
+                Aucun participant pour le moment.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {participants.map((p) => (
+                  <label
+                    key={p._id}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:border-primary/20 dark:border-gray-800 dark:bg-gray-900/50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(p._id)}
+                      onChange={() => toggleSelection(p._id)}
+                      className="h-4 w-4 accent-primary"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-midnight_text dark:text-white">
+                        {p.user?.name ?? "—"}
+                      </p>
+                      <p className="text-[10px] text-gray-500">{p.user?.matricule ?? "—"}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-bold text-primary">{p.note ?? p.score ?? "—"}/20</p>
+                      <p className="text-[10px] text-gray-400">{p.mention ?? "—"}</p>
+                    </div>
+                  </label>
+                ))}
+
+                <button
+                  type="button"
+                  disabled={generating || selectedIds.size === 0}
+                  onClick={generateCertificatesBulk}
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50"
+                >
+                  <Icon icon="solar:diploma-bold-duotone" className="h-4 w-4" />
+                  {generating ? "Génération…" : `Générer les certificats (${selectedIds.size})`}
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
-        <div className="rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-5 dark:border-primary/30 dark:bg-primary/5">
-          <p className="mb-3 text-sm font-semibold text-midnight_text dark:text-white">QR code de la formation</p>
-          <div className="flex flex-col items-center gap-4 sm:flex-row">
-            <div className="rounded-xl bg-white p-3 shadow-sm dark:bg-gray-900">
-              <QRCodeSVG value={publicUrl} size={160} level="H" includeMargin />
-            </div>
-            <div className="text-center sm:text-left">
-              <p className="max-w-xs break-all text-xs text-gray-500 dark:text-gray-400">{publicUrl}</p>
-              <p className="mt-1 text-xs text-gray-400">Scanné, ce code redirige vers la page publique.</p>
-            </div>
-          </div>
-        </div>
-
-        {message && (
-          <p
-            className={`text-sm ${message.includes("Erreur") || message.includes("impossible") ? "text-rose-600" : "text-emerald-600"}`}
-          >
-            {message}
-          </p>
-        )}
-
-        <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-xl bg-primary px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:opacity-90 disabled:opacity-50"
-          >
-            {saving ? "Enregistrement…" : "Enregistrer"}
-          </button>
-          <Link
-            href="/formations"
-            className="rounded-xl border border-gray-200 px-6 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-          >
-            Retour
-          </Link>
-        </div>
-      </form>
+      </div>
     </section>
   );
 }

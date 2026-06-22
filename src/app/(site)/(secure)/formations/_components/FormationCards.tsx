@@ -240,7 +240,7 @@ export function FormationCardItem({
           </button>
 
           <Link
-            href={`/formations/${item.slug}`}
+            href={`/formations/${item.slug}/edit`}
             className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-50 text-gray-500 transition hover:bg-primary/10 hover:text-primary dark:bg-gray-800"
             title="Modifier"
           >

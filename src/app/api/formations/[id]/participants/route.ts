@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/services/connectedDB";
 import { ParticipantModel } from "@/lib/models/Participant";
-import { UserModel } from "@/lib/models/User";
+import { StudentModel } from "@/lib/models/User";
 import { getSessionPayload, isAgentSession } from "@/lib/auth/sessionServer";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -24,7 +24,7 @@ export async function GET(_: Request, context: RouteContext) {
     }
 
     const participants = await ParticipantModel.find({ formation: new Types.ObjectId(id) })
-      .populate({ path: "user", model: UserModel, select: "name email matricule" })
+      .populate({ path: "user", model: StudentModel, select: "name email matricule" })
       .sort({ createdAt: -1 })
       .lean()
       .exec();

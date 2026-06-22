@@ -11,7 +11,14 @@ export interface ReponseQCM {
 
 export interface ParticipantDoc extends Document {
   formation: Types.ObjectId;
-  user: Types.ObjectId;
+  user: {
+    nom: string,
+    post_nom: string,
+    prenom: string,
+    matricule: string,
+    grade: string,
+    email: string
+  };
 
   reponses: ReponseQCM[];
 
@@ -80,9 +87,12 @@ const participantSchema = new Schema<ParticipantDoc>(
     },
 
     user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+        nom: {type: String},
+        post_nom: { type: String},
+        prenom: {type: String},
+        matricule: { type: String},
+        grade: { type: String },
+        email: { type: String }
     },
 
     reponses: [reponseSchema],
